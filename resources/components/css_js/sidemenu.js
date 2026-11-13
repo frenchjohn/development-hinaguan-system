@@ -1571,7 +1571,8 @@ window.addEventListener('DOMContentLoaded', function () {
                         playScannerSound(true);
 
                         if (typeof window.showToast === 'function') {
-                            window.showToast(`Scanned QR: Reservation #${reservationId}`, 'success');
+                            const formattedResId = String(reservationId).length < 3 ? String(reservationId).padStart(3, '0') : String(reservationId);
+                            window.showToast(`Scanned QR: Reservation #${formattedResId}`, 'success');
                         }
 
                         window.dispatchEvent(new CustomEvent('scanner:scanned', {

@@ -95,6 +95,13 @@ window.AppPage['staff_check_ins'] = function () {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
+    const formatReservationId = (id) => {
+        if (id === null || id === undefined || id === '') return '';
+        const digits = String(id).trim().replace(/\D/g, '');
+        if (!digits) return String(id);
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     // Bulk companions store a representative midpoint age (0-12→6, 13-17→15,
     // 18-59→30, 60+→65). Display the actual age group instead of the midpoint.
     const ageGroupLabel = (age) => {
@@ -532,11 +539,11 @@ window.AppPage['staff_check_ins'] = function () {
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div class="flex items-center gap-3.5 min-w-0">
                         <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white font-black text-xl shadow-md tracking-tight">
-                            #${reservation.id}
+                            #${formatReservationId(reservation.id)}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2.5 flex-wrap">
-                                <span class="font-display font-black text-xl text-hp-text tracking-tight">Reservation #${reservation.id}</span>
+                                <span class="font-display font-black text-xl text-hp-text tracking-tight">Reservation #${formatReservationId(reservation.id)}</span>
                                 <span class="inline-flex items-center rounded-lg bg-hp-green/15 text-hp-green border border-hp-green/30 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide">
                                     ${reservationTypeLabel}
                                 </span>
@@ -993,7 +1000,7 @@ window.AppPage['staff_check_ins'] = function () {
             const previewEl = checkOutConfirmModal.querySelector('#checkOutConfirmGuestPreview');
 
             if (titleEl) titleEl.textContent = 'Confirm Check Out';
-            if (messageEl) messageEl.textContent = `Would you like to check out Reservation #${resId}?`;
+            if (messageEl) messageEl.textContent = `Would you like to check out Reservation #${formatReservationId(resId)}?`;
             if (previewEl) {
                 previewEl.innerHTML = '';
                 previewEl.classList.add('hidden');
@@ -1120,7 +1127,7 @@ window.AppPage['staff_check_ins'] = function () {
                             </div>
                             <div class="text-right shrink-0">
                                 <span class="inline-block bg-white text-neutral-900 dark:bg-white dark:text-black text-xs font-bold px-2.5 py-1 rounded-md shadow-xs">
-                                    Reservation #${escapeHtml(resId)}
+                                    Reservation #${escapeHtml(formatReservationId(resId))}
                                 </span>
                             </div>
                         </div>
@@ -1133,7 +1140,7 @@ window.AppPage['staff_check_ins'] = function () {
                                         Reservation ID
                                     </td>
                                     <td class="py-2.5 px-4 font-bold text-neutral-900 dark:text-neutral-100 align-top">
-                                        #${escapeHtml(resId)}
+                                        #${escapeHtml(formatReservationId(resId))}
                                     </td>
                                 </tr>
                                 <tr>
@@ -1379,7 +1386,7 @@ window.AppPage['staff_check_ins'] = function () {
                 if (guestCountEl) guestCountEl.textContent = `Showing ${remainingGuestRows} active guest${remainingGuestRows === 1 ? '' : 's'}`;
 
                 refreshCheckoutCountdowns();
-                showToast(`Reservation #${resId} checked out successfully.`);
+                showToast(`Reservation #${formatReservationId(resId)} checked out successfully.`);
             }, () => {
                 // onReady: charges modal has appeared, now close confirmation modal
                 closeModalFn();
@@ -1693,7 +1700,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         extendStayCalState.resId = reservationId;
         const resIdEl = document.getElementById('extendStayResId');
-        if (resIdEl) resIdEl.textContent = res.id;
+        if (resIdEl) resIdEl.textContent = formatReservationId(res.id);
 
         const sDateOnly = res.reservation_date ? String(res.reservation_date).split('T')[0].split(' ')[0] : '';
         const eDateOnly = res.end_date ? String(res.end_date).split('T')[0].split(' ')[0] : '';
@@ -2842,7 +2849,7 @@ window.AppPage['staff_check_ins'] = function () {
         const resIdInput = document.getElementById('addAmenityMidStayResId');
         const resIdEl = document.getElementById('addAmenityResId');
         if (resIdInput) resIdInput.value = reservationId;
-        if (resIdEl) resIdEl.textContent = reservationId;
+        if (resIdEl) resIdEl.textContent = formatReservationId(reservationId);
 
         const today = window.SERVER_TODAY || todayStr;
         const curSession = window.SERVER_CURRENT_SESSION || 'Daytime';
@@ -3235,7 +3242,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <div style="padding: 1rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; border-left: 4px solid #c8a45d;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Reservation ID:</span>
-                            <strong>#${reservation.id}</strong>
+                            <strong>#${formatReservationId(reservation.id)}</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Main Guest:</span>
@@ -3527,7 +3534,7 @@ window.AppPage['staff_check_ins'] = function () {
                     });
                     const finalPayload = await finalResponse.json().catch(() => ({}));
                     if (!finalResponse.ok) throw new Error(finalPayload.message || 'Unable to complete checkout.');
-                    showToast(`Reservation #${currentBulkResId} checked out successfully.`);
+                    showToast(`Reservation #${formatReservationId(currentBulkResId)} checked out successfully.`);
                     window.dispatchEvent(new CustomEvent('app:data-mutated'));
                 });
                 return;
@@ -4316,7 +4323,7 @@ window.AppPage['staff_check_ins'] = function () {
                     if (!finalResponse.ok || !finalPayload.success) {
                         throw new Error(finalPayload.message || 'Unable to complete checkout.');
                     }
-                    showToast(`Reservation #${currentCompanionCheckoutResId} checked out successfully.`);
+                    showToast(`Reservation #${formatReservationId(currentCompanionCheckoutResId)} checked out successfully.`);
                     window.dispatchEvent(new CustomEvent('app:data-mutated'));
                 });
                 return;
@@ -4489,7 +4496,7 @@ window.AppPage['staff_check_ins'] = function () {
                                     <span class="nested-guest-avatar ${groupGlowClass} flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0e7490] to-[#155e75] text-[0.55rem] font-bold text-white shadow-sm">
                                         <i class="bi bi-people-fill"></i>
                                     </span>
-                                    <span>Companions (#${resId})</span>
+                                    <span>Companions (#${formatReservationId(resId)})</span>
                                     <div class="flex shrink-0 items-center gap-1.5">
                                         <span class="inline-flex items-center rounded-full bg-[#0e7490] px-2 py-0.5 text-[0.6rem] font-bold text-white shadow-sm">${activeBulk}/${totalBulk} Checked In</span>
                                         ${poolBadge}
@@ -9898,7 +9905,7 @@ window.AppPage['staff_check_ins'] = function () {
                     return;
                 }
 
-                qrScannerStatus.textContent = `Found reservation #${reservationId}. Looking up...`;
+                qrScannerStatus.textContent = `Found reservation #${formatReservationId(reservationId)}. Looking up...`;
                 await stopQrScanner();
 
                 try {
@@ -11216,7 +11223,7 @@ window.AppPage['staff_check_ins'] = function () {
         loadParkSettings();
 
         if (resAddCompanionFor && currentReservationId) {
-            resAddCompanionFor.textContent = `Reservation #${currentReservationId}`;
+            resAddCompanionFor.textContent = `Reservation #${formatReservationId(currentReservationId)}`;
         }
 
         if (resAddAllCompanionsBtn) {
@@ -11394,7 +11401,7 @@ window.AppPage['staff_check_ins'] = function () {
             closeResAddCompanionModal();
             const totalPay = payload.total_payment !== undefined ? parseFloat(payload.total_payment) : null;
             const payText = totalPay !== null ? ` Total Payment: ₱${totalPay.toFixed(2)}.` : '';
-            showToast(`${payload.added || flattenedCompanions.length} companion${(payload.added || flattenedCompanions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.${payText}`);
+            showToast(`${payload.added || flattenedCompanions.length} companion${(payload.added || flattenedCompanions.length) > 1 ? 's' : ''} added to Reservation #${formatReservationId(currentReservationId)}.${payText}`);
         } catch (error) {
             showToast(error.message || 'Unable to add companion.', 'error');
         } finally {

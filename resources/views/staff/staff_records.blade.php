@@ -357,7 +357,7 @@
                                                 data-checked-out-by="{{ strtolower($checkOutStaff) }}"
                                                 data-check-out="{{ $effectiveDate ?? '' }}"
                                                 data-amount="{{ (float) ($reservation->amount_paid ?? 0) }}"
-                                                data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
+                                                data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->formatted_id . ' res #' . $reservation->formatted_id . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
                                                 tabindex="0"
                                                 role="button"
                                             >
@@ -369,7 +369,7 @@
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->id }}</span>
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->formatted_id }}</span>
                                                             <div class="mt-0.5">
                                                                 <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
                                                             </div>
@@ -670,7 +670,7 @@
                                                 data-checked-out-by="{{ strtolower($checkOutStaff) }}"
                                                 data-check-out="{{ $effectiveDate ?? '' }}"
                                                 data-amount="{{ (float) ($reservation->amount_paid ?? 0) }}"
-                                                data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
+                                                data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->formatted_id . ' res #' . $reservation->formatted_id . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
                                                 tabindex="0"
                                                 role="button"
                                             >
@@ -682,7 +682,7 @@
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->id }}</span>
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->formatted_id }}</span>
                                                             <div class="mt-0.5">
                                                                 <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
                                                             </div>

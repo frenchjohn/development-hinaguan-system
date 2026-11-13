@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reservation Pass #{{ $reservation->id }} - Hinaguan Nature Park</title>
+    <title>Reservation Pass #{{ $reservation->formatted_id }} - Hinaguan Nature Park</title>
     <style>
         @page {
             margin: 24px 28px;
@@ -237,7 +237,7 @@
                 <div class="brand-subtitle">Official Online Reservation Pass &amp; Confirmation Voucher</div>
             </td>
             <td class="pass-meta" style="vertical-align: top;">
-                <div class="res-number">Pass #{{ $reservation->id }}</div>
+                <div class="res-number">Pass #{{ $reservation->formatted_id }}</div>
                 <div class="badge-status">
                     @if($remainingBalance <= 0 && $totalAmount > 0)
                         Fully Paid

@@ -27,7 +27,7 @@
             @if($reservation)
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span style="font-size:14px;">Reservation ID:</span>
-                <span style="font-size:14px;">{{ $reservation->id }}</span>
+                <span style="font-size:14px;">{{ $reservation->formatted_id }}</span>
             </div>
             
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">

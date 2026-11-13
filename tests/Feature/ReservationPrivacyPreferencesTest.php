@@ -313,4 +313,43 @@ class ReservationPrivacyPreferencesTest extends TestCase
             'activity_type' => 'privacy_preferences_updated',
         ]);
     }
+
+    public function test_admin_announcements_view_calculates_sms_opt_out_counts(): void
+    {
+        $this->withSession([
+            'auth_user' => [
+                'id' => 1,
+                'name' => 'Admin User',
+                'email' => 'admin@example.com',
+                'role' => 'admin',
+            ]
+        ]);
+
+        $activeOptIn = $this->createSampleReservation(allowSms: true);
+        $activeOptIn->update(['status' => 'Checked In', 'check_in' => now()]);
+
+        $activeOptOut = $this->createSampleReservation(allowSms: false);
+        $activeOptOut->update(['status' => 'Checked In', 'check_in' => now()]);
+
+        $pendingOptOut = $this->createSampleReservation(allowSms: false);
+
+        $response = $this->get('/admin/announcements');
+        $response->assertOk();
+        $response->assertViewHas('activeOptedOutSmsCount', 1);
+        $response->assertViewHas('eligibleActiveCount', 1);
+        $response->assertViewHas('totalOptedOutSmsCount', 2);
+    }
+
+    public function test_reservation_formatted_id_pads_to_minimum_three_digits(): void
+    {
+        $this->assertSame('001', Reservation::formatId(1));
+        $this->assertSame('011', Reservation::formatId(11));
+        $this->assertSame('145', Reservation::formatId(145));
+        $this->assertSame('1444', Reservation::formatId(1444));
+        $this->assertSame('2252', Reservation::formatId(2252));
+        $this->assertSame('222216', Reservation::formatId(222216));
+
+        $res1 = $this->createSampleReservation();
+        $this->assertSame(sprintf('%03d', $res1->id), $res1->formatted_id);
+    }
 }

@@ -260,7 +260,7 @@ class ReceiptPdfService
         }
 
         $receiptNumber = $reservation
-            ? "REC-RES-{$reservation->id}-" . now()->format('Ymd')
+            ? "REC-RES-{$reservation->formatted_id}-" . now()->format('Ymd')
             : "REC-CUST-{$customer->id}-" . now()->format('Ymd');
 
         $paymentMethod = $reservation?->payment_method ?: 'Cash / Front Desk';

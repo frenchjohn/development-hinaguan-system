@@ -125,6 +125,13 @@ window.AppPage['staff_reservations'] = function () {
         return String(phone);
     };
 
+    const formatReservationId = (id) => {
+        if (id === null || id === undefined || id === '') return '';
+        const digits = String(id).trim().replace(/\D/g, '');
+        if (!digits) return String(id);
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     const renderTimeSlots = (reservation) => {
         const slots = reservation?.time_slots || [];
         const totalDays = Number(reservation?.total_days || 1);
@@ -206,7 +213,7 @@ window.AppPage['staff_reservations'] = function () {
 
         return `
                 <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
+                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(formatReservationId(reservation.id))}</span>
                 </td>
                 <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
                     <div class="resv-booker flex items-center gap-3">
@@ -1591,7 +1598,7 @@ window.AppPage['staff_reservations'] = function () {
             `;
         }
 
-        let html = `<p class="text-sm text-hp-text dark:text-gray-200 mb-3">Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
+        let html = `<p class="text-sm text-hp-text dark:text-gray-200 mb-3">Are you sure you want to check in <strong>Reservation #${escapeHtml(formatReservationId(currentReservationData?.id || pendingReservationId))}</strong> now?</p>`;
 
         html += `
             <div class="mt-3 border border-glass-border rounded-xl overflow-hidden bg-glass">
@@ -3597,7 +3604,7 @@ window.AppPage['staff_reservations'] = function () {
 
         const checkInTitle = document.getElementById('checkInModalTitle');
         if (checkInTitle) {
-            checkInTitle.textContent = `Check In Reservation #${reservationId}`;
+            checkInTitle.textContent = `Check In Reservation #${formatReservationId(reservationId)}`;
         }
 
         currentReservationData = reservation;
@@ -4059,7 +4066,7 @@ window.AppPage['staff_reservations'] = function () {
         }
         const resvModalIdBadge = document.getElementById('reservationModalIdBadge');
         if (resvModalIdBadge) {
-            resvModalIdBadge.textContent = `#${reservation.id}`;
+            resvModalIdBadge.textContent = `#${formatReservationId(reservation.id)}`;
         }
 
         // Ensure modal body is visible and edit form is hidden
@@ -4153,7 +4160,7 @@ window.AppPage['staff_reservations'] = function () {
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Reservation Receipt #${res.id} - Hinaguan Nature Park</title>
+                    <title>Reservation Receipt #${formatReservationId(res.id)} - Hinaguan Nature Park</title>
                     <style>
                         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; color: #1c2b22; background: #fff; }
                         .receipt { max-width: 620px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 32px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -4177,7 +4184,7 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="header">
                             <h1>HINAGUAN NATURE PARK</h1>
                             <p>Riverside Eco-Park & Sanctuary · Official Receipt</p>
-                            <span class="badge">RESERVATION #${res.id}</span>
+                            <span class="badge">RESERVATION #${formatReservationId(res.id)}</span>
                         </div>
                         <div class="details-grid">
                             <div><div class="label">Booker Name</div><div class="val">${escapeHtml(res.booker_name || 'N/A')}</div></div>
@@ -4252,6 +4259,8 @@ window.AppPage['staff_reservations'] = function () {
         const sSlot = reservation.start_slot || 'Daytime';
         const eSlot = reservation.end_slot || reservation.start_slot || 'Daytime';
         const canReschedule = isPendingOrConfirmed;
+        const activeResched = reservation.active_reschedule_request;
+        const hasActiveLink = !!(activeResched && activeResched.url);
         const isNight = sSlot.toLowerCase().includes('night');
         const slotPill = isNight
             ? `<span class="inline-flex items-center gap-1 rounded-full bg-indigo-600 text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-indigo-100" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg> Overnight</span>`
@@ -4351,7 +4360,7 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
                         <div>
                             <div class="text-xs font-medium text-gray-400 dark:text-gray-400">Reservation ID</div>
-                            <div class="text-base font-bold text-[#1b4332] dark:text-emerald-400 font-mono mt-0.5">#${reservation.id}</div>
+                            <div class="text-base font-bold text-[#1b4332] dark:text-emerald-400 font-mono mt-0.5">#${formatReservationId(reservation.id)}</div>
                         </div>
                         <div>
                             <div class="text-xs font-medium text-gray-400 dark:text-gray-400">Booker</div>
@@ -4390,10 +4399,18 @@ window.AppPage['staff_reservations'] = function () {
                                 <span class="text-xs font-medium text-gray-400 dark:text-gray-400">Reservation Stay</span>
                                 ${canReschedule ? `
                                     <div class="flex items-center gap-1.5 shrink-0">
-                                        <button type="button" id="detailRequestReschedBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Send guest temporary single-use reschedule link via SMS">
-                                            <i class="bi bi-chat-left-dots-fill text-[0.65rem]"></i>
-                                            <span>Request Resched</span>
-                                        </button>
+                                        ${hasActiveLink ? `
+                                            <button type="button" id="detailRequestReschedBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-amber-600 bg-amber-500/15 px-2.5 py-1 text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-600 hover:text-white transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95" title="Active reschedule link exists. Click to send link again via SMS">
+                                                <i class="bi bi-arrow-repeat text-[0.7rem]"></i>
+                                                <span>Send Link Again</span>
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5"></span>
+                                            </button>
+                                        ` : `
+                                            <button type="button" id="detailRequestReschedBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Send guest temporary single-use reschedule link via SMS">
+                                                <i class="bi bi-chat-left-dots-fill text-[0.65rem]"></i>
+                                                <span>Request Resched</span>
+                                            </button>
+                                        `}
                                         <button type="button" id="detailRescheduleBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-[0.7rem] font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Reschedule stay dates or sessions">
                                             <span>Reschedule</span>
                                         </button>
@@ -4405,6 +4422,28 @@ window.AppPage['staff_reservations'] = function () {
                                 <span>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, sSlot, eSlot))}</span>
                                 ${slotPill}
                             </div>
+                            ${hasActiveLink ? `
+                                <div class="mt-2.5 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-xs">
+                                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-600 text-white uppercase tracking-wider shadow-2xs">
+                                                <i class="bi bi-link-45deg"></i> Link Still Active
+                                            </span>
+                                            <span class="text-[11px] font-semibold text-amber-900 dark:text-amber-200">${escapeHtml(activeResched.expires_human ? 'Expires ' + activeResched.expires_human : (activeResched.expires_at_formatted ? 'Valid until ' + activeResched.expires_at_formatted : 'Active'))}</span>
+                                        </div>
+                                        <button type="button" class="open-resend-link-btn text-[11px] font-bold text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 hover:underline flex items-center gap-1 cursor-pointer" data-reservation-id="${reservation.id}" title="Send the active link again via SMS">
+                                            <i class="bi bi-send text-[10px]"></i> Send Link Again
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="text" readonly value="${escapeHtml(activeResched.url)}" class="w-full px-2.5 py-1 text-[11px] font-mono font-medium rounded-lg border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-[#151a17] text-slate-800 dark:text-slate-100 select-all focus:outline-none truncate" />
+                                        <button type="button" class="copy-resched-link-btn px-2.5 py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-lg cursor-pointer transition-all flex items-center gap-1 shrink-0 shadow-2xs" data-copy-url="${escapeHtml(activeResched.url)}" title="Copy active reschedule link">
+                                            <i class="bi bi-clipboard"></i>
+                                            <span>Copy</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
@@ -4544,10 +4583,18 @@ window.AppPage['staff_reservations'] = function () {
                             <i class="bi bi-person-x text-xs"></i>
                             <span>No-Show</span>
                         </button>
-                        <button type="button" class="cursor-pointer rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-800 dark:text-amber-300 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Send temporary single-use rescheduling link via SMS">
-                            <i class="bi bi-chat-left-dots text-xs"></i>
-                            <span>Request Resched</span>
-                        </button>
+                        ${hasActiveLink ? `
+                            <button type="button" class="cursor-pointer rounded-xl border border-amber-600 bg-amber-500/15 hover:bg-amber-600 hover:text-white text-amber-900 dark:text-amber-200 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Active reschedule link exists. Send link again via SMS">
+                                <i class="bi bi-arrow-repeat text-xs"></i>
+                                <span>Send Link Again</span>
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-600 text-white uppercase">Active</span>
+                            </button>
+                        ` : `
+                            <button type="button" class="cursor-pointer rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-800 dark:text-amber-300 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Send temporary single-use rescheduling link via SMS">
+                                <i class="bi bi-chat-left-dots text-xs"></i>
+                                <span>Request Resched</span>
+                            </button>
+                        `}
                     </div>
                 `;
             } else if (isCancelled || isNoShow) {
@@ -4671,7 +4718,7 @@ window.AppPage['staff_reservations'] = function () {
                 cancelBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const resDisplay = `#${reservation.id} - ${reservation.booker_name || 'Guest'}`;
+                    const resDisplay = `#${formatReservationId(reservation.id)} - ${reservation.booker_name || 'Guest'}`;
                     showConfirmModal(
                         'Cancel Reservation?',
                         `Are you sure you want to cancel this reservation (${resDisplay})?`,
@@ -4689,7 +4736,7 @@ window.AppPage['staff_reservations'] = function () {
                 noShowBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const resDisplay = `#${reservation.id} - ${reservation.booker_name || 'Guest'}`;
+                    const resDisplay = `#${formatReservationId(reservation.id)} - ${reservation.booker_name || 'Guest'}`;
                     showConfirmModal(
                         'Mark as No-Show?',
                         `Are you sure you want to mark this reservation (${resDisplay}) as No-Show?`,
@@ -4709,7 +4756,7 @@ window.AppPage['staff_reservations'] = function () {
                     e.stopPropagation();
                     showConfirmModal(
                         'Reopen Reservation?',
-                        `Are you sure you want to restore reservation #${reservation.id} back to Pending status?`,
+                        `Are you sure you want to restore reservation #${formatReservationId(reservation.id)} back to Pending status?`,
                         () => updateReservationStatus(reservation.id, 'Pending')
                     );
                 });
@@ -4730,7 +4777,7 @@ window.AppPage['staff_reservations'] = function () {
             btn.addEventListener('click', closeModal);
         });
 
-        // Hook up Request Resched button in Reservation Stay section
+        // Hook up Request Resched / Send Link Again button in Reservation Stay section
         const detailRequestReschedBtn = modalBody.querySelector('#detailRequestReschedBtn');
         if (detailRequestReschedBtn) {
             detailRequestReschedBtn.addEventListener('click', (e) => {
@@ -4739,6 +4786,41 @@ window.AppPage['staff_reservations'] = function () {
                 openRequestReschedModal(reservation);
             });
         }
+
+        // Hook up Send Link Again secondary button in active link callout if any
+        modalBody.querySelectorAll('.open-resend-link-btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openRequestReschedModal(reservation);
+            });
+        });
+
+        // Hook up Copy Active Link button inside detail stay section
+        modalBody.querySelectorAll('.copy-resched-link-btn').forEach((btn) => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const copyUrl = btn.getAttribute('data-copy-url');
+                if (!copyUrl) return;
+                try {
+                    await navigator.clipboard.writeText(copyUrl);
+                    const origHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check2"></i> <span>Copied!</span>';
+                    btn.classList.add('bg-emerald-600');
+                    btn.classList.remove('bg-amber-600');
+                    setTimeout(() => {
+                        btn.innerHTML = origHtml;
+                        btn.classList.remove('bg-emerald-600');
+                        btn.classList.add('bg-amber-600');
+                    }, 2000);
+                    showToast('Active reschedule link copied to clipboard!', 'success');
+                } catch (err) {
+                    console.error('Clipboard copy error:', err);
+                    prompt('Copy active reschedule link:', copyUrl);
+                }
+            });
+        });
 
         // Hook up Reschedule button in Reservation Stay section
         const detailRescheduleBtn = modalBody.querySelector('#detailRescheduleBtn');
@@ -5000,7 +5082,7 @@ window.AppPage['staff_reservations'] = function () {
 
         if (!reservationData[cleanId]) {
             try {
-                showToast(`Loading reservation #${cleanId}...`, 'info');
+                showToast(`Loading reservation #${formatReservationId(cleanId)}...`, 'info');
                 const response = await fetch(`/staff/check-ins/lookup?reservation_id=${encodeURIComponent(cleanId)}`, {
                     headers: {
                         'Accept': 'application/json',
@@ -5014,18 +5096,18 @@ window.AppPage['staff_reservations'] = function () {
                         window.staffReservationData[cleanId] = body.reservation;
                     }
                 } else {
-                    showToast(body.message || `Reservation #${cleanId} not found.`, 'error');
+                    showToast(body.message || `Reservation #${formatReservationId(cleanId)} not found.`, 'error');
                     return;
                 }
             } catch (fetchErr) {
-                showToast(`Unable to load reservation #${cleanId}.`, 'error');
+                showToast(`Unable to load reservation #${formatReservationId(cleanId)}.`, 'error');
                 return;
             }
         }
 
         const res = reservationData[cleanId];
         if (!res) {
-            showToast(`Reservation #${cleanId} not found.`, 'error');
+            showToast(`Reservation #${formatReservationId(cleanId)} not found.`, 'error');
             return;
         }
 
@@ -5052,7 +5134,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         openModal(cleanId);
-        showToast(`Opened reservation #${cleanId}`, 'success');
+        showToast(`Opened reservation #${formatReservationId(cleanId)}`, 'success');
     };
 
     window.openReservationById = openReservationById;
@@ -5099,7 +5181,7 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             window.dispatchEvent(new CustomEvent('app:data-mutated'));
-            showToast(data.message || `Reservation #${reservationId} marked as ${targetStatus}.`);
+            showToast(data.message || `Reservation #${formatReservationId(reservationId)} marked as ${targetStatus}.`);
         } catch (err) {
             console.error(err);
             window.alert(err.message || `Failed to update reservation status to ${targetStatus}.`);
@@ -5145,10 +5227,10 @@ window.AppPage['staff_reservations'] = function () {
             row.setAttribute('data-guests', reservation.number_of_guests);
             row.setAttribute('data-total-amount', reservation.total_amount);
             row.setAttribute('data-is-past', isPastArrival ? '1' : '0');
-            row.setAttribute('data-search', `${reservation.id} #${reservation.id} ${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
+            row.setAttribute('data-search', `${formatReservationId(reservation.id)} #${formatReservationId(reservation.id)} ${reservation.id} #${reservation.id} ${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
             row.setAttribute('tabindex', '0');
             row.setAttribute('role', 'button');
-            row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name} (#${reservation.id})`);
+            row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name} (#${formatReservationId(reservation.id)})`);
 
             // Format date to readable format (e.g., September 2, 2023)
             const formatDate = (dateStr) => {
@@ -5212,7 +5294,7 @@ window.AppPage['staff_reservations'] = function () {
             tableRow.setAttribute('data-total-amount', fullRes.total_amount);
         }
         tableRow.setAttribute('data-is-past', isPastArrival ? '1' : '0');
-        tableRow.setAttribute('data-search', `${resId} #${resId} ${(bName || '').toLowerCase()} ${(bEmail || '').toLowerCase()} ${(bPhone || '').toLowerCase()} ${(status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
+        tableRow.setAttribute('data-search', `${formatReservationId(resId)} #${formatReservationId(resId)} ${resId} #${resId} ${(bName || '').toLowerCase()} ${(bEmail || '').toLowerCase()} ${(bPhone || '').toLowerCase()} ${(status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
 
         tableRow.innerHTML = buildRowCells(fullRes);
     };
@@ -6735,7 +6817,7 @@ window.AppPage['staff_reservations'] = function () {
                 }
                 closeModal();
                 window.dispatchEvent(new CustomEvent('app:data-mutated'));
-                showToast(`Reservation #${reservationId} checked out successfully.`);
+                showToast(`Reservation #${formatReservationId(reservationId)} checked out successfully.`);
             });
         } catch (error) {
             window.alert(error.message || 'Unable to check out this reservation.');
@@ -6967,7 +7049,7 @@ window.AppPage['staff_reservations'] = function () {
             closeCompanionSummaryModal?.();
             closeModal?.();
             window.dispatchEvent(new CustomEvent('app:data-mutated'));
-            queueToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
+            queueToast(`Reservation #${formatReservationId(pendingReservationId)} checked in successfully and marked as Paid.`);
             window.location.reload();
         } catch (error) {
             window.alert(error.message || 'Unable to check in this reservation.');
@@ -7206,10 +7288,15 @@ window.AppPage['staff_reservations'] = function () {
         const phoneInput = document.getElementById('sendReschedPhone');
         const messageInput = document.getElementById('sendReschedMessage');
         const prefixEl = document.getElementById('sendReschedPrefixPreview');
+        const modalTitle = document.getElementById('requestReschedModalTitle');
+        const submitBtn = document.getElementById('submitSendReschedBtn');
+        const activeNotice = document.getElementById('sendReschedActiveNotice');
+        const activeLinkInput = document.getElementById('sendReschedActiveLinkInput');
+        const activeExpiryText = document.getElementById('sendReschedActiveExpiryText');
 
         if (idInput) idInput.value = resId;
         if (bookerEl) bookerEl.textContent = bookerName;
-        if (badgeEl) badgeEl.textContent = `#${resId}`;
+        if (badgeEl) badgeEl.textContent = `#${formatReservationId(resId)}`;
         if (dateEl) dateEl.textContent = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '—';
         if (sessionEl) sessionEl.textContent = `${reservation.start_slot || 'Daytime'} - ${reservation.end_slot || 'Daytime'}`;
 
@@ -7218,8 +7305,32 @@ window.AppPage['staff_reservations'] = function () {
             phoneInput.value = formatPhilippinePhone(reservation.phone) || '';
         }
 
-        if (messageInput) messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
-        if (prefixEl) prefixEl.textContent = `hi ${bookerName} of reservation_${resId}, `;
+        const activeResched = reservation.active_reschedule_request;
+        const hasActiveLink = !!(activeResched && activeResched.url);
+
+        if (hasActiveLink) {
+            if (activeNotice) activeNotice.classList.remove('hidden');
+            if (activeLinkInput) activeLinkInput.value = activeResched.url;
+            if (activeExpiryText) {
+                activeExpiryText.textContent = activeResched.expires_human
+                    ? `Expires ${activeResched.expires_human}`
+                    : (activeResched.expires_at_formatted ? `Valid until ${activeResched.expires_at_formatted}` : 'Expires in 24 hours');
+            }
+            if (modalTitle) modalTitle.textContent = 'Resend Reschedule / Refund Link (SMS)';
+            if (submitBtn) submitBtn.innerHTML = '<i class="bi bi-arrow-repeat text-xs mr-1.5"></i><span>Send Link Again (SMS)</span>';
+            if (messageInput) {
+                messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
+            }
+        } else {
+            if (activeNotice) activeNotice.classList.add('hidden');
+            if (modalTitle) modalTitle.textContent = 'Send Reschedule / Refund Link (SMS)';
+            if (submitBtn) submitBtn.innerHTML = '<i class="bi bi-send-fill text-xs mr-1.5"></i><span>Send Reschedule SMS</span>';
+            if (messageInput) {
+                messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
+            }
+        }
+
+        if (prefixEl) prefixEl.textContent = `hi ${bookerName} of reservation_${formatReservationId(resId)}, `;
 
         const errAlert = document.getElementById('sendReschedErrorAlert');
         if (errAlert) {
@@ -7310,9 +7421,24 @@ window.AppPage['staff_reservations'] = function () {
             const data = await response.json();
 
             if (response.ok && data.success) {
+                if (data.active_reschedule_request) {
+                    if (window.staffReservationData && window.staffReservationData[resId]) {
+                        window.staffReservationData[resId].active_reschedule_request = data.active_reschedule_request;
+                    }
+                    if (reservationData && reservationData[resId]) {
+                        reservationData[resId].active_reschedule_request = data.active_reschedule_request;
+                    }
+                    if (currentReservationData && currentReservationData.id == resId) {
+                        currentReservationData.active_reschedule_request = data.active_reschedule_request;
+                    }
+                }
                 closeRequestReschedModal();
-                showSuccessModal(data.message || `Temporary rescheduling link generated and SMS sent to ${phone}!`);
+                showSuccessModal(data.message || (data.is_resend ? `Active link still valid. Resent via SMS to ${phone}!` : `Temporary rescheduling link generated and SMS sent to ${phone}!`));
                 fetchReschedBadgeCount();
+                const resModal = document.getElementById('reservationModal');
+                if (resModal && resModal.classList.contains('is-open')) {
+                    openModal(resId);
+                }
             } else {
                 if (errAlert) {
                     errAlert.textContent = data.message || 'Failed to send reschedule request. Please try again.';
@@ -7328,6 +7454,33 @@ window.AppPage['staff_reservations'] = function () {
         } finally {
             submitSendReschedBtn.disabled = false;
             submitSendReschedBtn.innerHTML = originalHtml;
+        }
+    });
+
+    // Copy active link button inside requestReschedModal notice
+    const copyActiveReschedLinkBtn = document.getElementById('copyActiveReschedLinkBtn');
+    copyActiveReschedLinkBtn?.addEventListener('click', async () => {
+        const linkInput = document.getElementById('sendReschedActiveLinkInput');
+        const url = linkInput?.value?.trim();
+        if (!url) return;
+        try {
+            await navigator.clipboard.writeText(url);
+            const icon = document.getElementById('copyActiveIcon');
+            const text = document.getElementById('copyActiveLinkText');
+            if (icon) icon.className = 'bi bi-check2';
+            if (text) text.textContent = 'Copied!';
+            copyActiveReschedLinkBtn.classList.add('bg-emerald-600');
+            copyActiveReschedLinkBtn.classList.remove('bg-amber-600');
+            setTimeout(() => {
+                if (icon) icon.className = 'bi bi-clipboard';
+                if (text) text.textContent = 'Copy';
+                copyActiveReschedLinkBtn.classList.remove('bg-emerald-600');
+                copyActiveReschedLinkBtn.classList.add('bg-amber-600');
+            }, 2000);
+            showToast('Active reschedule link copied to clipboard!', 'success');
+        } catch (err) {
+            console.error('Clipboard copy error:', err);
+            prompt('Copy active reschedule link:', url);
         }
     });
 
@@ -7483,7 +7636,7 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="p-4 rounded-2xl border ${isSub ? 'border-amber-400/80 bg-amber-50/25 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                                    <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">#${req.reservation_id}</span>
+                                    <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">#${formatReservationId(req.reservation_id)}</span>
                                     <span class="font-bold text-slate-900 dark:text-white text-sm truncate">${escapeHtml(req.booker_name)}</span>
                                     <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone text-[0.75rem]"></i> ${escapeHtml(phoneDisplay)}</span>
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300/80">
@@ -7603,7 +7756,7 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="p-4 rounded-2xl border ${isSub ? 'border-blue-300/80 bg-blue-50/20 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                                <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300">#${req.reservation_id}</span>
+                                <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300">#${formatReservationId(req.reservation_id)}</span>
                                 <span class="font-bold text-slate-900 dark:text-white text-sm truncate">${escapeHtml(req.booker_name)}</span>
                                 <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone text-[0.75rem]"></i> ${escapeHtml(phoneDisplay)}</span>
                                 ${statusBadgeHtml}
@@ -7826,7 +7979,7 @@ window.AppPage['staff_reservations'] = function () {
         const swapNotice = swapAmenity ? `\n\nNote: This will also swap the reserved unit to "${swapAmenity}" (same category & rate).` : '';
         showConfirmModal(
             'Approve Reschedule?',
-            `Are you sure you want to approve this reschedule request for Reservation #${reservationId} to ${requestedDate}? This will update the reservation date and notify the guest via SMS.${swapNotice}`,
+            `Are you sure you want to approve this reschedule request for Reservation #${formatReservationId(reservationId)} to ${requestedDate}? This will update the reservation date and notify the guest via SMS.${swapNotice}`,
             async () => {
                 if (btnEl) {
                     btnEl.disabled = true;
@@ -7846,6 +7999,17 @@ window.AppPage['staff_reservations'] = function () {
                     const data = await response.json();
 
                     if (response.ok && data.success) {
+                        if (reservationId) {
+                            if (window.staffReservationData && window.staffReservationData[reservationId]) {
+                                window.staffReservationData[reservationId].active_reschedule_request = null;
+                            }
+                            if (reservationData && reservationData[reservationId]) {
+                                reservationData[reservationId].active_reschedule_request = null;
+                            }
+                            if (currentReservationData && currentReservationData.id == reservationId) {
+                                currentReservationData.active_reschedule_request = null;
+                            }
+                        }
                         showSuccessModal(data.message || 'Reschedule request approved successfully!');
                         loadRescheduleRequests(currentReschedFilter);
                         fetchReschedBadgeCount();
@@ -7934,6 +8098,7 @@ window.AppPage['staff_reservations'] = function () {
                 showSuccessModal(data.message || 'Reschedule request has been declined.');
                 loadRescheduleRequests(currentReschedFilter);
                 fetchReschedBadgeCount();
+                document.getElementById('refreshTableBtn')?.click();
             } else {
                 showToast(data.message || 'Failed to decline request.', 'error');
             }
@@ -7963,7 +8128,7 @@ window.AppPage['staff_reservations'] = function () {
 
         if (idInput) idInput.value = req.id;
         if (bookerEl) bookerEl.textContent = req.booker_name || 'Guest';
-        if (resIdEl) resIdEl.textContent = `#${req.reservation_id}`;
+        if (resIdEl) resIdEl.textContent = `#${formatReservationId(req.reservation_id)}`;
         if (amountEl) amountEl.textContent = req.refund_amount_formatted || `₱${Number(req.refund_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
         if (accountNameEl) accountNameEl.textContent = req.ewallet_account_name || '—';
         if (providerAndNumberEl) providerAndNumberEl.textContent = `${req.ewallet_provider || 'GCash'} · ${req.ewallet_account_number || '—'}`;

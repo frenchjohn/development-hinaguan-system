@@ -9,6 +9,12 @@ window.AppPage['admin_announcement'] = function () {
     // CSRF Token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
+    const formatReservationId = (id) => {
+        if (!id) return '';
+        const digits = String(id).replace(/\D/g, '');
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     // =========================================================================
     // CUSTOM ALERT MODAL (replaces native browser alert)
     // =========================================================================
@@ -346,7 +352,8 @@ window.AppPage['admin_announcement'] = function () {
             const guest       = row.getAttribute('data-guest-name');
             const phone       = row.getAttribute('data-phone');
             const displayPhone = row.getAttribute('data-display-phone');
-            if (id && rowMatchesAudience(row, currentAudience) && rowMatchesDateFilter(row)) {
+            const allowSms    = row.getAttribute('data-allow-sms') !== '0';
+            if (id && allowSms && rowMatchesAudience(row, currentAudience) && rowMatchesDateFilter(row)) {
                 selectedReservations.set(id, { id, guest, phone, displayPhone });
             }
         });
@@ -370,6 +377,18 @@ window.AppPage['admin_announcement'] = function () {
         let count = 0;
         rows.forEach(row => {
             if (rowMatchesAudience(row, audienceKey)) count++;
+        });
+        return count;
+    }
+
+    // Compute total opted-out rows for an audience preset and date filter
+    function getAudienceOptedOutCount(audienceKey) {
+        const rows = modalTableBody?.querySelectorAll('.reservation-row') || [];
+        let count = 0;
+        rows.forEach(row => {
+            if (rowMatchesAudience(row, audienceKey) && rowMatchesDateFilter(row)) {
+                if (row.getAttribute('data-allow-sms') === '0') count++;
+            }
         });
         return count;
     }
@@ -418,7 +437,9 @@ window.AppPage['admin_announcement'] = function () {
 
     function updateStep1SummaryCard() {
         const totalSelected = selectedReservations.size;
-        const totalPool = getAudienceMatchCount(currentAudience === 'custom' ? 'all' : currentAudience);
+        const targetAudienceKey = currentAudience === 'custom' ? 'all' : currentAudience;
+        const totalPool = getAudienceMatchCount(targetAudienceKey);
+        const optedOutCount = getAudienceOptedOutCount(targetAudienceKey);
 
         if (selectedRatioDisplay) {
             selectedRatioDisplay.textContent = `${totalSelected} / ${totalPool}`;
@@ -433,6 +454,30 @@ window.AppPage['admin_announcement'] = function () {
             } else {
                 selectionStatusBadge.textContent = 'Group Preset Active';
                 selectionStatusBadge.className = 'text-[11px] font-bold text-emerald-700 dark:text-emerald-400';
+            }
+        }
+
+        // Update Step 1 Opt-Out Reminder
+        const step1Notice = document.getElementById('smsOptOutNoticeStep1');
+        const step1CountEl = document.getElementById('optedOutCountStep1');
+        if (step1Notice && step1CountEl) {
+            step1CountEl.textContent = optedOutCount;
+            if (optedOutCount > 0) {
+                step1Notice.classList.remove('hidden');
+            } else {
+                step1Notice.classList.add('hidden');
+            }
+        }
+
+        // Update Step 2 Opt-Out Reminder
+        const step2Notice = document.getElementById('smsOptOutNoticeStep2');
+        const step2CountEl = document.getElementById('optedOutCountStep2');
+        if (step2Notice && step2CountEl) {
+            step2CountEl.textContent = optedOutCount;
+            if (optedOutCount > 0) {
+                step2Notice.classList.remove('hidden');
+            } else {
+                step2Notice.classList.add('hidden');
             }
         }
     }
@@ -613,13 +658,26 @@ window.AppPage['admin_announcement'] = function () {
         const rows = modalTableBody?.querySelectorAll('.reservation-row') || [];
         rows.forEach(row => {
             const id = row.getAttribute('data-id');
+            const allowSms = row.getAttribute('data-allow-sms') !== '0';
             const cb = row.querySelector('.reservation-select-cb');
-            if (selectedReservations.has(id)) {
+            if (!allowSms) {
+                row.classList.remove('is-selected');
+                if (cb) {
+                    cb.checked = false;
+                    cb.disabled = true;
+                }
+            } else if (selectedReservations.has(id)) {
                 row.classList.add('is-selected');
-                if (cb) cb.checked = true;
+                if (cb) {
+                    cb.checked = true;
+                    cb.disabled = false;
+                }
             } else {
                 row.classList.remove('is-selected');
-                if (cb) cb.checked = false;
+                if (cb) {
+                    cb.checked = false;
+                    cb.disabled = false;
+                }
             }
         });
         updateModalMasterCheckbox();
@@ -628,18 +686,19 @@ window.AppPage['admin_announcement'] = function () {
     function updateModalMasterCheckbox() {
         if (!modalMasterCheckbox || !modalTableBody) return;
         const visibleRows = Array.from(modalTableBody.querySelectorAll('.reservation-row')).filter(r => r.style.display !== 'none');
-        if (visibleRows.length === 0) {
+        const eligibleRows = visibleRows.filter(r => r.getAttribute('data-allow-sms') !== '0');
+        if (eligibleRows.length === 0) {
             modalMasterCheckbox.checked = false;
             modalMasterCheckbox.indeterminate = false;
             return;
         }
 
         let checkedCount = 0;
-        visibleRows.forEach(row => {
+        eligibleRows.forEach(row => {
             if (selectedReservations.has(row.getAttribute('data-id'))) checkedCount++;
         });
 
-        if (checkedCount === visibleRows.length) {
+        if (checkedCount === eligibleRows.length) {
             modalMasterCheckbox.checked = true;
             modalMasterCheckbox.indeterminate = false;
         } else if (checkedCount > 0) {
@@ -657,6 +716,18 @@ window.AppPage['admin_announcement'] = function () {
 
         if (customizerSelectedCount) customizerSelectedCount.textContent = totalSelected;
         if (customizerTotalCount) customizerTotalCount.textContent = filteredRows.length;
+
+        const customizerOptedNotice = document.getElementById('customizerOptedOutNotice');
+        const customizerOptedText = document.getElementById('customizerOptedOutText');
+        if (customizerOptedNotice && customizerOptedText) {
+            const filteredOptedOut = filteredRows.filter(r => r.getAttribute('data-allow-sms') === '0').length;
+            if (filteredOptedOut > 0) {
+                customizerOptedText.textContent = `${filteredOptedOut} opted out of SMS (unselectable)`;
+                customizerOptedNotice.classList.remove('hidden');
+            } else {
+                customizerOptedNotice.classList.add('hidden');
+            }
+        }
     }
 
     // Row checkbox toggle
@@ -664,6 +735,14 @@ window.AppPage['admin_announcement'] = function () {
         if (e.target.classList.contains('reservation-select-cb')) {
             const cb = e.target;
             const id = cb.getAttribute('data-id');
+            const allowSms = cb.getAttribute('data-allow-sms') !== '0';
+
+            if (!allowSms) {
+                cb.checked = false;
+                cb.disabled = true;
+                showSmsAlert('This guest opted out of SMS notifications (Privacy Preference) and cannot receive SMS broadcasts.', 'warning');
+                return;
+            }
 
             currentAudience = 'custom';
             audienceCards.forEach(c => c.classList.remove('is-active-audience'));
@@ -671,7 +750,7 @@ window.AppPage['admin_announcement'] = function () {
             if (cb.checked) {
                 selectedReservations.set(id, {
                     id,
-                    guest: cb.getAttribute('data-guest') || `Reservation #${id}`,
+                    guest: cb.getAttribute('data-guest') || `Reservation #${formatReservationId(id)}`,
                     phone: cb.getAttribute('data-phone') || '',
                     displayPhone: cb.getAttribute('data-display-phone') || 'No phone'
                 });
@@ -692,14 +771,17 @@ window.AppPage['admin_announcement'] = function () {
 
         visibleRows.forEach(row => {
             const id = row.getAttribute('data-id');
+            const allowSms = row.getAttribute('data-allow-sms') !== '0';
             const cb = row.querySelector('.reservation-select-cb');
             if (modalMasterCheckbox.checked) {
-                selectedReservations.set(id, {
-                    id,
-                    guest: cb?.getAttribute('data-guest') || `Reservation #${id}`,
-                    phone: cb?.getAttribute('data-phone') || '',
-                    displayPhone: cb?.getAttribute('data-display-phone') || 'No phone'
-                });
+                if (allowSms) {
+                    selectedReservations.set(id, {
+                        id,
+                        guest: cb?.getAttribute('data-guest') || `Reservation #${formatReservationId(id)}`,
+                        phone: cb?.getAttribute('data-phone') || '',
+                        displayPhone: cb?.getAttribute('data-display-phone') || 'No phone'
+                    });
+                }
             } else {
                 selectedReservations.delete(id);
             }
@@ -717,11 +799,12 @@ window.AppPage['admin_announcement'] = function () {
 
         filteredRows.forEach(row => {
             const id = row.getAttribute('data-id');
+            const allowSms = row.getAttribute('data-allow-sms') !== '0';
             const cb = row.querySelector('.reservation-select-cb');
-            if (cb) {
+            if (cb && allowSms) {
                 selectedReservations.set(id, {
                     id,
-                    guest: cb.getAttribute('data-guest') || `Reservation #${id}`,
+                    guest: cb.getAttribute('data-guest') || `Reservation #${formatReservationId(id)}`,
                     phone: cb.getAttribute('data-phone') || '',
                     displayPhone: cb.getAttribute('data-display-phone') || 'No phone'
                 });
@@ -805,6 +888,7 @@ window.AppPage['admin_announcement'] = function () {
     // =========================================================================
     const reviewAudienceName = document.getElementById('reviewAudienceName');
     const reviewReservationsCount = document.getElementById('reviewReservationsCount');
+    const reviewOptedOutCount = document.getElementById('reviewOptedOutCount');
     const reviewValidPhoneCount = document.getElementById('reviewValidPhoneCount');
     const reviewMessageText = document.getElementById('reviewMessageText');
     const alertFeedbackContainer = document.getElementById('alertFeedbackContainer');
@@ -820,8 +904,12 @@ window.AppPage['admin_announcement'] = function () {
         const effectiveCount = deduplicate ? uniquePhones.length : allValidPhones.length;
         const duplicatesSkipped = allValidPhones.length - uniquePhones.length;
 
+        const targetAudienceKey = currentAudience === 'custom' ? 'all' : currentAudience;
+        const optedOutCount = getAudienceOptedOutCount(targetAudienceKey);
+
         if (reviewAudienceName) reviewAudienceName.textContent = getAudienceLabel(currentAudience);
         if (reviewReservationsCount) reviewReservationsCount.textContent = `${selectedReservations.size} Selected`;
+        if (reviewOptedOutCount) reviewOptedOutCount.textContent = `${optedOutCount} Excluded`;
         if (reviewValidPhoneCount) {
             reviewValidPhoneCount.textContent = deduplicate && duplicatesSkipped > 0
                 ? `${effectiveCount} Numbers (${duplicatesSkipped} duplicate${duplicatesSkipped > 1 ? 's' : ''} skipped)`
@@ -1044,7 +1132,7 @@ window.AppPage['admin_announcement'] = function () {
             let companions = [];
             try { companions = JSON.parse(companionsJson || '[]'); } catch { companions = []; }
 
-            if (companionModalTitle) companionModalTitle.textContent = `Companions Breakdown — Reservation #${resId}`;
+            if (companionModalTitle) companionModalTitle.textContent = `Companions Breakdown — Reservation #${formatReservationId(resId)}`;
             if (companionMainGuestName) companionMainGuestName.textContent = guest;
             if (companionMainGuestPhone) companionMainGuestPhone.textContent = phone ? `Mobile: ${phone}` : 'No phone registered';
             if (companionModalCount) companionModalCount.textContent = companions.length;

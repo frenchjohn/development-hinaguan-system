@@ -10,6 +10,12 @@ window.AppPage['staff_occupancy_monitor'] = function () {
 
     const todayStr = toISODateString(new Date());
 
+    const formatReservationId = (id) => {
+        if (!id) return '';
+        const digits = String(id).replace(/\D/g, '');
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     // State initialized from URL query params or inputs
     const urlParams = new URLSearchParams(window.location.search);
     let appliedStartDate = urlParams.get('start_date') || document.getElementById('modalStartDateInput')?.value || todayStr;
@@ -502,7 +508,7 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     const guestCount = Number(item.guest_count ?? 0);
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
                     const slotLabel = formatSlotDisplay(item.time_slot_label || item.time_slot);
-                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${slotLabel})${sharedTag} &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
+                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${formatReservationId(item.reservation_id)} - ${slotLabel})${sharedTag} &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {
@@ -511,7 +517,7 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
                     const reservationDate = item.reservation_date || item.date || 'Today';
                     const slotLabel = formatSlotDisplay(item.time_slot_label || item.time_slot);
-                    div.innerHTML = `<strong>Reserved</strong> (${reservationDate}) (Reservation #${item.reservation_id} - ${slotLabel})${sharedTag}`;
+                    div.innerHTML = `<strong>Reserved</strong> (${reservationDate}) (Reservation #${formatReservationId(item.reservation_id)} - ${slotLabel})${sharedTag}`;
                     modalStatusList.appendChild(div);
                 });
             }

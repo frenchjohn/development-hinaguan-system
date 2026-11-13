@@ -159,7 +159,7 @@
                 @if($reservation)
                 <tr>
                     <td class="label-td">Reservation ID:</td>
-                    <td class="value-td">{{ $reservation->id }}</td>
+                    <td class="value-td">{{ $reservation->formatted_id }}</td>
                 </tr>
                 <tr>
                     <td class="label-td">Reservation Date:</td>

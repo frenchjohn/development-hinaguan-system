@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeDetailModalFooter = document.getElementById('closeAmenityDetailModalFooter');
     const occupancyCards = document.querySelectorAll('.occupancy-card');
 
+    const formatReservationId = (id) => {
+        if (!id) return '';
+        const digits = String(id).replace(/\D/g, '');
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     if (siteHeader) {
         const sync = () => document.documentElement.style.setProperty('--am-header-offset', `${siteHeader.offsetHeight}px`);
         sync();
@@ -214,14 +220,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     div.className = 'rounded-xl border border-red-200 bg-red-50/80 p-3 text-xs text-gray-800 flex flex-wrap items-center justify-between gap-2';
                     const guestCount = Number(item.guest_count ?? 0);
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[0.62rem] font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<div><strong class="text-red-700 font-bold">Occupied</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div><span class="font-bold bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[0.68rem]">${guestCount} guest${guestCount === 1 ? '' : 's'} inside</span>`;
+                    div.innerHTML = `<div><strong class="text-red-700 font-bold">Occupied</strong> (Reservation #${formatReservationId(item.reservation_id)} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div><span class="font-bold bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[0.68rem]">${guestCount} guest${guestCount === 1 ? '' : 's'} inside</span>`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-gray-800 flex flex-wrap items-center justify-between gap-2';
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[0.62rem] font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<div><strong class="text-amber-700 font-bold">Reserved Today</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div>`;
+                    div.innerHTML = `<div><strong class="text-amber-700 font-bold">Reserved Today</strong> (Reservation #${formatReservationId(item.reservation_id)} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div>`;
                     modalStatusList.appendChild(div);
                 });
             }

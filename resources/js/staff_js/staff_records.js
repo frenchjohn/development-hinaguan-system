@@ -29,6 +29,13 @@ window.AppPage['staff_records'] = function () {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
+    const formatReservationId = (id) => {
+        if (id === null || id === undefined || id === '') return '';
+        const digits = String(id).trim().replace(/\D/g, '');
+        if (!digits) return String(id);
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     // ============================================================
@@ -169,7 +176,7 @@ window.AppPage['staff_records'] = function () {
                         <span class="text-[0.7rem] font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Reservation Reference</span>
                         <div class="flex items-center gap-2">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border ${statusBadgeClass}">${escapeHtml(resStatus)}</span>
-                            <span class="font-bold text-xs text-[#178a52] dark:text-[#8fd0ab]">#${escapeHtml(reservation?.id ?? 'N/A')}</span>
+                            <span class="font-bold text-xs text-[#178a52] dark:text-[#8fd0ab]">#${escapeHtml(formatReservationId(reservation?.id ?? 'N/A'))}</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-xs">
@@ -306,7 +313,7 @@ window.AppPage['staff_records'] = function () {
                             </span>
                         ` : ''}
                     </div>
-                    <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation #${escapeHtml(group.reservation_id)} · Bulk Companion Group</p>
+                    <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation #${escapeHtml(formatReservationId(group.reservation_id))} · Bulk Companion Group</p>
                 </div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
@@ -510,7 +517,7 @@ window.AppPage['staff_records'] = function () {
             // Open Success Modal
             const successMsgEl = document.getElementById('reopenSuccessMessage');
             if (successMsgEl) {
-                successMsgEl.textContent = data.message || `Reservation #${resId} has been returned to Pending status and is now listed on the active Staff Reservations page.`;
+                successMsgEl.textContent = data.message || `Reservation #${formatReservationId(resId)} has been returned to Pending status and is now listed on the active Staff Reservations page.`;
             }
             if (reopenSuccessModal) {
                 if (reopenSuccessModal.parentElement !== document.body) {
@@ -624,7 +631,7 @@ window.AppPage['staff_records'] = function () {
             statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700';
         }
 
-        if (modalIdBadge) modalIdBadge.textContent = `#${reservation.id}`;
+        if (modalIdBadge) modalIdBadge.textContent = `#${formatReservationId(reservation.id)}`;
         if (modalTitle) modalTitle.textContent = `${reservation.booker_name || 'Reservation Record'}`;
         if (modalStatusBadge) {
             modalStatusBadge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusBadgeClass}`;
@@ -922,7 +929,7 @@ window.AppPage['staff_records'] = function () {
                 <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
                     <div>
                         <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8] block">Official Bill & Settlement</span>
-                        <span class="text-[0.65rem] text-[#889b8a]">${reservation.reservation_type === 'walk_in' ? 'Walk-In Desk' : 'Online Booking'} · Ref #${reservation.id}</span>
+                        <span class="text-[0.65rem] text-[#889b8a]">${reservation.reservation_type === 'walk_in' ? 'Walk-In Desk' : 'Online Booking'} · Ref #${formatReservationId(reservation.id)}</span>
                     </div>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border ${paymentBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
                 </div>
@@ -1035,7 +1042,7 @@ window.AppPage['staff_records'] = function () {
                     const checkOutSlotEl = document.getElementById('reopenConfirmCheckOutSlot');
                     const errBox = document.getElementById('reopenConfirmError');
 
-                    if (resIdEl) resIdEl.textContent = `#${reservation.id}`;
+                    if (resIdEl) resIdEl.textContent = `#${formatReservationId(reservation.id)}`;
                     if (bookerEl) bookerEl.textContent = reservation.booker_name || 'Guest';
 
                     // Helpers for formatting date & time

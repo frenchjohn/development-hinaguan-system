@@ -56,6 +56,34 @@ class Reservation extends Model
         'allow_email' => 'boolean',
     ];
 
+    protected $appends = [
+        'formatted_id',
+    ];
+
+    /**
+     * Format any reservation ID with minimum 3 digits zero-padded (e.g. 1 -> 001, 11 -> 011, 145 -> 145, 1444 -> 1444).
+     */
+    public static function formatId($id): string
+    {
+        if ($id === null || $id === '') {
+            return '';
+        }
+        $raw = (string) $id;
+        $digits = preg_replace('/\D/', '', $raw);
+        if ($digits === '') {
+            return $raw;
+        }
+        return strlen($digits) < 3 ? str_pad($digits, 3, '0', STR_PAD_LEFT) : $digits;
+    }
+
+    /**
+     * Accessor for formatted_id.
+     */
+    public function getFormattedIdAttribute(): string
+    {
+        return self::formatId($this->id);
+    }
+
     /**
      * Determine if the guest has opted in to receive SMS messages.
      */

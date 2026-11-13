@@ -1107,17 +1107,17 @@
 										data-amenities-name="{{ strtolower($rowAmenityNames) }}"
 										data-amount-total="{{ (float) ($reservation->total_amount ?? 0) }}"
 										data-guest-count="{{ $totalResGuests }}"
-										data-reservation-search="{{ strtolower(trim($reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
+										data-reservation-search="{{ strtolower(trim($reservation->formatted_id . ' ' . $reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
 										data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"
 										tabindex="0"
 										role="button"
-										aria-label="View reservation {{ $reservation->id }}"
+										aria-label="View reservation {{ $reservation->formatted_id }}"
 									>
 										<td class="px-5 py-3.5 align-middle">
 											<div class="flex items-center gap-2">
 												<div>
 													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
-														<span>#{{ $reservation->id }}</span>
+														<span>#{{ $reservation->formatted_id }}</span>
 														@if($isSpecificAmenityDue)
 															<span class="amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
 														@endif

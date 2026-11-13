@@ -82,7 +82,7 @@
             <h1>Thank you! Your booking is confirmed.</h1>
             <p>Your deposit was received and a QR code is on its way to your email. Present it at the park entrance on your reservation day.</p>
             <div class="meta">
-                Reservation #{{ $reservation->id }} &middot; {{ $reservation->booker_name }}<br>
+                Reservation #{{ $reservation->formatted_id }} &middot; {{ $reservation->booker_name }}<br>
                 <strong>₱{{ number_format((float) $reservation->amount_paid, 2) }}</strong> paid &middot;
                 Balance ₱{{ number_format((float) $reservation->remaining_balance, 2) }}
             </div>

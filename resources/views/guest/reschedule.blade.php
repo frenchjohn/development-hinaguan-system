@@ -326,7 +326,7 @@
                     </div>
                     <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 mb-2">Refund Request Submitted</h2>
                     <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
-                        This single-use link has already been used to request a <strong>50% downpayment refund</strong> for Reservation #{{ $reservation?->id }}.
+                        This single-use link has already been used to request a <strong>50% downpayment refund</strong> for Reservation #{{ $reservation?->formatted_id }}.
                     </p>
 
                     <div class="bg-amber-50/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-amber-200 mb-4 sm:mb-6 text-left">
@@ -470,7 +470,7 @@
                 <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-left text-xs space-y-2">
                     <div class="flex items-center justify-between pb-2 border-b border-emerald-200/60">
                         <span class="text-emerald-800/80 font-medium">Reservation ID</span>
-                        <span class="font-bold text-emerald-950 font-mono text-sm">#{{ $reservation->id }}</span>
+                        <span class="font-bold text-emerald-950 font-mono text-sm">#{{ $reservation->formatted_id }}</span>
                     </div>
                     <div class="flex items-center justify-between pb-2 border-b border-emerald-200/60">
                         <span class="text-emerald-800/80 font-medium">Total Downpayment Paid</span>
@@ -518,7 +518,7 @@
                     <div class="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
                         <div>
                             <span class="text-emerald-800/80 font-medium block">Reservation ID</span>
-                            <span class="font-bold text-emerald-950 font-mono text-xs sm:text-sm">#{{ $reservation->id }}</span>
+                            <span class="font-bold text-emerald-950 font-mono text-xs sm:text-sm">#{{ $reservation->formatted_id }}</span>
                         </div>
                         <div>
                             <span class="text-emerald-800/80 font-medium block">Stay Duration</span>
@@ -604,7 +604,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] sm:text-xs border border-emerald-200">
-                                #{{ $reservation->id }}
+                                #{{ $reservation->formatted_id }}
                             </span>
                             <span class="text-[11px] sm:text-xs text-slate-500 font-mono"><i class="bi bi-phone"></i> {{ $displayPhone }}</span>
                         </div>
@@ -781,7 +781,7 @@
                                 <h2 class="font-display text-base sm:text-xl font-bold text-slate-900 leading-tight">{{ $reservation->booker_name }}</h2>
                             </div>
                             <span class="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] sm:text-xs border border-emerald-200">
-                                #{{ $reservation->id }}
+                                #{{ $reservation->formatted_id }}
                             </span>
                         </div>
 
@@ -1106,7 +1106,7 @@
                                 <label class="flex items-start gap-2 sm:gap-2.5 cursor-pointer text-[11px] sm:text-xs text-slate-600 leading-snug sm:leading-relaxed">
                                     <input type="checkbox" id="refundConfirmCheck" required class="mt-0.5 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600">
                                     <span>
-                                        I understand that submitting this request will <strong>cancel Reservation #{{ $reservation->id }}</strong> and that <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% of my downpayment) will be manually transferred to my GCash account by park staff.
+                                        I understand that submitting this request will <strong>cancel Reservation #{{ $reservation->formatted_id }}</strong> and that <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% of my downpayment) will be manually transferred to my GCash account by park staff.
                                     </span>
                                 </label>
                             </div>

@@ -222,11 +222,11 @@ class PhilSmsService
             $firstName = 'Guest';
         }
 
-        $message = "Hinaguan Park: Hi {$firstName}! Res #{$reservation->id} is CONFIRMED. Arrive on {$dateText} ({$slotText}). Bring valid ID & QR pass. Call: {$parkContact}.";
+        $message = "Hinaguan Park: Hi {$firstName}! Res #{$reservation->formatted_id} is CONFIRMED. Arrive on {$dateText} ({$slotText}). Bring valid ID & QR pass. Call: {$parkContact}.";
 
         // Guarantee single SMS limit (160 characters = 1 SMS unit)
         if (mb_strlen($message) > 160) {
-            $message = "Hinaguan Park: Res #{$reservation->id} is CONFIRMED! Arrive on {$dateText} ({$slotText}). Bring ID & QR pass. Call: {$parkContact}.";
+            $message = "Hinaguan Park: Res #{$reservation->formatted_id} is CONFIRMED! Arrive on {$dateText} ({$slotText}). Bring ID & QR pass. Call: {$parkContact}.";
             if (mb_strlen($message) > 160) {
                 $message = mb_substr($message, 0, 157) . '...';
             }
@@ -257,7 +257,7 @@ class PhilSmsService
         }
 
         $bookerName = trim((string) $reservation->booker_name) ?: 'Guest';
-        $prefix = "hi {$bookerName} of reservation_{$reservation->id}, ";
+        $prefix = "hi {$bookerName} of reservation_{$reservation->formatted_id}, ";
         $fullMessage = $prefix . trim($messageBody);
 
         return $this->sendSms($phone, $fullMessage);
@@ -293,7 +293,7 @@ class PhilSmsService
             $scheduleText = $checkInText;
         }
 
-        $message = "Hinaguan Nature Park: Hi {$firstName}! Your reschedule request for Reservation #{$reservation->id} has been APPROVED. Your new schedule is: {$scheduleText}. See you there! Inquiries: {$parkContact}.";
+        $message = "Hinaguan Nature Park: Hi {$firstName}! Your reschedule request for Reservation #{$reservation->formatted_id} has been APPROVED. Your new schedule is: {$scheduleText}. See you there! Inquiries: {$parkContact}.";
 
         return $this->sendSms($phone, $message);
     }
@@ -322,7 +322,7 @@ class PhilSmsService
         $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
 
         $reasonText = !empty($reason) ? " Reason: {$reason}." : '';
-        $message = "Hinaguan Nature Park: Hi {$firstName}, unfortunately your reschedule request for Reservation #{$reservation->id} has been declined.{$reasonText} Please wait for an update or contact us at {$parkContact}.";
+        $message = "Hinaguan Nature Park: Hi {$firstName}, unfortunately your reschedule request for Reservation #{$reservation->formatted_id} has been declined.{$reasonText} Please wait for an update or contact us at {$parkContact}.";
 
         return $this->sendSms($phone, $message);
     }
@@ -355,7 +355,7 @@ class PhilSmsService
         $fmtAmount = 'PHP ' . number_format($refundAmount, 2);
         $refText = !empty($refNumber) ? " (Ref: {$refNumber})" : '';
 
-        $message = "Hinaguan Nature Park: Hi {$firstName}! Your refund request for Reservation #{$reservation->id} is DONE and successful. Your 50% refund of {$fmtAmount} has been sent to your {$ewalletProvider} ({$ewalletAccount}){$refText}. Reservation is now cancelled. Inquiries: {$parkContact}.";
+        $message = "Hinaguan Nature Park: Hi {$firstName}! Your refund request for Reservation #{$reservation->formatted_id} is DONE and successful. Your 50% refund of {$fmtAmount} has been sent to your {$ewalletProvider} ({$ewalletAccount}){$refText}. Reservation is now cancelled. Inquiries: {$parkContact}.";
 
         return $this->sendSms($phone, $message);
     }
@@ -384,7 +384,7 @@ class PhilSmsService
         $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
         $reasonText = !empty($reason) ? " Reason: {$reason}." : '';
 
-        $message = "Hinaguan Nature Park: Hi {$firstName}, your refund request for Reservation #{$reservation->id} was reviewed and declined.{$reasonText} Please contact us at {$parkContact}.";
+        $message = "Hinaguan Nature Park: Hi {$firstName}, your refund request for Reservation #{$reservation->formatted_id} was reviewed and declined.{$reasonText} Please contact us at {$parkContact}.";
 
         return $this->sendSms($phone, $message);
     }

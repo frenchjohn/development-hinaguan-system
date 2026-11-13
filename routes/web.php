@@ -3741,10 +3741,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'end_slot' => $r->end_slot ?? 'Daytime',
                 'status' => $r->status,
                 'is_active' => $isActive,
+                'allow_sms' => (bool) ($r->canReceiveSms()),
+                'allow_email' => (bool) ($r->canReceiveEmail()),
+                'formatted_id' => $r->formatted_id,
             ];
         });
 
         $activeCount = $mappedReservations->where('is_active', true)->count();
+        $activeOptedOutSmsCount = $mappedReservations->where('is_active', true)->where('allow_sms', false)->count();
+        $eligibleActiveCount = $mappedReservations->where('is_active', true)->where('allow_sms', true)->count();
+        $totalOptedOutSmsCount = $mappedReservations->where('allow_sms', false)->count();
         $totalCount = $mappedReservations->count();
         $checkedOutCount = $mappedReservations->where('status', 'Checked Out')->count();
         $confirmedCount = $mappedReservations->where('status', 'Confirmed')->count();
@@ -3762,6 +3768,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return view('admin.admin_announcement', [
             'reservations' => $mappedReservations,
             'activeCount' => $activeCount,
+            'activeOptedOutSmsCount' => $activeOptedOutSmsCount,
+            'eligibleActiveCount' => $eligibleActiveCount,
+            'totalOptedOutSmsCount' => $totalOptedOutSmsCount,
             'totalCount' => $totalCount,
             'checkedOutCount' => $checkedOutCount,
             'confirmedCount' => $confirmedCount,
@@ -3921,11 +3930,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ]
         );
 
+        $skippedOptOutCount = collect($deliveryDetails)->where('reason', 'Guest opted out of SMS notifications (Privacy preference)')->count();
+        $messageSuffix = '';
+        if ($failedCount > 0) {
+            $messageSuffix .= " ({$failedCount} failed or skipped due to missing phone number)";
+        }
+        if ($skippedOptOutCount > 0) {
+            $messageSuffix .= " ({$skippedOptOutCount} skipped per guest privacy preference)";
+        }
+
         return response()->json([
             'success' => true,
-            'message' => "SMS announcement dispatched to {$sentCount} recipient(s)." . ($failedCount > 0 ? " ({$failedCount} failed or skipped due to missing phone number)" : ''),
+            'message' => "SMS announcement dispatched to {$sentCount} recipient(s)." . $messageSuffix,
             'sent_count' => $sentCount,
             'failed_count' => $failedCount,
+            'skipped_opt_out_count' => $skippedOptOutCount,
             'announcement' => $announcement,
         ]);
     })->name('announcements.send_sms');
@@ -5811,7 +5830,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $reservations = Reservation::query()
-            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+            ->with(['reservationAmenities.amenity', 'reservationGuests.customer', 'rescheduleRequests'])
             ->where('reservation_type', 'online')
             ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
@@ -5850,6 +5869,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             return [$reservation->id => [
                 'id' => $reservation->id,
+                'formatted_id' => $reservation->formatted_id,
                 'booker_name' => $reservation->booker_name,
                 'phone' => $reservation->phone,
                 'email' => $reservation->email,
@@ -5915,6 +5935,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         ],
                     ];
                 })->values(),
+                'allow_sms' => (bool) ($reservation->allow_sms ?? true),
+                'allow_email' => (bool) ($reservation->allow_email ?? true),
+                'active_reschedule_request' => (function () use ($reservation) {
+                    $active = $reservation->rescheduleRequests
+                        ->where('status', 'pending')
+                        ->filter(fn ($r) => (! $r->expires_at || $r->expires_at->isFuture()) && ! $r->used_at)
+                        ->first();
+                    if (! $active) return null;
+                    return [
+                        'id' => $active->id,
+                        'token' => $active->token,
+                        'url' => url('/reservation/reschedule/' . $active->token),
+                        'created_at' => $active->created_at ? $active->created_at->toIso8601String() : null,
+                        'expires_at' => $active->expires_at ? $active->expires_at->toIso8601String() : null,
+                        'expires_at_formatted' => $active->expires_at ? $active->expires_at->format('M d, Y g:i A') : null,
+                        'expires_human' => $active->expires_at ? $active->expires_at->diffForHumans() : null,
+                    ];
+                })(),
             ]];
         });
 
@@ -6597,6 +6635,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             return [$reservation->id => [
                 'id' => $reservation->id,
+                'formatted_id' => $reservation->formatted_id,
                 'booker_name' => $reservation->booker_name,
                 'check_in' => $reservation->check_in,
                 'check_out' => $reservation->check_out,
@@ -6682,6 +6721,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     'adult_count' => $reservation->entranceFee->adult_count,
                     'child_count' => $reservation->entranceFee->child_count,
                 ] : null,
+                'allow_sms' => (bool) ($reservation->allow_sms ?? true),
+                'allow_email' => (bool) ($reservation->allow_email ?? true),
             ]];
         });
 
@@ -7236,6 +7277,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             return [$reservation->id => [
                 'id' => $reservation->id,
+                'formatted_id' => $reservation->formatted_id,
                 'booker_name' => $reservation->booker_name,
                 'email' => $reservation->email,
                 'phone' => $reservation->phone,
@@ -11075,39 +11117,66 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ], 422);
         }
 
-        // Expire any existing pending requests for this reservation
-        \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
+        // Check if there is already an active pending request for this reservation
+        $activeRequest = \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
             ->where('status', 'pending')
-            ->update(['status' => 'expired']);
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+            })
+            ->whereNull('used_at')
+            ->latest()
+            ->first();
 
-        $token = \Illuminate\Support\Str::random(48);
-        $rescheduleUrl = url('/reservation/reschedule/' . $token);
-        $expiresAt = now()->addHours(24);
+        $isResend = false;
+        if ($activeRequest) {
+            // Cannot create a new link while one is already active!
+            // Reuse the existing active token and link
+            $reschedReq = $activeRequest;
+            $token = $activeRequest->token;
+            $rescheduleUrl = url('/reservation/reschedule/' . $token);
+            $expiresAt = $activeRequest->expires_at;
+            $isResend = true;
+        } else {
+            // Expire any stale pending requests for this reservation
+            \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'expired']);
+
+            $token = \Illuminate\Support\Str::random(48);
+            $rescheduleUrl = url('/reservation/reschedule/' . $token);
+            $expiresAt = now()->addHours(24);
+
+            $origDate = $formatLocalDate($reservation, 'reservation_date')
+                ?: ($reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString());
+
+            $reschedReq = \App\Models\RescheduleRequest::create([
+                'reservation_id' => $reservation->id,
+                'token' => $token,
+                'original_date' => $origDate,
+                'status' => 'pending',
+                'expires_at' => $expiresAt,
+            ]);
+        }
 
         $inputMsg = trim((string) $request->input('message'));
         if (empty($inputMsg)) {
-            $actualMessage = "Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please choose your option using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
+            if ($isResend) {
+                $actualMessage = "Reminder: Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please use your active link: {$rescheduleUrl} (link expires in 24 hours).";
+            } else {
+                $actualMessage = "Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please choose your option using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
+            }
         } else {
             if (str_contains($inputMsg, '{link}')) {
                 $actualMessage = str_replace('{link}', $rescheduleUrl, $inputMsg);
             } elseif (! str_contains($inputMsg, $rescheduleUrl)) {
-                $actualMessage = $inputMsg . " Reschedule/Refund link: " . $rescheduleUrl . " (valid for 24 hours).";
+                $actualMessage = $inputMsg . " Reschedule/Refund link: " . $rescheduleUrl . ($isResend ? "" : " (valid for 24 hours).");
             } else {
                 $actualMessage = $inputMsg;
             }
         }
 
-        $origDate = $formatLocalDate($reservation, 'reservation_date')
-            ?: ($reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString());
-
-        $reschedReq = \App\Models\RescheduleRequest::create([
-            'reservation_id' => $reservation->id,
-            'token' => $token,
-            'original_date' => $origDate,
-            'status' => 'pending',
-            'expires_at' => $expiresAt,
-            'reason' => $actualMessage,
-        ]);
+        $reschedReq->update(['reason' => $actualMessage]);
 
         $philSms = app(\App\Services\PhilSmsService::class);
         $smsResult = $philSms->sendRescheduleLink($reservation, $actualMessage, $recipientPhone);
@@ -11115,10 +11184,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $user['name'] ?? 'Staff User';
         $displayPhone = \App\Services\PhilSmsService::formatDisplayPhone($recipientPhone);
 
+        $actionTitle = $isResend ? 'Reschedule Link Resent via SMS' : 'Reschedule Link Sent via SMS';
+        $actionDesc = $isResend
+            ? "Active rescheduling link resent to {$reservation->booker_name} ({$displayPhone}) for Res #{$reservation->id} by {$staffName}"
+            : "Rescheduling link sent to {$reservation->booker_name} ({$displayPhone}) for Res #{$reservation->id} by {$staffName}";
+
         ActivityLog::log(
             activityType: 'reservation_reschedule_link_sent',
-            title: 'Reschedule Link Sent via SMS',
-            description: "Rescheduling link sent to {$reservation->booker_name} ({$displayPhone}) for Res #{$reservation->id} by {$staffName}",
+            title: $actionTitle,
+            description: $actionDesc,
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
@@ -11127,17 +11201,29 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reschedule_request_id' => $reschedReq->id,
                 'recipient_phone' => $recipientPhone,
                 'recipient_phone_display' => $displayPhone,
+                'is_resend' => $isResend,
                 'sms_success' => $smsResult['success'] ?? false,
                 'sms_error' => $smsResult['error'] ?? null,
             ]
         );
 
+        $activePayload = [
+            'id' => $reschedReq->id,
+            'token' => $token,
+            'url' => $rescheduleUrl,
+            'expires_at' => $expiresAt?->toIso8601String(),
+            'expires_at_formatted' => $expiresAt?->format('M d, Y g:i A'),
+            'expires_human' => $expiresAt?->diffForHumans(),
+        ];
+
         if (! ($smsResult['success'] ?? false)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Reschedule link was generated, but PhilSMS failed to deliver SMS: ' . ($smsResult['message'] ?? 'Unknown error'),
+                'message' => 'Reschedule link was verified, but PhilSMS failed to deliver SMS: ' . ($smsResult['message'] ?? 'Unknown error'),
                 'token' => $token,
                 'reschedule_url' => $rescheduleUrl,
+                'active_reschedule_request' => $activePayload,
+                'is_resend' => $isResend,
                 'sms_result' => $smsResult,
                 'request_id' => $reschedReq->id,
             ], 422);
@@ -11145,9 +11231,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         return response()->json([
             'success' => true,
-            'message' => "Temporary rescheduling link generated and SMS sent to {$displayPhone}!",
+            'is_resend' => $isResend,
+            'message' => $isResend
+                ? "Active link is still valid until {$expiresAt?->format('M d, g:i A')} ({$expiresAt?->diffForHumans()}). Link was resent via SMS to {$displayPhone}!"
+                : "Temporary rescheduling link generated and SMS sent to {$displayPhone}!",
             'token' => $token,
             'reschedule_url' => $rescheduleUrl,
+            'active_reschedule_request' => $activePayload,
             'sms_result' => $smsResult,
             'request_id' => $reschedReq->id,
         ]);
@@ -11617,7 +11707,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $reservations = Reservation::query()
-            ->with(['reservationAmenities.amenity.benefits', 'reservationGuests.customer'])
+            ->with(['reservationAmenities.amenity.benefits', 'reservationGuests.customer', 'rescheduleRequests'])
             ->where('reservation_type', 'online')
             ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
@@ -11651,6 +11741,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             return [$reservation->id => [
                 'id' => $reservation->id,
+                'formatted_id' => $reservation->formatted_id,
                 'booker_name' => $reservation->booker_name,
                 'phone' => $reservation->phone,
                 'email' => $reservation->email,
@@ -11715,6 +11806,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         ] : null,
                     ];
                 })->values(),
+                'allow_sms' => (bool) ($reservation->allow_sms ?? true),
+                'allow_email' => (bool) ($reservation->allow_email ?? true),
+                'active_reschedule_request' => (function () use ($reservation) {
+                    $active = $reservation->rescheduleRequests
+                        ->where('status', 'pending')
+                        ->filter(fn ($r) => (! $r->expires_at || $r->expires_at->isFuture()) && ! $r->used_at)
+                        ->first();
+                    if (! $active) return null;
+                    return [
+                        'id' => $active->id,
+                        'token' => $active->token,
+                        'url' => url('/reservation/reschedule/' . $active->token),
+                        'created_at' => $active->created_at ? $active->created_at->toIso8601String() : null,
+                        'expires_at' => $active->expires_at ? $active->expires_at->toIso8601String() : null,
+                        'expires_at_formatted' => $active->expires_at ? $active->expires_at->format('M d, Y g:i A') : null,
+                        'expires_human' => $active->expires_at ? $active->expires_at->diffForHumans() : null,
+                    ];
+                })(),
             ]];
         })->toArray();
 

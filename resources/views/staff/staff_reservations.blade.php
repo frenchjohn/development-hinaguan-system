@@ -420,13 +420,13 @@
                                     data-guests="{{ $reservation->number_of_guests }}"
                                     data-total-amount="{{ (float) $reservation->total_amount }}"
                                     data-is-past="{{ $isPastArrival ? '1' : '0' }}"
-                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : '') . ' ' . ($reservation->start_slot ?? '') . ' ' . (($reservation->start_slot ?? '') === 'Nighttime' ? 'overnight' : ''))) }}"
+                                    data-search="{{ strtolower(trim($reservation->formatted_id . ' #' . $reservation->formatted_id . ' ' . $reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : '') . ' ' . ($reservation->start_slot ?? '') . ' ' . (($reservation->start_slot ?? '') === 'Nighttime' ? 'overnight' : ''))) }}"
                                     tabindex="0"
                                     role="button"
-                                    aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
+                                    aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->formatted_id }})"
                                 >
                                     <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
-                                        <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->id }}</span>
+                                        <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->formatted_id }}</span>
                                     </td>
                                     <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
                                         <div class="resv-booker flex items-center gap-3">
@@ -898,6 +898,29 @@
                         <div class="font-bold text-slate-900 dark:text-white text-sm" id="sendReschedBookerName">—</div>
                     </div>
                     <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 font-mono font-bold text-xs" id="sendReschedIdBadge">#—</span>
+                </div>
+
+                <!-- Active Link Notice (displayed if reservation already has an active pending link) -->
+                <div id="sendReschedActiveNotice" class="hidden p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-500/50 text-xs text-amber-950 dark:text-amber-200">
+                    <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white uppercase tracking-wider shadow-2xs">
+                                <i class="bi bi-link-45deg"></i> Link Still Active
+                            </span>
+                            <span class="font-bold text-[11px]" id="sendReschedActiveExpiryText">Expires in 24 hours</span>
+                        </div>
+                        <span class="text-[10px] font-semibold text-amber-800 dark:text-amber-400">Cannot create new link</span>
+                    </div>
+                    <p class="m-0 text-[11px] text-amber-900 dark:text-amber-300 leading-relaxed mb-2">
+                        An active reschedule &amp; refund link is already pending for this reservation. You cannot generate a new conflicting link, but you can <strong>send the link again via SMS</strong> or copy it below:
+                    </p>
+                    <div class="relative flex items-center">
+                        <input type="text" id="sendReschedActiveLinkInput" readonly class="w-full pl-3 pr-20 py-2 text-xs font-mono font-bold rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-[#1a201c] text-slate-800 dark:text-slate-100 select-all focus:outline-none" />
+                        <button type="button" id="copyActiveReschedLinkBtn" class="absolute right-1.5 px-3 py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-2xs">
+                            <i class="bi bi-clipboard" id="copyActiveIcon"></i>
+                            <span id="copyActiveLinkText">Copy</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 text-xs">

@@ -501,7 +501,7 @@
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Current Recipient Pool</span>
                                 <div class="flex items-baseline gap-2 mt-1">
                                     <h4 class="m-0 text-2xl font-display font-bold text-[var(--ink)]">
-                                        <span id="selectedRatioDisplay">{{ $activeCount }} / {{ $activeCount }}</span>
+                                        <span id="selectedRatioDisplay">{{ $eligibleActiveCount ?? $activeCount }} / {{ $activeCount }}</span>
                                     </h4>
                                     <span class="text-xs font-semibold text-[var(--ink-muted)]">Reservations Selected</span>
                                 </div>
@@ -522,10 +522,21 @@
                             </div>
                         </div>
 
+                        {{-- Privacy Notice: Opted Out of SMS --}}
+                        <div id="smsOptOutNoticeStep1" class="{{ ($activeOptedOutSmsCount ?? 0) > 0 ? '' : 'hidden' }} mt-4 p-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                            <i class="bi bi-shield-slash-fill text-amber-600 dark:text-amber-400 text-base shrink-0 mt-0.5"></i>
+                            <div class="flex-1">
+                                <span class="font-bold">Guest Privacy Exclusion:</span>
+                                <span id="smsOptOutNoticeStep1Text">
+                                    <strong id="optedOutCountStep1">{{ $activeOptedOutSmsCount ?? 0 }}</strong> reservation(s) in this group opted out of SMS notifications and cannot receive broadcast messages.
+                                </span>
+                            </div>
+                        </div>
+
                         <div class="mt-4 pt-3.5 border-t border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[var(--ink-muted)]">
                             <span class="flex items-center gap-1.5">
                                 <i class="bi bi-info-circle text-emerald-600"></i>
-                                <span>All reservations in the chosen group are included by default. Click customize to select or unselect individuals.</span>
+                                <span>All eligible reservations in the chosen group are included by default. Guests who opted out of SMS are automatically excluded.</span>
                             </span>
                             <span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400" id="selectionStatusBadge">
                                 Group Preset Active
@@ -538,6 +549,16 @@
                 {{-- STEP 2: COMPOSE SMS MESSAGE & PHONE MOCKUP PREVIEW            --}}
                 {{-- ------------------------------------------------------------- --}}
                 <div id="wizardStep2" class="wizard-step-page hidden space-y-4">
+                    {{-- Privacy Opt-out Reminder Banner for Step 2 --}}
+                    <div id="smsOptOutNoticeStep2" class="{{ ($activeOptedOutSmsCount ?? 0) > 0 ? '' : 'hidden' }} p-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                        <i class="bi bi-shield-slash-fill text-amber-600 dark:text-amber-400 text-sm shrink-0"></i>
+                        <div class="flex-1 leading-snug">
+                            <span class="font-bold">Privacy Reminder:</span>
+                            <span id="smsOptOutNoticeStep2Text">
+                                <strong id="optedOutCountStep2">{{ $activeOptedOutSmsCount ?? 0 }}</strong> reservation(s) in this group opted out of SMS notifications and won't receive this message.
+                            </span>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         {{-- Left 8 cols: Form inputs --}}
                         <div class="lg:col-span-8 space-y-4">
@@ -665,14 +686,18 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-emerald-200 dark:border-emerald-900 mb-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-emerald-200 dark:border-emerald-900 mb-4">
                             <div>
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Target Audience</span>
                                 <div class="font-bold text-xs text-[var(--ink)] mt-0.5" id="reviewAudienceName">Active In-Park Guests</div>
                             </div>
                             <div>
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Total Reservations</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Selected Reservations</span>
                                 <div class="font-bold text-xs text-[var(--ink)] mt-0.5" id="reviewReservationsCount">0 Selected</div>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">SMS Opted Out</span>
+                                <div class="font-bold text-xs text-rose-600 dark:text-rose-400 mt-0.5" id="reviewOptedOutCount">0 Excluded</div>
                             </div>
                             <div>
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)]">Valid Mobile Recipients</span>
@@ -744,9 +769,13 @@
 
             {{-- Toolbar & Search --}}
             <div class="px-6 py-3 border-b border-gray-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#111e16]">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-bold text-[var(--ink)]">
-                        Selected: <span id="customizerSelectedCount" class="text-emerald-600 font-extrabold">{{ $activeCount }}</span> / <span id="customizerTotalCount">{{ $activeCount }}</span>
+                        Selected: <span id="customizerSelectedCount" class="text-emerald-600 font-extrabold">{{ $eligibleActiveCount ?? $activeCount }}</span> / <span id="customizerTotalCount">{{ $activeCount }}</span>
+                    </span>
+                    <span id="customizerOptedOutNotice" class="{{ ($activeOptedOutSmsCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-200 text-[11px] font-semibold border border-amber-300 dark:border-amber-800">
+                        <i class="bi bi-shield-slash"></i>
+                        <span id="customizerOptedOutText">{{ $activeOptedOutSmsCount ?? 0 }} opted out of SMS (unselectable)</span>
                     </span>
                 </div>
 
@@ -780,7 +809,7 @@
                                 </th>
                                 <th class="py-2.5 px-3 w-16">ID</th>
                                 <th class="py-2.5 px-3 min-w-[160px]">Main Guest</th>
-                                <th class="py-2.5 px-3 min-w-[120px]">Mobile Phone</th>
+                                <th class="py-2.5 px-3 min-w-[140px]">Mobile Phone</th>
                                 <th class="py-2.5 px-3 min-w-[130px]">Companions</th>
                                 <th class="py-2.5 px-3 text-center w-24">Status</th>
                             </tr>
@@ -788,9 +817,10 @@
                         <tbody class="divide-y divide-[var(--border)]" id="modalTableBody">
                             @foreach($reservations as $res)
                                 <tr
-                                    class="reservation-row hover:bg-black/5 dark:hover:bg-white/5 transition-colors {{ $res['is_active'] ? 'is-selected' : '' }}"
+                                    class="reservation-row hover:bg-black/5 dark:hover:bg-white/5 transition-colors {{ ($res['is_active'] && $res['allow_sms']) ? 'is-selected' : '' }} {{ ! $res['allow_sms'] ? 'opacity-70 bg-rose-50/20 dark:bg-rose-950/15' : '' }}"
                                     data-id="{{ $res['id'] }}"
                                     data-active="{{ $res['is_active'] ? '1' : '0' }}"
+                                    data-allow-sms="{{ $res['allow_sms'] ? '1' : '0' }}"
                                     data-status="{{ $res['status'] }}"
                                     data-guest-name="{{ strtolower($res['main_guest_name']) }}"
                                     data-phone="{{ $res['phone'] }}"
@@ -804,17 +834,19 @@
                                     <td class="py-2 px-3 text-center align-middle">
                                         <input
                                             type="checkbox"
-                                            class="reservation-select-cb rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer h-3.5 w-3.5"
+                                            class="reservation-select-cb rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer h-3.5 w-3.5 disabled:opacity-30 disabled:cursor-not-allowed"
                                             value="{{ $res['id'] }}"
                                             data-id="{{ $res['id'] }}"
+                                            data-allow-sms="{{ $res['allow_sms'] ? '1' : '0' }}"
                                             data-guest="{{ $res['main_guest_name'] }}"
                                             data-phone="{{ $res['phone'] }}"
                                             data-display-phone="{{ $res['display_phone'] }}"
-                                            {{ $res['is_active'] ? 'checked' : '' }}
+                                            {{ ($res['is_active'] && $res['allow_sms']) ? 'checked' : '' }}
+                                            {{ ! $res['allow_sms'] ? 'disabled title="Guest opted out of receiving SMS"' : '' }}
                                         >
                                     </td>
                                     <td class="py-2 px-3 align-middle font-mono font-bold text-[var(--ink)]">
-                                        #{{ $res['id'] }}
+                                        #{{ $res['formatted_id'] ?? \App\Models\Reservation::formatId($res['id']) }}
                                     </td>
                                     <td class="py-2 px-3 align-middle font-medium text-[var(--ink)]">
                                         <div class="truncate max-w-[160px]" title="{{ $res['main_guest_name'] }}">
@@ -822,7 +854,14 @@
                                         </div>
                                     </td>
                                     <td class="py-2 px-3 align-middle font-mono text-[var(--ink)]">
-                                        @if(!empty($res['phone']))
+                                        @if(! $res['allow_sms'])
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="line-through text-gray-400 text-[11px]">{{ $res['display_phone'] ?: 'No Phone' }}</span>
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 px-1.5 py-0.2 text-[9px] font-bold" title="Guest opted out of SMS notifications">
+                                                    <i class="bi bi-bell-slash"></i> No SMS
+                                                </span>
+                                            </div>
+                                        @elseif(!empty($res['phone']))
                                             <span class="select-all">{{ $res['display_phone'] }}</span>
                                         @else
                                             <span class="text-rose-500 font-sans text-[10px]">No Phone</span>

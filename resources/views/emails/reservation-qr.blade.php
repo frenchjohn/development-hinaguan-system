@@ -56,7 +56,7 @@
                                 <tr>
                                     <td align="center">
                                         <div style="display:inline-block; background:#ffffff; color:#134629; font-size:13px; font-weight:700; padding:6px 16px; border-radius:8px;">
-                                            Reservation ID: <span style="color:#15803d; letter-spacing:0.5px;">#{{ $reservation->id }}</span>
+                                            Reservation ID: <span style="color:#15803d; letter-spacing:0.5px;">#{{ $reservation->formatted_id }}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -403,7 +403,7 @@
                                             <tr>
                                                 <td width="20" valign="top" style="padding-bottom:10px; font-size:12px; font-weight:bold; color:#9a3412;">3.</td>
                                                 <td style="padding-bottom:10px; font-size:12.5px; color:#451a03; line-height:1.5;">
-                                                    <strong>Reservation Reference:</strong> Keep note of your <strong>Reservation ID #{{ $reservation->id }}</strong> for any front-desk inquiries.
+                                                    <strong>Reservation Reference:</strong> Keep note of your <strong>Reservation ID #{{ $reservation->formatted_id }}</strong> for any front-desk inquiries.
                                                 </td>
                                             </tr>
                                             <tr>

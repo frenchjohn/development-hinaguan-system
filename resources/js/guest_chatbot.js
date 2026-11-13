@@ -107,6 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
+    const formatReservationId = (id) => {
+        if (id === null || id === undefined || id === '') return '';
+        const digits = String(id).trim().replace(/\D/g, '');
+        if (!digits) return String(id);
+        return digits.length < 3 ? digits.padStart(3, '0') : digits;
+    };
+
     const roundToTwo = (num) => Math.round((Number(num || 0) + Number.EPSILON) * 100) / 100;
 
     const CONFUSED_FALLBACK = "I'm sorry, i couldnt understand and im confuse can you state it again";
@@ -706,8 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <p style="font-size:0.72rem;color:#4b5563;margin:0.25rem 0 0.45rem;line-height:1.4;">
                     ${accepted
-                        ? (hasDate ? 'Schedule is saved. Click below to adjust dates/sessions or proceed to choose amenities.' : 'Open our schedule chooser dialog to pick check-in & check-out dates and daytime/nighttime sessions.')
-                        : 'Please review and agree to our Terms & Conditions to proceed with picking dates & sessions.'}
+                    ? (hasDate ? 'Schedule is saved. Click below to adjust dates/sessions or proceed to choose amenities.' : 'Open our schedule chooser dialog to pick check-in & check-out dates and daytime/nighttime sessions.')
+                    : 'Please review and agree to our Terms & Conditions to proceed with picking dates & sessions.'}
                 </p>
 
                 <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
@@ -2215,8 +2222,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <p style="font-size:0.72rem;color:#4b5563;margin:0.2rem 0 0.45rem;line-height:1.4;">
                 ${hasGuest
-                    ? `Saved Booker: <strong>${escapeHtml(guestName)}</strong> (${guestPax} pax). Click below to edit details or proceed.`
-                    : 'Please provide primary booker details to issue your digital pass, entry QR code, and confirmation.'}
+                ? `Saved Booker: <strong>${escapeHtml(guestName)}</strong> (${guestPax} pax). Click below to edit details or proceed.`
+                : 'Please provide primary booker details to issue your digital pass, entry QR code, and confirmation.'}
             </p>
             <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbOpenGuestModalBtn">
                 <i class="bi bi-person-vcard me-1.5"></i> ${hasGuest ? 'Edit Booker Details (Modal)' : 'Enter Booker Information (Modal)'}
@@ -2775,7 +2782,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="chatbot-receipt" style="margin-top:0.35rem;">
                 <div class="chatbot-receipt__row">
                     <span>Reference / ID:</span>
-                    <strong>#${reservationId || 'HNP'}</strong>
+                    <strong>#${reservationId ? formatReservationId(reservationId) : 'HNP'}</strong>
                 </div>
                 <div class="chatbot-receipt__row">
                     <span>50% Downpayment Paid:</span>
