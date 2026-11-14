@@ -320,66 +320,82 @@
         @elseif ($state === 'used')
             <!-- Already Used State -->
             @if ($rescheduleRequest && $rescheduleRequest->isRefund())
-                <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-amber-100 text-center max-w-lg mx-auto">
-                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-xl sm:text-2xl">
-                        <i class="bi bi-cash-stack"></i>
+                <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100/80 text-emerald-500 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
                     </div>
-                    <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 mb-2">Refund Request Submitted</h2>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
-                        This single-use link has already been used to request a <strong>50% downpayment refund</strong> for Reservation #{{ $reservation?->formatted_id }}.
+                    <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Refund Request Submitted!</h2>
+                    <p class="text-slate-600 text-xs sm:text-sm mb-5 leading-relaxed max-w-md mx-auto">
+                        Thank you, <strong class="text-slate-900 font-bold">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
                     </p>
 
-                    <div class="bg-amber-50/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-amber-200 mb-4 sm:mb-6 text-left">
-                        <div class="text-[0.68rem] sm:text-xs uppercase font-bold text-amber-900 tracking-wider mb-2.5 sm:mb-3">Submitted Refund Details</div>
-                        <div class="space-y-2 sm:space-y-2.5 text-xs">
-                            <div class="flex items-center justify-between">
-                                <span class="text-slate-500 font-medium">Original Downpayment:</span>
-                                <span class="font-bold text-slate-800">₱{{ number_format($origPaid, 2) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between pb-2 border-b border-amber-200/60">
-                                <span class="text-amber-950 font-bold uppercase text-[0.65rem] sm:text-[0.68rem]">50% Refund to Receive:</span>
-                                <span class="text-emerald-700 font-extrabold text-sm sm:text-base">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-slate-500 font-medium">Receiving E-Wallet:</span>
-                                <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &middot; {{ $rescheduleRequest->ewallet_account_number }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-slate-500 font-medium">Account Name:</span>
-                                <span class="font-semibold text-slate-700">{{ $rescheduleRequest->ewallet_account_name }}</span>
-                            </div>
-                            <div class="flex items-center justify-between pt-2 border-t border-amber-200/60">
-                                <span class="text-slate-500 font-medium">Status:</span>
-                                @if ($rescheduleRequest->status === 'approved')
-                                    <span class="px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                        <i class="bi bi-check-circle-fill"></i> Refund Completed
-                                    </span>
-                                @elseif ($rescheduleRequest->status === 'declined')
-                                    <span class="px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                        <i class="bi bi-x-circle-fill"></i> Declined
-                                    </span>
-                                @else
-                                    <span class="px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                        <i class="bi bi-clock-fill"></i> Awaiting Staff GCash Transfer
-                                    </span>
-                                @endif
-                            </div>
-                            @if ($rescheduleRequest->refund_reference_number)
-                                <div class="pt-2 text-[0.72rem] text-slate-600">
-                                    <strong>GCash Reference #:</strong> <span class="font-mono text-slate-900 font-bold">{{ $rescheduleRequest->refund_reference_number }}</span>
-                                </div>
-                            @endif
+                    <div class="bg-[#eef8f2] border border-[#cbe8d5] rounded-2xl p-4 sm:p-5 mb-4 text-left text-xs sm:text-sm space-y-3">
+                        <div class="flex items-center justify-between text-slate-600">
+                            <span class="font-medium">Reservation ID</span>
+                            <span class="font-bold text-slate-900 font-mono text-sm sm:text-base">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-600">
+                            <span class="font-medium">Total Downpayment Paid</span>
+                            <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 uppercase text-[11px] sm:text-xs tracking-wider">50% REFUND TO RECEIVE</span>
+                            <span class="font-bold text-emerald-700 text-base sm:text-lg">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-600">
+                            <span class="font-medium">Receiving E-Wallet</span>
+                            <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &bull; {{ $rescheduleRequest->ewallet_account_number }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-600">
+                            <span class="font-medium">Account Name</span>
+                            <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</span>
                         </div>
                     </div>
 
-                    <p class="text-slate-500 text-[11px] sm:text-xs mb-4 sm:mb-6">
-                        Park staff manually transfers refunds through GCash. Once sent, an SMS confirmation is dispatched.
-                    </p>
-                    @if (!empty($parkContact))
-                        <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
-                            <i class="bi bi-telephone-fill text-emerald-700"></i> Inquiries: {{ $parkContact }}
+                    @if ($rescheduleRequest->status === 'approved')
+                        <div class="mb-5 p-3.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs text-left">
+                            <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+                                <i class="bi bi-check-circle-fill text-emerald-600"></i> Refund Completed
+                            </div>
+                            <p>Disbursed via <strong>{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }}</strong> on {{ $rescheduleRequest->refunded_at?->format('M d, Y · g:i A') ?? 'recently' }}.
+                                @if ($rescheduleRequest->refund_reference_number)
+                                    &middot; Reference #: <strong class="font-mono text-slate-900">{{ $rescheduleRequest->refund_reference_number }}</strong>
+                                @endif
+                            </p>
+                        </div>
+                    @elseif ($rescheduleRequest->status === 'declined')
+                        <div class="mb-5 p-3.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs text-left">
+                            <div class="font-bold flex items-center gap-1.5 text-rose-700 mb-1">
+                                <i class="bi bi-x-circle-fill text-rose-600"></i> Refund Request Declined
+                            </div>
+                            <p>{{ $rescheduleRequest->decline_reason ?? 'Please contact Hinaguan Nature Park staff for inquiries.' }}</p>
+                        </div>
+                    @else
+                        <div class="bg-[#f4faf6] border border-[#d3eee0] rounded-2xl p-4 sm:p-5 mb-6 text-left">
+                            <div class="flex items-center gap-2 mb-2.5">
+                                <i class="bi bi-info-circle-fill text-emerald-600 text-base sm:text-lg shrink-0"></i>
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base">Refund Request Under Review</h3>
+                            </div>
+                            <div class="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2.5">
+                                <p>The submitted refund request will be reviewed by the park management. Please allow up to 24 hours for the confirmation and completion of your request.</p>
+                                <p>Once the review is done, the refund will be <strong class="text-slate-900 font-bold">automatically</strong> sent to your e-wallet, and you will receive a confirmation through <strong class="text-slate-900 font-bold">SMS</strong>.</p>
+                                <p>If you have any questions, just call <span class="font-bold text-emerald-800">📞 {{ $parkContact ?: '09938373838' }}</span>.</p>
+                                <p>Thank you for your patience.</p>
+                            </div>
                         </div>
                     @endif
+
+                    <div class="text-center">
+                        <a href="{{ url('/') }}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#0c5132] hover:bg-[#083e26] text-white font-semibold text-xs sm:text-sm shadow-md transition-all">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Back to Homepage
+                        </a>
+                    </div>
                 </div>
             @else
                 <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-amber-100 text-center max-w-lg mx-auto">
@@ -458,49 +474,62 @@
 
         @elseif ($state === 'submitted_refund_success')
             <!-- Refund Submission Success Confirmation -->
-            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
-                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-2xl sm:text-3xl">
-                    <i class="bi bi-check2-circle"></i>
+            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100/80 text-emerald-500 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
                 </div>
-                <h2 class="font-display text-xl sm:text-3xl font-bold text-emerald-950 mb-2">Refund Request Submitted!</h2>
-                <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                    Thank you, <strong class="text-slate-800">{{ $reservation->booker_name }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
+                <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Refund Request Submitted!</h2>
+                <p class="text-slate-600 text-xs sm:text-sm mb-5 leading-relaxed max-w-md mx-auto">
+                    Thank you, <strong class="text-slate-900 font-bold">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
                 </p>
 
-                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-left text-xs space-y-2">
-                    <div class="flex items-center justify-between pb-2 border-b border-emerald-200/60">
-                        <span class="text-emerald-800/80 font-medium">Reservation ID</span>
-                        <span class="font-bold text-emerald-950 font-mono text-sm">#{{ $reservation->formatted_id }}</span>
+                <div class="bg-[#eef8f2] border border-[#cbe8d5] rounded-2xl p-4 sm:p-5 mb-4 text-left text-xs sm:text-sm space-y-3">
+                    <div class="flex items-center justify-between text-slate-600">
+                        <span class="font-medium">Reservation ID</span>
+                        <span class="font-bold text-slate-900 font-mono text-sm sm:text-base">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</span>
                     </div>
-                    <div class="flex items-center justify-between pb-2 border-b border-emerald-200/60">
-                        <span class="text-emerald-800/80 font-medium">Total Downpayment Paid</span>
-                        <span class="font-semibold text-slate-800">₱{{ number_format($origPaid, 2) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between pb-2 border-b border-emerald-200/60">
-                        <span class="text-emerald-950 font-bold uppercase text-[0.65rem] sm:text-[0.68rem]">50% Refund to Receive</span>
-                        <span class="font-extrabold text-emerald-800 text-sm sm:text-base">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between pt-1">
-                        <span class="text-emerald-800/80 font-medium">Receiving E-Wallet</span>
-                        <span class="font-bold text-slate-800">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &middot; {{ $rescheduleRequest->ewallet_account_number }}</span>
+                    <div class="flex items-center justify-between text-slate-600">
+                        <span class="font-medium">Total Downpayment Paid</span>
+                        <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-emerald-800/80 font-medium">Account Name</span>
-                        <span class="font-semibold text-slate-700">{{ $rescheduleRequest->ewallet_account_name }}</span>
+                        <span class="font-bold text-slate-900 uppercase text-[11px] sm:text-xs tracking-wider">50% REFUND TO RECEIVE</span>
+                        <span class="font-bold text-emerald-700 text-base sm:text-lg">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-600">
+                        <span class="font-medium">Receiving E-Wallet</span>
+                        <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &bull; {{ $rescheduleRequest->ewallet_account_number }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-600">
+                        <span class="font-medium">Account Name</span>
+                        <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</span>
                     </div>
                 </div>
 
-                <div class="p-3 sm:p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] sm:text-xs text-slate-600 mb-4 sm:mb-6 text-left flex items-start gap-2.5">
-                    <i class="bi bi-info-circle-fill text-emerald-600 text-sm sm:text-base shrink-0 mt-0.5"></i>
-                    <div>
-                        <strong>What happens next?</strong><br>
-                        Our park staff will review your request and manually transfer <strong>₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</strong> to your GCash account. Once disbursed, you will receive an SMS confirmation with the transaction reference number.
+                <div class="bg-[#f4faf6] border border-[#d3eee0] rounded-2xl p-4 sm:p-5 mb-6 text-left">
+                    <div class="flex items-center gap-2 mb-2.5">
+                        <i class="bi bi-info-circle-fill text-emerald-600 text-base sm:text-lg shrink-0"></i>
+                        <h3 class="font-bold text-slate-900 text-sm sm:text-base">Refund Request Under Review</h3>
+                    </div>
+                    <div class="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2.5">
+                        <p>The submitted refund request will be reviewed by the park management. Please allow up to 24 hours for the confirmation and completion of your request.</p>
+                        <p>Once the review is done, the refund will be <strong class="text-slate-900 font-bold">automatically</strong> sent to your e-wallet, and you will receive a confirmation through <strong class="text-slate-900 font-bold">SMS</strong>.</p>
+                        <p>If you have any questions, just call <span class="font-bold text-emerald-800">📞 {{ $parkContact ?: '09938373838' }}</span>.</p>
+                        <p>Thank you for your patience.</p>
                     </div>
                 </div>
 
-                <a href="{{ url('/') }}" class="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-semibold text-xs sm:text-sm transition-all shadow-md">
-                    <i class="bi bi-house-door"></i> Back to Homepage
-                </a>
+                <div class="text-center">
+                    <a href="{{ url('/') }}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#0c5132] hover:bg-[#083e26] text-white font-semibold text-xs sm:text-sm shadow-md transition-all">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Back to Homepage
+                    </a>
+                </div>
             </div>
 
         @elseif ($state === 'submitted_success')

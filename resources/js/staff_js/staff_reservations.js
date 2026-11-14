@@ -4260,7 +4260,8 @@ window.AppPage['staff_reservations'] = function () {
         const eSlot = reservation.end_slot || reservation.start_slot || 'Daytime';
         const canReschedule = isPendingOrConfirmed;
         const activeResched = reservation.active_reschedule_request;
-        const hasActiveLink = !!(activeResched && activeResched.url);
+        const hasSubmittedRequest = !!(activeResched && activeResched.is_submitted);
+        const hasActiveLink = !!(activeResched && activeResched.url && !activeResched.is_submitted);
         const isNight = sSlot.toLowerCase().includes('night');
         const slotPill = isNight
             ? `<span class="inline-flex items-center gap-1 rounded-full bg-indigo-600 text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-indigo-100" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg> Overnight</span>`
@@ -4399,7 +4400,13 @@ window.AppPage['staff_reservations'] = function () {
                                 <span class="text-xs font-medium text-gray-400 dark:text-gray-400">Reservation Stay</span>
                                 ${canReschedule ? `
                                     <div class="flex items-center gap-1.5 shrink-0">
-                                        ${hasActiveLink ? `
+                                        ${hasSubmittedRequest ? `
+                                            <button type="button" class="view-submitted-resched-trigger inline-flex items-center gap-1.5 rounded-lg border border-amber-600/60 bg-amber-500/15 px-2.5 py-1 text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-600 hover:text-white transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95" data-request-id="${activeResched.id}" data-request-type="${activeResched.request_type}" title="Active ${activeResched.request_type === 'refund' ? '50% refund' : 'reschedule'} request submitted by guest (awaiting staff confirmation). Click to review.">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                <i class="bi ${activeResched.request_type === 'refund' ? 'bi-cash-coin' : 'bi-calendar-check'} text-[0.7rem]"></i>
+                                                <span>${activeResched.request_type === 'refund' ? 'Active Refund Request' : 'Active Resched Request'}</span>
+                                            </button>
+                                        ` : hasActiveLink ? `
                                             <button type="button" id="detailRequestReschedBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-amber-600 bg-amber-500/15 px-2.5 py-1 text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-600 hover:text-white transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95" title="Active reschedule link exists. Click to send link again via SMS">
                                                 <i class="bi bi-arrow-repeat text-[0.7rem]"></i>
                                                 <span>Send Link Again</span>
@@ -4422,7 +4429,35 @@ window.AppPage['staff_reservations'] = function () {
                                 <span>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, sSlot, eSlot))}</span>
                                 ${slotPill}
                             </div>
-                            ${hasActiveLink ? `
+                            ${hasSubmittedRequest ? `
+                                <div class="mt-2.5 p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-xs shadow-2xs">
+                                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-600 text-white uppercase tracking-wider shadow-2xs">
+                                                <i class="bi bi-clock-history"></i> Request Under Review
+                                            </span>
+                                            <span class="font-bold text-amber-950 dark:text-amber-200">
+                                                ${activeResched.request_type === 'refund' ? '50% Downpayment Refund Requested' : 'Stay Reschedule Requested'}
+                                            </span>
+                                        </div>
+                                        <button type="button" class="view-submitted-resched-trigger inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-600 hover:bg-amber-700 active:scale-95 text-white transition-all shadow-2xs cursor-pointer" data-request-id="${activeResched.id}" data-request-type="${activeResched.request_type}" title="Review this request in the Reschedule Requests list">
+                                            <i class="bi bi-eye"></i> Review Request
+                                        </button>
+                                    </div>
+                                    <div class="text-[11px] text-amber-900/90 dark:text-amber-200 space-y-0.5">
+                                        <div>
+                                            ${activeResched.request_type === 'refund'
+                                                ? `Guest requested a 50% refund of <strong>₱${Number(activeResched.refund_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> via <strong>${escapeHtml(activeResched.ewallet_provider || 'GCash')} (${escapeHtml(activeResched.ewallet_account_number || '')})</strong>.`
+                                                : `Guest submitted requested new date: <strong>${escapeHtml(activeResched.requested_date_formatted || activeResched.requested_date || '')}</strong>.`
+                                            }
+                                        </div>
+                                        <div class="text-amber-800 dark:text-amber-300 font-semibold pt-0.5 flex items-center gap-1">
+                                            <i class="bi bi-shield-lock"></i>
+                                            <span>Sending another reschedule link is <strong>disabled</strong> while this request is awaiting staff confirmation.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : hasActiveLink ? `
                                 <div class="mt-2.5 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-xs">
                                     <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                                         <div class="flex items-center gap-1.5">
@@ -4583,7 +4618,13 @@ window.AppPage['staff_reservations'] = function () {
                             <i class="bi bi-person-x text-xs"></i>
                             <span>No-Show</span>
                         </button>
-                        ${hasActiveLink ? `
+                        ${hasSubmittedRequest ? `
+                            <button type="button" class="view-submitted-resched-trigger cursor-pointer rounded-xl border border-amber-500 bg-amber-500/15 hover:bg-amber-500 hover:text-white text-amber-900 dark:text-amber-200 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" data-request-id="${activeResched.id}" data-request-type="${activeResched.request_type}" title="Active ${activeResched.request_type === 'refund' ? 'refund' : 'reschedule'} request submitted by guest (awaiting staff confirmation). Click to review.">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                <i class="bi bi-clock-history text-xs"></i>
+                                <span>Active ${activeResched.request_type === 'refund' ? 'Refund' : 'Resched'} Request (Review)</span>
+                            </button>
+                        ` : hasActiveLink ? `
                             <button type="button" class="cursor-pointer rounded-xl border border-amber-600 bg-amber-500/15 hover:bg-amber-600 hover:text-white text-amber-900 dark:text-amber-200 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Active reschedule link exists. Send link again via SMS">
                                 <i class="bi bi-arrow-repeat text-xs"></i>
                                 <span>Send Link Again</span>
@@ -4770,11 +4811,37 @@ window.AppPage['staff_reservations'] = function () {
                     openRequestReschedModal(reservation);
                 });
             }
+
+            const viewSubmittedFooterBtn = resFooter.querySelector('.view-submitted-resched-trigger');
+            if (viewSubmittedFooterBtn) {
+                viewSubmittedFooterBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const reqType = viewSubmittedFooterBtn.getAttribute('data-request-type');
+                    const tabToOpen = reqType === 'refund' ? 'refund' : 'submitted';
+                    if (typeof window.openReschedRequestsModalWithTab === 'function') {
+                        window.openReschedRequestsModalWithTab(tabToOpen);
+                    }
+                });
+            }
         }
 
         // Hook up close buttons inside modalBody if any
         modalBody.querySelectorAll('[data-close-reservation-modal="true"]').forEach((btn) => {
             btn.addEventListener('click', closeModal);
+        });
+
+        // Hook up View Submitted Resched / Refund buttons inside modalBody
+        modalBody.querySelectorAll('.view-submitted-resched-trigger').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const reqType = btn.getAttribute('data-request-type');
+                const tabToOpen = reqType === 'refund' ? 'refund' : 'submitted';
+                if (typeof window.openReschedRequestsModalWithTab === 'function') {
+                    window.openReschedRequestsModalWithTab(tabToOpen);
+                }
+            });
         });
 
         // Hook up Request Resched / Send Link Again button in Reservation Stay section
@@ -7306,7 +7373,19 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const activeResched = reservation.active_reschedule_request;
-        const hasActiveLink = !!(activeResched && activeResched.url);
+        if (activeResched && activeResched.is_submitted) {
+            showToast(
+                `Cannot send another link: Reservation #${formatReservationId(resId)} already has an active ${activeResched.request_type === 'refund' ? '50% refund' : 'reschedule'} request submitted by the guest awaiting staff confirmation. Please review or confirm the existing request first.`,
+                'warning'
+            );
+            const tabToOpen = activeResched.request_type === 'refund' ? 'refund' : 'submitted';
+            if (typeof window.openReschedRequestsModalWithTab === 'function') {
+                window.openReschedRequestsModalWithTab(tabToOpen);
+            }
+            return;
+        }
+
+        const hasActiveLink = !!(activeResched && activeResched.url && !activeResched.is_submitted);
         const contactNum = window.PARK_CONTACT_NUMBER || '09383763722';
         const formattedResId = formatReservationId(resId);
 
@@ -7505,6 +7584,22 @@ window.AppPage['staff_reservations'] = function () {
             loadRescheduleRequests(currentReschedFilter);
         }
     };
+    window.openReschedRequestsModal = openReschedRequestsModal;
+
+    const openReschedRequestsModalWithTab = (tabName = 'all') => {
+        document.querySelectorAll('.resched-tab-btn').forEach(b => {
+            if (b.dataset.reschedTab === tabName) {
+                b.classList.add('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
+                b.classList.remove('text-hp-text');
+            } else {
+                b.classList.remove('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
+                b.classList.add('text-hp-text');
+            }
+        });
+        currentReschedFilter = tabName;
+        openReschedRequestsModal();
+    };
+    window.openReschedRequestsModalWithTab = openReschedRequestsModalWithTab;
 
     const closeReschedRequestsModal = () => {
         if (reschedRequestsModal) {
@@ -8025,6 +8120,10 @@ window.AppPage['staff_reservations'] = function () {
                         loadRescheduleRequests(currentReschedFilter);
                         fetchReschedBadgeCount();
                         document.getElementById('refreshTableBtn')?.click();
+                        const resModal = document.getElementById('reservationModal');
+                        if (resModal && resModal.classList.contains('is-open') && reservationId) {
+                            openModal(reservationId);
+                        }
                     } else {
                         showToast(data.message || 'Failed to approve reschedule request.', 'error');
                         if (btnEl) {
@@ -8110,6 +8209,11 @@ window.AppPage['staff_reservations'] = function () {
                 loadRescheduleRequests(currentReschedFilter);
                 fetchReschedBadgeCount();
                 document.getElementById('refreshTableBtn')?.click();
+                const resModal = document.getElementById('reservationModal');
+                if (resModal && resModal.classList.contains('is-open') && currentReservationData) {
+                    currentReservationData.active_reschedule_request = null;
+                    openModal(currentReservationData.id);
+                }
             } else {
                 showToast(data.message || 'Failed to decline request.', 'error');
             }
@@ -8236,6 +8340,11 @@ window.AppPage['staff_reservations'] = function () {
                 loadRescheduleRequests(currentReschedFilter);
                 fetchReschedBadgeCount();
                 document.getElementById('refreshTableBtn')?.click();
+                const resModal = document.getElementById('reservationModal');
+                if (resModal && resModal.classList.contains('is-open') && currentReservationData) {
+                    currentReservationData.active_reschedule_request = null;
+                    openModal(currentReservationData.id);
+                }
             } else {
                 showToast(data.message || 'Failed to process refund request.', 'error');
             }

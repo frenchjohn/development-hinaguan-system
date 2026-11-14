@@ -1392,7 +1392,7 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
 // ── Guest Temporary Rescheduling Portal ──────────────────────────────────────
 Route::get('/reservation/reschedule/{token}', function (string $token) use ($formatLocalDate) {
     $parkSettings = \App\Models\ParkSetting::first();
-    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+    $parkContact = $parkSettings?->contact_number ?? '09938373838';
 
     $requestRecord = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity'])
         ->where('token', $token)
@@ -1607,7 +1607,7 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
         ->first();
 
     $parkSettings = \App\Models\ParkSetting::first();
-    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+    $parkContact = $parkSettings?->contact_number ?? '09938373838';
 
     if (! $requestRecord) {
         return response()->view('guest.reschedule', [
@@ -1806,7 +1806,7 @@ Route::post('/reservation/reschedule/{token}/refund', function (Request $request
         ->first();
 
     $parkSettings = \App\Models\ParkSetting::first();
-    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+    $parkContact = $parkSettings?->contact_number ?? '09938373838';
 
     if (! $requestRecord) {
         return response()->view('guest.reschedule', [
@@ -5938,15 +5938,51 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'allow_sms' => (bool) ($reservation->allow_sms ?? true),
                 'allow_email' => (bool) ($reservation->allow_email ?? true),
                 'active_reschedule_request' => (function () use ($reservation) {
+                    // Check for unconfirmed submitted request first (reschedule or refund awaiting staff action)
+                    $submitted = $reservation->rescheduleRequests
+                        ->where('status', 'submitted')
+                        ->sortByDesc('created_at')
+                        ->first();
+
+                    if ($submitted) {
+                        $isRefund = $submitted->isRefund();
+                        return [
+                            'id' => $submitted->id,
+                            'token' => $submitted->token,
+                            'url' => url('/reservation/reschedule/' . $submitted->token),
+                            'status' => 'submitted',
+                            'is_submitted' => true,
+                            'request_type' => $isRefund ? 'refund' : 'reschedule',
+                            'type_label' => $isRefund ? '50% Refund Request' : 'Reschedule Request',
+                            'refund_amount' => $submitted->refund_amount,
+                            'ewallet_provider' => $submitted->ewallet_provider,
+                            'ewallet_account_number' => $submitted->ewallet_account_number,
+                            'ewallet_account_name' => $submitted->ewallet_account_name,
+                            'requested_date' => $submitted->requested_date ? $submitted->requested_date->format('Y-m-d') : null,
+                            'requested_date_formatted' => $submitted->requested_date ? $submitted->requested_date->format('M d, Y') : null,
+                            'created_at' => $submitted->created_at ? $submitted->created_at->toIso8601String() : null,
+                            'created_at_formatted' => $submitted->created_at ? $submitted->created_at->format('M d, Y g:i A') : null,
+                            'created_human' => $submitted->created_at ? $submitted->created_at->diffForHumans() : null,
+                        ];
+                    }
+
+                    // Otherwise check for active pending link awaiting guest action
                     $active = $reservation->rescheduleRequests
                         ->where('status', 'pending')
                         ->filter(fn ($r) => (! $r->expires_at || $r->expires_at->isFuture()) && ! $r->used_at)
+                        ->sortByDesc('created_at')
                         ->first();
+
                     if (! $active) return null;
+
                     return [
                         'id' => $active->id,
                         'token' => $active->token,
                         'url' => url('/reservation/reschedule/' . $active->token),
+                        'status' => 'pending',
+                        'is_submitted' => false,
+                        'request_type' => 'pending_link',
+                        'type_label' => 'Pending Link',
                         'created_at' => $active->created_at ? $active->created_at->toIso8601String() : null,
                         'expires_at' => $active->expires_at ? $active->expires_at->toIso8601String() : null,
                         'expires_at_formatted' => $active->expires_at ? $active->expires_at->format('M d, Y g:i A') : null,
@@ -11226,6 +11262,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ], 422);
         }
 
+        // Block sending if there is already an active unconfirmed request submitted by the guest
+        $submittedRequest = \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
+            ->where('status', 'submitted')
+            ->latest()
+            ->first();
+
+        if ($submittedRequest) {
+            $formattedId = $reservation->formatted_id ?: str_pad((string) $reservation->id, 4, '0', STR_PAD_LEFT);
+            $typeLabel = $submittedRequest->isRefund() ? '50% downpayment refund' : 'reschedule';
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot send a new link: Reservation #{$formattedId} already has an active {$typeLabel} request submitted by the guest awaiting staff confirmation. Please review and confirm or decline the existing request first.",
+            ], 422);
+        }
+
         // Check if there is already an active pending request for this reservation
         $activeRequest = \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
             ->where('status', 'pending')
@@ -11947,15 +11998,51 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'allow_sms' => (bool) ($reservation->allow_sms ?? true),
                 'allow_email' => (bool) ($reservation->allow_email ?? true),
                 'active_reschedule_request' => (function () use ($reservation) {
+                    // Check for unconfirmed submitted request first (reschedule or refund awaiting staff action)
+                    $submitted = $reservation->rescheduleRequests
+                        ->where('status', 'submitted')
+                        ->sortByDesc('created_at')
+                        ->first();
+
+                    if ($submitted) {
+                        $isRefund = $submitted->isRefund();
+                        return [
+                            'id' => $submitted->id,
+                            'token' => $submitted->token,
+                            'url' => url('/reservation/reschedule/' . $submitted->token),
+                            'status' => 'submitted',
+                            'is_submitted' => true,
+                            'request_type' => $isRefund ? 'refund' : 'reschedule',
+                            'type_label' => $isRefund ? '50% Refund Request' : 'Reschedule Request',
+                            'refund_amount' => $submitted->refund_amount,
+                            'ewallet_provider' => $submitted->ewallet_provider,
+                            'ewallet_account_number' => $submitted->ewallet_account_number,
+                            'ewallet_account_name' => $submitted->ewallet_account_name,
+                            'requested_date' => $submitted->requested_date ? $submitted->requested_date->format('Y-m-d') : null,
+                            'requested_date_formatted' => $submitted->requested_date ? $submitted->requested_date->format('M d, Y') : null,
+                            'created_at' => $submitted->created_at ? $submitted->created_at->toIso8601String() : null,
+                            'created_at_formatted' => $submitted->created_at ? $submitted->created_at->format('M d, Y g:i A') : null,
+                            'created_human' => $submitted->created_at ? $submitted->created_at->diffForHumans() : null,
+                        ];
+                    }
+
+                    // Otherwise check for active pending link awaiting guest action
                     $active = $reservation->rescheduleRequests
                         ->where('status', 'pending')
                         ->filter(fn ($r) => (! $r->expires_at || $r->expires_at->isFuture()) && ! $r->used_at)
+                        ->sortByDesc('created_at')
                         ->first();
+
                     if (! $active) return null;
+
                     return [
                         'id' => $active->id,
                         'token' => $active->token,
                         'url' => url('/reservation/reschedule/' . $active->token),
+                        'status' => 'pending',
+                        'is_submitted' => false,
+                        'request_type' => 'pending_link',
+                        'type_label' => 'Pending Link',
                         'created_at' => $active->created_at ? $active->created_at->toIso8601String() : null,
                         'expires_at' => $active->expires_at ? $active->expires_at->toIso8601String() : null,
                         'expires_at_formatted' => $active->expires_at ? $active->expires_at->format('M d, Y g:i A') : null,
