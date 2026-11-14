@@ -7031,7 +7031,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $bulkGroupData = $bulkGroups->mapWithKeys(fn ($group) => [$group['key'] => $group]);
 
         // Get all completed/history reservations with status Checked Out, No Show, or Cancelled
-        $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges'])
+        $checkedOutReservations = Reservation::with([
+            'reservationAmenities.amenity',
+            'reservationGuests.customer',
+            'entranceFee',
+            'reservationCharges',
+            'rescheduleRequests.approver',
+        ])
             ->where(function ($query) {
                 $query->whereIn('status', ['Checked Out', 'No Show', 'Cancelled'])
                     ->orWhereNotNull('check_out')
@@ -7163,9 +7169,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $activityLogs = \App\Models\ActivityLog::with('staff')
             ->whereIn('reservation_id', $resIds)
             ->where(function ($q) {
-                $q->whereIn('action', ['checked_in', 'check_in', 'checked_out', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added'])
-                  ->orWhereIn('activity_type', ['check_in', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added', 'online_reservation_created'])
-                  ->orWhere('payment_amount', '>', 0);
+                $q->whereIn('action', ['checked_in', 'check_in', 'checked_out', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added', 'cancelled', 'reservation_cancelled', 'refund_processed', 'reservation_refund_processed'])
+                  ->orWhereIn('activity_type', ['check_in', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added', 'online_reservation_created', 'cancelled', 'reservation_cancelled', 'reservation_refund_processed', 'refund'])
+                  ->orWhere('payment_amount', '!=', 0);
             })
             ->orderBy('created_at', 'asc')
             ->get()
@@ -7241,6 +7247,66 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 return in_array($l->action, ['checked_out', 'check_out'], true) || $l->activity_type === 'check_out';
             });
 
+            // Find refund request (if any)
+            $refundRequest = $reservation->rescheduleRequests
+                ? $reservation->rescheduleRequests->first(fn ($r) => $r->isRefund() || $r->status === 'approved' || (float) ($r->refund_amount ?? 0) > 0)
+                : null;
+
+            // Find refund and cancellation activity logs
+            $refundLog = $logsForRes->first(function ($l) {
+                return in_array($l->action, ['refund_processed', 'reservation_refund_processed', 'refund'], true)
+                    || in_array($l->activity_type, ['refund_processed', 'reservation_refund_processed', 'refund'], true);
+            });
+
+            $cancelLog = $logsForRes->reverse()->first(function ($l) {
+                return in_array($l->action, ['cancelled', 'reservation_cancelled'], true)
+                    || in_array($l->activity_type, ['cancelled', 'reservation_cancelled'], true);
+            });
+
+            $refundedAmount = (float) ($reservation->refunded_amount ?? 0);
+            if ($refundedAmount <= 0 && $refundRequest && (float) ($refundRequest->refund_amount ?? 0) > 0) {
+                $refundedAmount = (float) $refundRequest->refund_amount;
+            }
+            if ($refundedAmount <= 0 && $refundLog && abs((float) ($refundLog->payment_amount ?? 0)) > 0) {
+                $refundedAmount = abs((float) $refundLog->payment_amount);
+            }
+
+            $parkRetainedAmount = (float) ($reservation->amount_paid ?? 0);
+            $totalBookingValue = (float) ($reservation->total_amount ?? 0);
+            $originalDeposit = round($parkRetainedAmount + $refundedAmount, 2);
+            if ($originalDeposit <= 0 && $reservation->reservation_type === 'online' && $totalBookingValue > 0) {
+                $originalDeposit = round($totalBookingValue * 0.50, 2);
+            }
+
+            // Refund disbursement details
+            $refundStaff = $refundRequest?->approver?->name 
+                ?: ($refundLog?->staff?->name ?: ($refundLog?->actor_name ?: ($refundLog?->metadata['staff_name'] ?? null)));
+            $refundDate = $refundRequest?->refunded_at 
+                ? $refundRequest->refunded_at->format('M d, Y · h:i A') 
+                : ($refundRequest?->approved_at 
+                    ? $refundRequest->approved_at->format('M d, Y · h:i A') 
+                    : ($refundLog?->created_at ? $refundLog->created_at->format('M d, Y · h:i A') : null));
+            $refundReference = $refundRequest?->refund_reference_number 
+                ?: ($refundLog?->metadata['reference_number'] ?? ($refundLog?->metadata['refund_reference_number'] ?? null));
+            $refundNotes = $refundRequest?->refund_notes 
+                ?: ($refundLog?->metadata['notes'] ?? ($refundLog?->description ?? null));
+            $refundProvider = $refundRequest?->ewallet_provider 
+                ?: ($refundLog?->metadata['ewallet_provider'] ?? ($reservation->payment_method ?: 'GCash'));
+            $refundAccountName = $refundRequest?->ewallet_account_name 
+                ?: ($refundLog?->metadata['ewallet_account_name'] ?? $reservation->booker_name);
+            $refundAccountNumber = $refundRequest?->ewallet_account_number 
+                ?: ($refundLog?->metadata['ewallet_account_number'] ?? $reservation->phone);
+
+            // Cancellation details
+            $cancelledStaff = $cancelLog 
+                ? ($cancelLog->staff?->name ?: ($cancelLog->actor_name ?: ($cancelLog->metadata['staff_name'] ?? null))) 
+                : ($refundStaff ?: null);
+            $cancelledAt = $cancelLog?->created_at 
+                ? $cancelLog->created_at->format('M d, Y · h:i A') 
+                : ($refundDate ?: ($reservation->updated_at ? $reservation->updated_at->format('M d, Y · h:i A') : null));
+            $cancellationReason = $cancelLog?->metadata['reason'] 
+                ?: ($refundRequest?->reason ?: ($reservation->notes ?: null));
+
             $checkedInStaff = $checkInLog ? ($checkInLog->staff?->name ?: $checkInLog->actor_name ?: ($checkInLog->metadata['staff_name'] ?? null)) : null;
             $checkedInAt = $checkInLog?->created_at ? $checkInLog->created_at->format('M d, Y · h:i A') : null;
 
@@ -7297,6 +7363,27 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_type' => $reservation->reservation_type,
                 'total_amount' => (float) ($reservation->total_amount ?? 0),
                 'amount_paid' => (float) ($reservation->amount_paid ?? 0),
+                'refunded_amount' => $refundedAmount,
+                'park_retained_amount' => $parkRetainedAmount,
+                'original_deposit' => $originalDeposit,
+                'refund_details' => ($refundedAmount > 0 || $refundRequest) ? [
+                    'has_refund' => $refundedAmount > 0,
+                    'status' => $refundRequest?->status ?? ($refundedAmount > 0 ? 'approved' : 'none'),
+                    'refund_amount' => $refundedAmount,
+                    'ewallet_provider' => $refundProvider,
+                    'ewallet_account_name' => $refundAccountName,
+                    'ewallet_account_number' => $refundAccountNumber,
+                    'reference_number' => $refundReference,
+                    'notes' => $refundNotes,
+                    'refunded_at' => $refundDate,
+                    'staff_name' => $refundStaff,
+                ] : null,
+                'cancellation_details' => [
+                    'is_cancelled' => in_array(strtolower((string) $reservation->status), ['cancelled', 'cancel'], true),
+                    'cancelled_by' => $cancelledStaff,
+                    'cancelled_at' => $cancelledAt,
+                    'reason' => $cancellationReason,
+                ],
                 'remaining_balance' => (float) ($reservation->remaining_balance ?? 0),
                 'payment_status' => $reservation->payment_status ?? 'Paid',
                 'payment_method' => $reservation->payment_method ?? 'Cash',
@@ -7366,14 +7453,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'created_at' => $charge->created_at ? $charge->created_at->format('M d, Y h:i A') : null,
                     ];
                 })->toArray(),
-                'payment_history' => (function () use ($reservation, $logsForRes, $checkedInStaff) {
+                'payment_history' => (function () use ($reservation, $logsForRes, $checkedInStaff, $refundedAmount, $refundProvider, $refundReference, $refundDate, $refundStaff) {
                     $paymentHistory = [];
                     $totalPaid = (float) ($reservation->amount_paid ?? 0);
                     $paymentLogs = $logsForRes->filter(fn ($l) => (float) ($l->payment_amount ?? 0) > 0);
                     $sumLoggedPayments = (float) $paymentLogs->sum('payment_amount');
 
+                    $effectiveDeposit = round($totalPaid + $refundedAmount, 2);
+
                     if ($reservation->reservation_type === 'online') {
-                        $onlineDeposit = round(max(0, $totalPaid - $sumLoggedPayments), 2);
+                        $onlineDeposit = round(max(0, $effectiveDeposit - $sumLoggedPayments), 2);
+                        if ($onlineDeposit <= 0 && $effectiveDeposit > 0) {
+                            $onlineDeposit = $effectiveDeposit;
+                        }
                         if ($onlineDeposit > 0) {
                             $paymentHistory[] = [
                                 'type' => 'downpayment',
@@ -7385,12 +7477,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                                 'staff_name' => 'Online Gateway',
                             ];
                         }
-                    } elseif ($sumLoggedPayments <= 0 && $totalPaid > 0) {
+                    } elseif ($sumLoggedPayments <= 0 && $effectiveDeposit > 0) {
                         $paymentHistory[] = [
                             'type' => 'walkin_payment',
                             'title' => 'Walk-In Payment',
                             'description' => 'Paid at front desk upon check-in',
-                            'amount' => $totalPaid,
+                            'amount' => $effectiveDeposit,
                             'method' => $reservation->payment_method ?: 'Cash',
                             'date' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y · h:i A') : ($reservation->created_at ? $reservation->created_at->format('M d, Y · h:i A') : null),
                             'staff_name' => $checkedInStaff ?: 'Front Desk',
@@ -7417,6 +7509,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         ];
                     }
 
+                    if ($refundedAmount > 0) {
+                        $refNote = $refundReference ? " (Ref: {$refundReference})" : "";
+                        $paymentHistory[] = [
+                            'type' => 'refund',
+                            'title' => '50% Cancellation Refund Sent',
+                            'description' => 'Disbursed back to guest via ' . ($refundProvider ?: 'GCash') . $refNote,
+                            'amount' => -$refundedAmount,
+                            'method' => $refundProvider ?: 'GCash',
+                            'date' => $refundDate ?: ($reservation->updated_at ? $reservation->updated_at->format('M d, Y · h:i A') : null),
+                            'staff_name' => $refundStaff ?: 'Staff User',
+                        ];
+                    }
+
                     if (empty($paymentHistory) && $totalPaid > 0) {
                         $paymentHistory[] = [
                             'type' => 'settlement',
@@ -7437,7 +7542,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservationAmounts = $checkedOutReservations->pluck('amount_paid', 'id')->toArray();
 
         $staffAccounts = \App\Models\StaffAccount::orderBy('name')->pluck('name')->filter()->all();
-        $logStaffNames = $reservationData->pluck('checked_in_staff')->merge($reservationData->pluck('checked_out_staff'))->filter()->all();
+        $logStaffNames = $reservationData->pluck('checked_in_staff')
+            ->merge($reservationData->pluck('checked_out_staff'))
+            ->merge($reservationData->pluck('cancellation_details.cancelled_by'))
+            ->merge($reservationData->pluck('refund_details.staff_name'))
+            ->filter()->all();
         $staffMembersList = collect(array_merge($staffAccounts, $logStaffNames))
             ->map(fn($n) => trim((string)$n))
             ->filter(fn($n) => !empty($n) && !in_array(strtolower($n), ['n/a', 'none', 'unknown']))
@@ -11097,7 +11206,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $validated = $request->validate([
-            'message' => 'nullable|string|max:500',
+            'message' => 'nullable|string|max:1500',
             'phone' => 'nullable|string|max:30',
         ]);
 
@@ -11159,18 +11268,47 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]);
         }
 
+        $parkSettings = \App\Models\ParkSetting::first();
+        $parkContact = $parkSettings?->contact_number ?: '09383763722';
+        $bookerName = trim((string) $reservation->booker_name) ?: 'Valued Guest';
+        $formattedId = $reservation->formatted_id ?: str_pad((string) $reservation->id, 4, '0', STR_PAD_LEFT);
+
         $inputMsg = trim((string) $request->input('message'));
         if (empty($inputMsg)) {
-            if ($isResend) {
-                $actualMessage = "Reminder: Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please use your active link: {$rescheduleUrl} (link expires in 24 hours).";
-            } else {
-                $actualMessage = "Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please choose your option using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
-            }
+            $reasonSentence = "We regret to inform you that the park will not be available on your scheduled date due to unfavorable weather conditions.";
+            $actualMessage = "Hi {$bookerName},\n\n"
+                . "This is from Hinaguan Nature Park regarding your reservation #{$formattedId}.\n\n"
+                . "{$reasonSentence}\n\n"
+                . "You may choose a new preferred date or request a 50% refund using the link below.\n"
+                . "Please note: the link will be available within 24 hours.\n\n"
+                . "For further assistance, you may also call us at 📞 {$parkContact}.\n\n"
+                . "Thank you for your kind understanding and continued support.\n\n"
+                . "{$rescheduleUrl}";
         } else {
             if (str_contains($inputMsg, '{link}')) {
                 $actualMessage = str_replace('{link}', $rescheduleUrl, $inputMsg);
             } elseif (! str_contains($inputMsg, $rescheduleUrl)) {
-                $actualMessage = $inputMsg . " Reschedule/Refund link: " . $rescheduleUrl . ($isResend ? "" : " (valid for 24 hours).");
+                if (str_contains($inputMsg, 'This is from Hinaguan Nature Park') || str_starts_with($inputMsg, 'Hi ')) {
+                    $actualMessage = $inputMsg . "\n\n" . $rescheduleUrl;
+                } else {
+                    $reason = trim($inputMsg);
+                    if (str_starts_with(strtolower($reason), 'due to ')) {
+                        $reasonSentence = "We regret to inform you that the park will not be available on your scheduled date " . $reason . ".";
+                    } elseif (str_starts_with(strtolower($reason), 'we regret to inform you')) {
+                        $reasonSentence = $reason;
+                    } else {
+                        $reasonSentence = "We regret to inform you that the park will not be available on your scheduled date due to " . $reason . ".";
+                    }
+
+                    $actualMessage = "Hi {$bookerName},\n\n"
+                        . "This is from Hinaguan Nature Park regarding your reservation #{$formattedId}.\n\n"
+                        . "{$reasonSentence}\n\n"
+                        . "You may choose a new preferred date or request a 50% refund using the link below.\n"
+                        . "Please note: the link will be available within 24 hours.\n\n"
+                        . "For further assistance, you may also call us at 📞 {$parkContact}.\n\n"
+                        . "Thank you for your kind understanding and continued support.\n\n"
+                        . "{$rescheduleUrl}";
+                }
             } else {
                 $actualMessage = $inputMsg;
             }

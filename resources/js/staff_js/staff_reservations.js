@@ -7307,6 +7307,17 @@ window.AppPage['staff_reservations'] = function () {
 
         const activeResched = reservation.active_reschedule_request;
         const hasActiveLink = !!(activeResched && activeResched.url);
+        const contactNum = window.PARK_CONTACT_NUMBER || '09383763722';
+        const formattedResId = formatReservationId(resId);
+
+        const defaultSmsMessage = `Hi ${bookerName},\n\n` +
+            `This is from Hinaguan Nature Park regarding your reservation #${formattedResId}.\n\n` +
+            `We regret to inform you that the park will not be available on your scheduled date due to unfavorable weather conditions.\n\n` +
+            `You may choose a new preferred date or request a 50% refund using the link below.\n` +
+            `Please note: the link will be available within 24 hours.\n\n` +
+            `For further assistance, you may also call us at 📞 ${contactNum}.\n\n` +
+            `Thank you for your kind understanding and continued support.\n\n` +
+            `{link}`;
 
         if (hasActiveLink) {
             if (activeNotice) activeNotice.classList.remove('hidden');
@@ -7319,18 +7330,18 @@ window.AppPage['staff_reservations'] = function () {
             if (modalTitle) modalTitle.textContent = 'Resend Reschedule / Refund Link (SMS)';
             if (submitBtn) submitBtn.innerHTML = '<i class="bi bi-arrow-repeat text-xs mr-1.5"></i><span>Send Link Again (SMS)</span>';
             if (messageInput) {
-                messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
+                messageInput.value = defaultSmsMessage;
             }
         } else {
             if (activeNotice) activeNotice.classList.add('hidden');
             if (modalTitle) modalTitle.textContent = 'Send Reschedule / Refund Link (SMS)';
             if (submitBtn) submitBtn.innerHTML = '<i class="bi bi-send-fill text-xs mr-1.5"></i><span>Send Reschedule SMS</span>';
             if (messageInput) {
-                messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
+                messageInput.value = defaultSmsMessage;
             }
         }
 
-        if (prefixEl) prefixEl.textContent = `hi ${bookerName} of reservation_${formatReservationId(resId)}, `;
+        if (prefixEl) prefixEl.textContent = `Hi ${bookerName}, regarding reservation #${formattedResId}`;
 
         const errAlert = document.getElementById('sendReschedErrorAlert');
         if (errAlert) {

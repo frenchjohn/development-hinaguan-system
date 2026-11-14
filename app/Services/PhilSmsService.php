@@ -236,8 +236,7 @@ class PhilSmsService
     }
 
     /**
-     * Send reschedule request link SMS to the booker.
-     * Automatically prefixes message with: "hi bookername of reservation_id" then actual message.
+     * Send reschedule / 50% refund link SMS to the booker.
      *
      * @param  Reservation  $reservation
      * @param  string       $messageBody
@@ -256,11 +255,7 @@ class PhilSmsService
             ];
         }
 
-        $bookerName = trim((string) $reservation->booker_name) ?: 'Guest';
-        $prefix = "hi {$bookerName} of reservation_{$reservation->formatted_id}, ";
-        $fullMessage = $prefix . trim($messageBody);
-
-        return $this->sendSms($phone, $fullMessage);
+        return $this->sendSms($phone, trim($messageBody));
     }
 
     /**

@@ -659,6 +659,15 @@ window.AppPage['staff_records'] = function () {
         const hasZeroBalance = parseFloat(reservation.remaining_balance || 0) <= 0;
         const paymentHistory = reservation.payment_history || [];
 
+        // Refund & Cancellation financial details
+        const refundedAmount = parseFloat(reservation.refunded_amount || 0);
+        const parkRetained = parseFloat(reservation.park_retained_amount ?? reservation.amount_paid ?? 0);
+        const originalDeposit = parseFloat(reservation.original_deposit || (parkRetained + refundedAmount));
+        const refundDetails = reservation.refund_details || null;
+        const cancellationDetails = reservation.cancellation_details || null;
+        const effectiveRefunded = Math.max(refundedAmount, parseFloat(refundDetails?.refund_amount || 0));
+        const hasRefund = effectiveRefunded > 0;
+
         // Format money helper
         const formatMoney = (val) => {
             const num = parseFloat(val) || 0;
@@ -756,7 +765,7 @@ window.AppPage['staff_records'] = function () {
         const row = document.querySelector(`tr.reservation-row[data-reservation-id="${reservation.id}"]`);
         const rowStatus = row ? (row.getAttribute('data-status') || '').trim().toLowerCase() : '';
 
-        const isCancelled = normStatus.includes('cancel') || rowStatus.includes('cancel');
+        const isCancelled = normStatus.includes('cancel') || rowStatus.includes('cancel') || Boolean(cancellationDetails?.is_cancelled);
         const isNoShow = normStatus.includes('no show') || normStatus.includes('noshow') || rowStatus.includes('no show') || rowStatus.includes('noshow');
         const isCheckedOut = normStatus.includes('checked out') || normStatus.includes('checked_out') || rowStatus.includes('checked out') || rowStatus.includes('checked_out') || Boolean(reservation.check_out);
 
@@ -796,17 +805,21 @@ window.AppPage['staff_records'] = function () {
                         </div>
                     </div>
 
-                    <!-- Check-out staff -->
+                    <!-- Check-out / Cancellation staff -->
                     <div class="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#e8eee9] dark:border-[#282c29]">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isCancelled ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'}">
+                            ${isCancelled ? `
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            ` : `
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                            `}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="text-[0.68rem] font-semibold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Checked Out By Staff</div>
+                            <div class="text-[0.68rem] font-semibold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">${isCancelled ? 'Cancelled / Processed By' : 'Checked Out By Staff'}</div>
                             <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] truncate mt-0.5">
-                                ${escapeHtml(isCancelled ? 'N/A (Cancelled)' : (isNoShow ? 'N/A (No Show)' : (checkedOutStaff || (reservation.check_out || isCheckedOut ? 'Staff User' : 'Not recorded'))))}
+                                ${escapeHtml(isCancelled ? (cancellationDetails?.cancelled_by || refundDetails?.staff_name || 'Staff User') : (isNoShow ? 'N/A (No Show)' : (checkedOutStaff || (reservation.check_out || isCheckedOut ? 'Staff User' : 'Not recorded'))))}
                             </div>
-                            <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${escapeHtml(isCancelled ? 'Reservation cancelled' : (isNoShow ? 'Reservation marked no show' : (checkedOutAt || (reservation.check_out ? formatDateTime(reservation.check_out) : 'No check-out timestamp'))))}</div>
+                            <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${escapeHtml(isCancelled ? (cancellationDetails?.cancelled_at || refundDetails?.refunded_at || 'Reservation cancelled') : (isNoShow ? 'Reservation marked no show' : (checkedOutAt || (reservation.check_out ? formatDateTime(reservation.check_out) : 'No check-out timestamp'))))}</div>
                         </div>
                     </div>
                 </div>
@@ -841,6 +854,108 @@ window.AppPage['staff_records'] = function () {
                     </div>
                 </div>
             </div>
+
+            ${isCancelled ? `
+                <!-- Cancellation & Financial Record -->
+                <div class="rounded-xl border-2 border-rose-200 dark:border-rose-900/40 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-rose-950/20 dark:via-[#181b19] dark:to-amber-950/10 p-4 space-y-3.5">
+                    <div class="flex items-center justify-between pb-2 border-b border-rose-200/70 dark:border-rose-900/30">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </span>
+                            <div>
+                                <span class="text-xs font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wider block">Cancelled Booking Settlement</span>
+                                <span class="text-[0.65rem] text-[#718774] dark:text-[#889b8a]">${hasRefund ? 'Refund Processed & Disbursed' : 'No Refund Disbursed'}</span>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold ${hasRefund ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' : 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'}">
+                            ${hasRefund ? '50% Refunded' : 'Non-Refunded'}
+                        </span>
+                    </div>
+
+                    <!-- 4 Key Financial Metrics (Total, Deposit, Refunded, Amount Park Got) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <!-- 1. Total Booking Value -->
+                        <div class="p-3 rounded-lg bg-white dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex flex-col justify-between">
+                            <div class="text-[0.65rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Total Booking Value</div>
+                            <div class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums mt-1">₱${formatMoney(totalAmount)}</div>
+                            <div class="text-[0.62rem] text-[#889b8a] mt-0.5">Original total bill</div>
+                        </div>
+
+                        <!-- 2. Advance Deposit Paid -->
+                        <div class="p-3 rounded-lg bg-white dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex flex-col justify-between">
+                            <div class="text-[0.65rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Advance Deposit Paid</div>
+                            <div class="text-base font-extrabold text-blue-700 dark:text-blue-400 tabular-nums mt-1">₱${formatMoney(originalDeposit)}</div>
+                            <div class="text-[0.62rem] text-[#889b8a] mt-0.5">${reservation.reservation_type === 'online' ? '50% online deposit' : 'Initial payment'}</div>
+                        </div>
+
+                        <!-- 3. Amount Refunded -->
+                        <div class="p-3 rounded-lg bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 flex flex-col justify-between">
+                            <div class="text-[0.65rem] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">Amount Refunded</div>
+                            <div class="text-base font-extrabold text-rose-600 dark:text-rose-400 tabular-nums mt-1">₱${formatMoney(effectiveRefunded)}</div>
+                            <div class="text-[0.62rem] text-rose-700 dark:text-rose-300 mt-0.5">${effectiveRefunded > 0 ? 'Transferred to guest' : '₱0.00 refunded'}</div>
+                        </div>
+
+                        <!-- 4. Amount Park Got (Retained Revenue) -->
+                        <div class="p-3 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-600/50 flex flex-col justify-between shadow-xs">
+                            <div class="text-[0.65rem] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                                <span>Amount Park Got</span>
+                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            </div>
+                            <div class="text-base font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums mt-1">₱${formatMoney(parkRetained)}</div>
+                            <div class="text-[0.62rem] text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">Park retained revenue</div>
+                        </div>
+                    </div>
+
+                    <!-- Disbursement / E-Wallet & Cancellation Details -->
+                    ${(hasRefund || refundDetails) ? `
+                        <div class="p-3 rounded-lg bg-white dark:bg-[#141715] border border-amber-200 dark:border-amber-900/40 space-y-2 text-xs">
+                            <div class="flex items-center justify-between border-b border-amber-100 dark:border-amber-950 pb-1.5">
+                                <span class="text-[0.68rem] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Refund Disbursement Details
+                                </span>
+                                <span class="text-[0.65rem] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
+                                    ${escapeHtml(refundDetails?.ewallet_provider || 'GCash')} Transfer
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-[0.72rem]">
+                                <div>
+                                    <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Recipient Account Name</span>
+                                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(refundDetails?.ewallet_account_name || reservation.booker_name || 'N/A')}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Account / Mobile Number</span>
+                                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(refundDetails?.ewallet_account_number || reservation.phone || 'N/A')}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Reference Number</span>
+                                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(refundDetails?.reference_number || 'N/A')}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Processed By</span>
+                                    <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(refundDetails?.staff_name || cancellationDetails?.cancelled_by || 'Staff User')}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Refunded Date</span>
+                                    <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(refundDetails?.refunded_at || cancellationDetails?.cancelled_at || 'Recorded')}</span>
+                                </div>
+                                ${refundDetails?.notes ? `
+                                    <div class="sm:col-span-2 md:col-span-1">
+                                        <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Refund Notes</span>
+                                        <span class="text-[#0d2c1d] dark:text-[#f5f5f0] italic">${escapeHtml(refundDetails.notes)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : (cancellationDetails?.reason ? `
+                        <div class="p-2.5 rounded-lg bg-white dark:bg-[#141715] border border-rose-200 dark:border-rose-900/30 text-xs">
+                            <span class="text-[#718774] dark:text-[#889b8a] block text-[0.65rem]">Cancellation Reason</span>
+                            <span class="text-rose-900 dark:text-rose-200 font-medium">${escapeHtml(cancellationDetails.reason)}</span>
+                        </div>
+                    ` : '')}
+                </div>
+            ` : ''}
 
             <!-- Guests List -->
             <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
@@ -1002,14 +1117,71 @@ window.AppPage['staff_records'] = function () {
                         </div>
                     `).join('')}
 
-                    <!-- TOTAL BILL (Prominent, cleanly below individual items) -->
-                    <div class="pt-2.5 mt-1 border-t-2 border-[#0d2c1d] dark:border-[#f5f5f0] flex items-center justify-between">
-                        <div>
-                            <span class="text-xs font-bold uppercase tracking-wider text-[#0d2c1d] dark:text-[#f5f5f0] block">Total Bill:</span>
-                            <span class="text-[0.65rem] text-[#718774] dark:text-[#889b8a]">Settled via ${escapeHtml(reservation.payment_method || 'Cash')}</span>
+                    <!-- TOTAL BILL / CANCELLATION SUMMARY -->
+                    ${isCancelled ? `
+                        <div class="pt-3 mt-1 border-t-2 border-[#0d2c1d] dark:border-[#f5f5f0] space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#718774] dark:text-[#889b8a]">
+                                <span>Total Booking Value:</span>
+                                <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-[#718774] dark:text-[#889b8a]">
+                                <span>Advance Deposit Paid (${reservation.reservation_type === 'online' ? '50%' : 'Initial'}):</span>
+                                <span class="font-semibold text-blue-700 dark:text-blue-400 tabular-nums">₱${formatMoney(originalDeposit)}</span>
+                            </div>
+                            ${effectiveRefunded > 0 ? `
+                                <div class="flex items-center justify-between text-xs text-rose-600 dark:text-rose-400">
+                                    <span>Less: Refunded to Guest (50%):</span>
+                                    <span class="font-bold tabular-nums">- ₱${formatMoney(effectiveRefunded)}</span>
+                                </div>
+                            ` : ''}
+                            <div class="flex items-center justify-between pt-2 border-t border-dashed border-[#e5e9e6] dark:border-[#282c29]">
+                                <div>
+                                    <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">Amount Park Got (Retained Revenue):</span>
+                                    <span class="text-[0.65rem] text-[#718774] dark:text-[#889b8a]">${hasRefund ? 'Retained non-refundable fee' : (parkRetained > 0 ? 'Retained booking payment' : 'No funds retained')}</span>
+                                </div>
+                                <span class="text-base font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums">₱${formatMoney(parkRetained)}</span>
+                            </div>
                         </div>
-                        <span class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
-                    </div>
+                    ` : `
+                        <div class="pt-2.5 mt-1 border-t-2 border-[#0d2c1d] dark:border-[#f5f5f0] flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-[#0d2c1d] dark:text-[#f5f5f0] block">Total Bill:</span>
+                                <span class="text-[0.65rem] text-[#718774] dark:text-[#889b8a]">Settled via ${escapeHtml(reservation.payment_method || 'Cash')}</span>
+                            </div>
+                            <span class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
+                        </div>
+                    `}
+
+                    <!-- Payment & Refund History Ledger -->
+                    ${paymentHistory.length > 0 ? `
+                        <div class="pt-3 border-t border-[#f0f4f1] dark:border-[#242825] space-y-2">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a] block">
+                                Payment & Refund Ledger
+                            </span>
+                            <div class="space-y-1.5">
+                                ${paymentHistory.map(p => {
+                                    const pAmt = parseFloat(p.amount) || 0;
+                                    const isNeg = pAmt < 0;
+                                    return `
+                                        <div class="flex items-center justify-between p-2 rounded-lg bg-[#fafbfa] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-[0.7rem]">
+                                            <div class="min-w-0 pr-2">
+                                                <div class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5">
+                                                    <span>${escapeHtml(p.title || 'Payment')}</span>
+                                                    ${p.method ? `<span class="px-1.5 py-0.2 rounded text-[0.62rem] bg-[#e8eee9] dark:bg-[#202722] text-[#2c5f3e] dark:text-[#8fd0ab]">${escapeHtml(p.method)}</span>` : ''}
+                                                </div>
+                                                <div class="text-[0.65rem] text-[#718774] dark:text-[#889b8a] mt-0.5">
+                                                    ${p.description ? `${escapeHtml(p.description)} · ` : ''}${escapeHtml(p.date || '')} ${p.staff_name ? `(${escapeHtml(p.staff_name)})` : ''}
+                                                </div>
+                                            </div>
+                                            <span class="font-bold tabular-nums shrink-0 ${isNeg ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
+                                                ${isNeg ? `- ₱${formatMoney(Math.abs(pAmt))}` : `+ ₱${formatMoney(pAmt)}`}
+                                            </span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;

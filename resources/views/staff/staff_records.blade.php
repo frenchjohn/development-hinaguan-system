@@ -411,6 +411,9 @@
                                                 <td class="py-3.5 px-5 text-xs text-right font-bold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">
                                                     <div class="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm">₱{{ number_format($reservation->amount_paid, 2) }}</div>
                                                     <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
+                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
+                                                        <div class="text-[0.62rem] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
+                                                    @endif
                                                 </td>
                                                 <td class="py-3.5 px-4 text-right">
                                                     <div class="flex items-center justify-end">
@@ -724,6 +727,9 @@
                                                 <td class="py-3.5 px-5 text-xs text-right font-bold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">
                                                     <div class="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm">₱{{ number_format($reservation->amount_paid, 2) }}</div>
                                                     <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
+                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
+                                                        <div class="text-[0.62rem] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
+                                                    @endif
                                                 </td>
                                                 <td class="py-3.5 px-4 text-right">
                                                     <div class="flex items-center justify-end">

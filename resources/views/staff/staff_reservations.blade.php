@@ -956,20 +956,20 @@
                 <!-- Message Textarea -->
                 <div>
                     <label for="sendReschedMessage" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Rescheduling &amp; 50% Refund Message:
+                        Rescheduling &amp; 50% Refund Message Preview / Content:
                     </label>
-                    <textarea id="sendReschedMessage" rows="3" class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none leading-relaxed" placeholder="Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours."></textarea>
+                    <textarea id="sendReschedMessage" rows="9" class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none leading-relaxed font-sans"></textarea>
                     <p class="text-[0.68rem] text-slate-400 mt-1">
-                        The secure link placeholder <code class="bg-slate-100 dark:bg-white/10 px-1 py-0.5 rounded text-emerald-700 dark:text-emerald-400">{link}</code> will be replaced automatically.
+                        The secure link placeholder <code class="bg-slate-100 dark:bg-white/10 px-1 py-0.5 rounded text-emerald-700 dark:text-emerald-400">{link}</code> will be replaced automatically with the guest's 24-hour single-use portal link.
                     </p>
                 </div>
 
-                <!-- Prefix notification callout -->
-                <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
-                    <i class="bi bi-info-circle-fill text-amber-600 text-sm shrink-0 mt-0.5"></i>
-                    <div>
-                        <strong>Automatic SMS Prefix:</strong><br>
-                        The message will start with: <span class="font-mono font-bold text-slate-800 dark:text-white bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded" id="sendReschedPrefixPreview">hi Booker of reservation_#,</span> followed by your message containing the 24-hour single-use link.
+                <!-- Delivery notice callout -->
+                <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
+                    <i class="bi bi-chat-text-fill text-emerald-600 text-sm shrink-0 mt-0.5"></i>
+                    <div class="text-[0.72rem] leading-relaxed">
+                        <strong>Official SMS Notification:</strong><br>
+                        This notification will be delivered directly via PhilSMS gateway formatted with Hinaguan Nature Park's official reschedule notification, 24-hour portal link, and contact hotline.
                     </div>
                 </div>
 
@@ -2379,8 +2379,21 @@
                         if (dateEl) dateEl.textContent = btn.dataset.dateLabel || '—';
                         if (sessionEl) sessionEl.textContent = btn.dataset.sessionLabel || 'Daytime';
                         if (messageInput) {
-                            const sessionNote = btn.dataset.sessionLabel ? ` (${btn.dataset.sessionLabel} session)` : '';
-                            messageInput.value = `Dear guest, due to weather (${btn.dataset.condition}) forecast on ${btn.dataset.dateLabel}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date or request a 50% refund using this link: {link} (valid for 24 hours).`;
+                            const formattedResId = (typeof formatReservationId === 'function') ? formatReservationId(resId) : String(resId).padStart(4, '0');
+                            const contactNum = window.PARK_CONTACT_NUMBER || '09383763722';
+                            const condition = btn.dataset.condition ? ` (${btn.dataset.condition})` : '';
+                            const dateLabel = btn.dataset.dateLabel || 'your scheduled date';
+                            const sessionNote = btn.dataset.sessionLabel ? ` (${btn.dataset.sessionLabel})` : '';
+                            const booker = btn.dataset.bookerName || 'Valued Guest';
+
+                            messageInput.value = `Hi ${booker},\n\n` +
+                                `This is from Hinaguan Nature Park regarding your reservation #${formattedResId}.\n\n` +
+                                `We regret to inform you that the park will not be available on ${dateLabel}${sessionNote} due to unfavorable weather conditions${condition}.\n\n` +
+                                `You may choose a new preferred date or request a 50% refund using the link below.\n` +
+                                `Please note: the link will be available within 24 hours.\n\n` +
+                                `For further assistance, you may also call us at 📞 ${contactNum}.\n\n` +
+                                `Thank you for your kind understanding and continued support.\n\n` +
+                                `{link}`;
                         }
 
                         existingModal.classList.add('is-open');
@@ -2475,6 +2488,7 @@
     <script>
         window.staffReservationData = @json($reservationData ?? []);
         window.ALL_AMENITIES = @json($allAmenities ?? []);
+        window.PARK_CONTACT_NUMBER = @json(\App\Models\ParkSetting::first()?->contact_number ?: '09383763722');
     </script>
 </body>
 </html>
