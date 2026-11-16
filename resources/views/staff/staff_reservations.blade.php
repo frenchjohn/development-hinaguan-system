@@ -2484,6 +2484,8 @@
     })();
     </script>
 
+    {{-- Staff Chatbot Component --}}
+    <x-staff_chatbot />
 
     <script>
         window.staffReservationData = @json($reservationData ?? []);

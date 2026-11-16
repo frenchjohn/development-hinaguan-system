@@ -652,6 +652,19 @@ window.addEventListener('DOMContentLoaded', function () {
             el.remove();
         });
 
+        // Ensure chatbot widget persists if missing from initial DOM
+        if (!document.querySelector('.chatbot-widget')) {
+            const incomingChatbot = doc.querySelector('.chatbot-widget');
+            if (incomingChatbot) {
+                document.body.appendChild(incomingChatbot.cloneNode(true));
+                if (typeof window.initStaffChatbot === 'function') {
+                    window.initStaffChatbot();
+                } else if (typeof window.initAdminChatbot === 'function') {
+                    window.initAdminChatbot();
+                }
+            }
+        }
+
         Array.from(doc.body.children).forEach((el) => {
             if (el.matches('script, style, link, meta')) return;
             if (el.matches(keepSelector)) return;

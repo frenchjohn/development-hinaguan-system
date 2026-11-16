@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\OpenRouterKeyService;
 
 class GuestChatbotController extends Controller
 {
@@ -71,11 +72,13 @@ class GuestChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
+            $keyStatus = OpenRouterKeyService::getStatus();
             $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
             return response()->json([
                 'reply' => !empty($fallback) ? $fallback : 'The chatbot is currently offline. Please call park hotline 0917 861 8383.',
                 'booking_action' => $bookingAction,
                 'booking_draft' => $bookingDraft,
+                'openrouter_status' => $keyStatus,
             ]);
         }
 
@@ -209,14 +212,22 @@ class GuestChatbotController extends Controller
                     $rawReply = $this->cleanChatbotReply($msgObj['reasoning'], $userMessage);
                 }
 
+                OpenRouterKeyService::markActive();
                 $reply = $this->cleanChatbotReply($rawReply, $userMessage);
 
                 return response()->json([
                     'reply' => $reply,
                     'booking_action' => $bookingAction,
                     'booking_draft' => $bookingDraft,
+                    'openrouter_status' => [
+                        'is_expired' => false,
+                        'status' => 'active',
+                        'code' => 200,
+                        'label' => 'Online',
+                    ],
                 ]);
             } else {
+                $keyStatus = OpenRouterKeyService::markFromCompletionResponse($response->status(), $response->body());
                 Log::warning('Guest Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
 
                 // Optional fallback to Gemini if GEMINI_API_KEY is configured
@@ -244,6 +255,7 @@ class GuestChatbotController extends Controller
                                     'reply' => $reply,
                                     'booking_action' => $bookingAction,
                                     'booking_draft' => $bookingDraft,
+                                    'openrouter_status' => $keyStatus,
                                 ]);
                             }
                         }
@@ -257,9 +269,11 @@ class GuestChatbotController extends Controller
                     'reply' => !empty($fallback) ? $fallback : 'The assistant is temporarily unavailable. Please call 0917 861 8383.',
                     'booking_action' => $bookingAction,
                     'booking_draft' => $bookingDraft,
+                    'openrouter_status' => $keyStatus,
                 ]);
             }
         } catch (\Exception $e) {
+            $keyStatus = OpenRouterKeyService::getStatus();
             Log::warning('Guest Chatbot Exception (engaging intelligent fallback): ' . $e->getMessage());
 
             // Optional fallback to Gemini if GEMINI_API_KEY is configured
@@ -300,6 +314,7 @@ class GuestChatbotController extends Controller
                 'reply' => !empty($fallback) ? $fallback : 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.',
                 'booking_action' => $bookingAction,
                 'booking_draft' => $bookingDraft,
+                'openrouter_status' => $keyStatus,
             ]);
         }
     }

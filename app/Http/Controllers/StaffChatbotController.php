@@ -20,6 +20,7 @@ use App\Models\ReservationCharge;
 use App\Models\ReservationEntranceFee;
 use App\Models\ReservationGuest;
 use App\Models\UserActivityRead;
+use App\Services\OpenRouterKeyService;
 use App\Services\WeatherService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -102,6 +103,7 @@ class StaffChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
+            $keyStatus = OpenRouterKeyService::getStatus();
             $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
             if ($userId) {
                 ChatbotMessage::create([
@@ -112,7 +114,10 @@ class StaffChatbotController extends Controller
                     'model' => 'local/fallback',
                 ]);
             }
-            return response()->json(['reply' => $fallback]);
+            return response()->json([
+                'reply' => $fallback,
+                'openrouter_status' => $keyStatus,
+            ]);
         }
 
         $staffContext = $this->getStaffContext($userMessage);
@@ -221,6 +226,7 @@ class StaffChatbotController extends Controller
             ])->post("https://openrouter.ai/api/v1/chat/completions", $requestPayload);
 
             if ($response->successful()) {
+                OpenRouterKeyService::markActive();
                 $data = $response->json();
                 $msgObj = $data['choices'][0]['message'] ?? [];
                 $rawReply = trim($msgObj['content'] ?? '');
@@ -241,8 +247,17 @@ class StaffChatbotController extends Controller
                     ]);
                 }
 
-                return response()->json(['reply' => $reply]);
+                return response()->json([
+                    'reply' => $reply,
+                    'openrouter_status' => [
+                        'is_expired' => false,
+                        'status' => 'active',
+                        'code' => 200,
+                        'label' => 'Online',
+                    ],
+                ]);
             } else {
+                $keyStatus = OpenRouterKeyService::markFromCompletionResponse($response->status(), $response->body());
                 Log::warning('Staff Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
                 $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
                 if ($userId) {
@@ -254,9 +269,13 @@ class StaffChatbotController extends Controller
                         'model' => 'local/fallback',
                     ]);
                 }
-                return response()->json(['reply' => $fallback]);
+                return response()->json([
+                    'reply' => $fallback,
+                    'openrouter_status' => $keyStatus,
+                ]);
             }
         } catch (\Exception $e) {
+            $keyStatus = OpenRouterKeyService::getStatus();
             Log::warning('Staff Chatbot Exception (engaging intelligent fallback): ' . $e->getMessage());
             $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
             if ($userId) {
@@ -268,7 +287,10 @@ class StaffChatbotController extends Controller
                     'model' => 'local/fallback',
                 ]);
             }
-            return response()->json(['reply' => $fallback]);
+            return response()->json([
+                'reply' => $fallback,
+                'openrouter_status' => $keyStatus,
+            ]);
         }
     }
 
@@ -301,7 +323,10 @@ class StaffChatbotController extends Controller
                 ];
             });
 
-        return response()->json(['messages' => $messages]);
+        return response()->json([
+            'messages' => $messages,
+            'openrouter_status' => OpenRouterKeyService::getStatus(),
+        ]);
     }
 
     /**
@@ -506,6 +531,7 @@ class StaffChatbotController extends Controller
                 'announced_keys' => array_keys($announcedKeys),
                 'announced_res_id' => $lastAnnouncedResId,
                 'timestamp' => $now->toDateTimeString(),
+                'openrouter_status' => OpenRouterKeyService::getStatus(),
             ]);
         }
 
@@ -540,6 +566,7 @@ class StaffChatbotController extends Controller
             'announced_keys' => array_keys($announcedKeys),
             'announced_res_id' => $lastAnnouncedResId,
             'timestamp' => $now->toDateTimeString(),
+            'openrouter_status' => OpenRouterKeyService::getStatus(),
         ]);
     }
 

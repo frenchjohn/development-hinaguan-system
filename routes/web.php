@@ -3284,6 +3284,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'total7DayGuests' => $total7DayGuests,
             'peakBookDay' => $peakBookDay,
             'predictionReport' => $predictionReport,
+            'openRouterStatus' => \App\Services\OpenRouterKeyService::getStatus(),
         ]);
     })->name('dashboard');
 

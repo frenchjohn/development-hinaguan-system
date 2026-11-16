@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initStaffChatbot() {
     const chatbotWidget = document.getElementById('chatbotWidget');
     const chatbotToggle = document.getElementById('chatbotToggle');
     const chatbotWindow = document.getElementById('chatbotWindow');
@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentProactiveData = null;
 
     if (!chatbotWidget || !chatbotToggle || !chatbotWindow) return;
+    if (chatbotWidget.__staffChatbotInitialized) return;
+    chatbotWidget.__staffChatbotInitialized = true;
 
     // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
@@ -551,9 +553,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Periodic proactive check every 90 seconds
-    setInterval(() => {
+    if (window.__staffChatbotInterval) {
+        clearInterval(window.__staffChatbotInterval);
+    }
+    window.__staffChatbotInterval = setInterval(() => {
         if (document.visibilityState === 'visible' && !isOpen) {
             checkProactiveGreeting();
         }
     }, 90000);
+}
+
+window.initStaffChatbot = initStaffChatbot;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStaffChatbot);
+} else {
+    initStaffChatbot();
+}
+
+window.addEventListener('spa:navigated', () => {
+    initStaffChatbot();
 });
