@@ -9532,10 +9532,48 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'new_end_slot' => ['required', 'in:Daytime,Nighttime'],
         ]);
 
-        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString();
+        $todayStr = now()->toDateString();
+        $resStatus = strtolower(trim((string) ($reservation->status ?? '')));
+        $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+
+        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : $todayStr;
         $masterEndDate = $reservation->end_date ? \Illuminate\Support\Carbon::parse($reservation->end_date)->toDateString() : $masterStartDate;
         $masterStartSlot = $reservation->start_slot ?? 'Daytime';
         $masterEndSlot = $reservation->end_slot ?? 'Daytime';
+
+        // 1. If reservation checkout datetime extends past masterEndDate (e.g. overnight stay checkout next morning)
+        $computedCheckoutAt = $computeReservationCheckoutAt($reservation);
+        if ($computedCheckoutAt && $computedCheckoutAt->toDateString() > $masterEndDate) {
+            $masterEndDate = $computedCheckoutAt->toDateString();
+            $masterEndSlot = 'Daytime';
+        }
+
+        // 2. Single overnight booking (Nighttime to Nighttime on same date) carries over to next day morning
+        if ($masterEndSlot === 'Nighttime' && $masterStartDate === $masterEndDate) {
+            $nextDate = \Illuminate\Support\Carbon::parse($masterEndDate)->addDay()->toDateString();
+            if ($nextDate > $masterEndDate) {
+                $masterEndDate = $nextDate;
+                $masterEndSlot = 'Daytime';
+            }
+        }
+
+        // 3. For an active checked-in guest on site, their stay cannot end in the past
+        if ($isCheckedIn && $masterEndDate < $todayStr) {
+            $masterEndDate = $todayStr;
+            $masterEndSlot = ($currentSession === 'Nighttime' || $reservation->end_slot === 'Nighttime') ? 'Nighttime' : 'Daytime';
+        }
+
+        if ($isCheckedIn && $masterEndDate === $todayStr && $currentSession === 'Nighttime') {
+            $masterEndSlot = 'Nighttime';
+        }
+
+        if ($isCheckedIn && $reservation->end_slot === 'Nighttime' && $masterEndDate === $todayStr) {
+            $masterEndSlot = 'Nighttime';
+        }
+
+        if ($masterEndDate < $masterStartDate) {
+            $masterEndDate = $masterStartDate;
+        }
 
         $masterTimeline = $continuousSlotTimeline($masterStartDate, $masterEndDate, $masterStartSlot, $masterEndSlot);
         $masterKeys = [];
@@ -9616,10 +9654,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
 
         // Update reservation totals and amount paid (settled at counter)
-        $reservation->update([
+        $updateFields = [
             'total_amount' => round((float) $reservation->total_amount + $addedCost, 2),
             'amount_paid' => round((float) $reservation->amount_paid + $addedCost, 2),
-        ]);
+        ];
+
+        if ($newAmenityEndDate > $reservation->end_date) {
+            $updateFields['end_date'] = $newAmenityEndDate;
+            $updateFields['end_slot'] = $newAmenityEndSlot;
+            $sDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date ?: $amenityStartDate)->startOfDay();
+            $eDate = \Illuminate\Support\Carbon::parse($newAmenityEndDate)->startOfDay();
+            $updateFields['total_days'] = max(1, (int) round($sDate->diffInDays($eDate)) + 1);
+        } elseif ($newAmenityEndDate === $reservation->end_date && $newAmenityEndSlot === 'Nighttime' && $reservation->end_slot !== 'Nighttime') {
+            $updateFields['end_slot'] = 'Nighttime';
+        }
+
+        $reservation->update($updateFields);
 
         $reservation->refresh();
         $newCheckoutAt = $computeReservationCheckoutAt($reservation);
@@ -9694,10 +9744,48 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString();
+        $todayStr = now()->toDateString();
+        $resStatus = strtolower(trim((string) ($reservation->status ?? '')));
+        $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+
+        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : $todayStr;
         $masterEndDate = $reservation->end_date ? \Illuminate\Support\Carbon::parse($reservation->end_date)->toDateString() : $masterStartDate;
         $masterStartSlot = $reservation->start_slot ?? 'Daytime';
         $masterEndSlot = $reservation->end_slot ?? 'Daytime';
+
+        // 1. If reservation checkout datetime extends past masterEndDate (e.g. overnight stay checkout next morning)
+        $computedCheckoutAt = $computeReservationCheckoutAt($reservation);
+        if ($computedCheckoutAt && $computedCheckoutAt->toDateString() > $masterEndDate) {
+            $masterEndDate = $computedCheckoutAt->toDateString();
+            $masterEndSlot = 'Daytime';
+        }
+
+        // 2. Single overnight booking (Nighttime to Nighttime on same date) carries over to next day morning
+        if ($masterEndSlot === 'Nighttime' && $masterStartDate === $masterEndDate) {
+            $nextDate = \Illuminate\Support\Carbon::parse($masterEndDate)->addDay()->toDateString();
+            if ($nextDate > $masterEndDate) {
+                $masterEndDate = $nextDate;
+                $masterEndSlot = 'Daytime';
+            }
+        }
+
+        // 3. For an active checked-in guest on site, their stay cannot end in the past
+        if ($isCheckedIn && $masterEndDate < $todayStr) {
+            $masterEndDate = $todayStr;
+            $masterEndSlot = ($currentSession === 'Nighttime' || $reservation->end_slot === 'Nighttime') ? 'Nighttime' : 'Daytime';
+        }
+
+        if ($isCheckedIn && $masterEndDate === $todayStr && $currentSession === 'Nighttime') {
+            $masterEndSlot = 'Nighttime';
+        }
+
+        if ($isCheckedIn && $reservation->end_slot === 'Nighttime' && $masterEndDate === $todayStr) {
+            $masterEndSlot = 'Nighttime';
+        }
+
+        if ($masterEndDate < $masterStartDate) {
+            $masterEndDate = $masterStartDate;
+        }
 
         $masterTimeline = $continuousSlotTimeline($masterStartDate, $masterEndDate, $masterStartSlot, $masterEndSlot);
         $masterKeys = [];
@@ -9783,10 +9871,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
 
         // Update reservation totals
-        $reservation->update([
+        $updateFields = [
             'total_amount' => round((float) $reservation->total_amount + $totalAmenityCost, 2),
             'amount_paid' => round((float) $reservation->amount_paid + $totalAmenityCost, 2),
-        ]);
+        ];
+
+        if ($endDate > $reservation->end_date) {
+            $updateFields['end_date'] = $endDate;
+            $updateFields['end_slot'] = $endSlot;
+            $sDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date ?: $startDate)->startOfDay();
+            $eDate = \Illuminate\Support\Carbon::parse($endDate)->startOfDay();
+            $updateFields['total_days'] = max(1, (int) round($sDate->diffInDays($eDate)) + 1);
+        } elseif ($endDate === $reservation->end_date && $endSlot === 'Nighttime' && $reservation->end_slot !== 'Nighttime') {
+            $updateFields['end_slot'] = 'Nighttime';
+        }
+
+        $reservation->update($updateFields);
 
         $reservation->refresh();
         $newCheckoutAt = $computeReservationCheckoutAt($reservation);

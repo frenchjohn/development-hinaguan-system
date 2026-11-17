@@ -888,11 +888,22 @@
 							</div>
 						</div>
 
-						{{-- Right: Quick Status Filter Chips --}}
-						<div class="hidden sm:inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/50 dark:bg-white/5 p-1 text-xs">
-							<button type="button" class="resv-quick-filter active rounded-lg px-2.5 py-1 text-[0.7rem] font-bold text-hp-text transition-all cursor-pointer bg-white dark:bg-[#1e2220] shadow-xs" data-status-filter="all">All</button>
-							<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="due">Due Checkout</button>
-							<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="near">&le; 2h Left</button>
+						{{-- Right: Quick Amenity & Status Filter Chips --}}
+						<div class="flex items-center gap-2 flex-wrap">
+							{{-- Quick Amenity Filter: All, With Amenities, Visit Only --}}
+							<div class="inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/50 dark:bg-white/5 p-1 text-xs" id="resvAmenityFilterGroup" title="Filter by amenity inclusion">
+								<span class="text-[0.65rem] font-bold uppercase tracking-wider text-hp-text-muted px-1.5 hidden lg:inline"><i class="bi bi-houses me-1 text-emerald-600 dark:text-emerald-400"></i>Stay:</span>
+								<button type="button" class="resv-amenity-filter active rounded-lg px-2.5 py-1 text-[0.7rem] font-bold text-hp-text transition-all cursor-pointer bg-white dark:bg-[#1e2220] shadow-xs" data-amenity-filter="all">All</button>
+								<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-amenity-filter="with_amenities">With Amenities</button>
+								<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-amenity-filter="visit_only">Visit Only</button>
+							</div>
+
+							{{-- Quick Status Filter Chips --}}
+							<div class="hidden sm:inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/50 dark:bg-white/5 p-1 text-xs">
+								<button type="button" class="resv-quick-filter active rounded-lg px-2.5 py-1 text-[0.7rem] font-bold text-hp-text transition-all cursor-pointer bg-white dark:bg-[#1e2220] shadow-xs" data-status-filter="all">All</button>
+								<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="due">Due Checkout</button>
+								<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="near">&le; 2h Left</button>
+							</div>
 						</div>
 					</div>
 
@@ -918,8 +929,8 @@
 								</div>
 							</div>
 
-							{{-- Main Grid: 4 Clean Control Cards (Sort is first inside the filter) --}}
-							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+							{{-- Main Grid: 5 Clean Control Cards (Sort is first inside the filter) --}}
+							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
 								{{-- 1. SORT ORDER (Inside the filter drawer) --}}
 								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
 									<label for="resvSortSelect" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
@@ -951,6 +962,20 @@
 										<option value="online">Online only</option>
 									</select>
 									<span class="text-[0.68rem] text-hp-text-muted/80">Filter by booking channel</span>
+								</div>
+
+								{{-- 3. AMENITY / VISIT INCLUSION --}}
+								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
+									<label for="resvAmenityFilter" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
+										<i class="bi bi-houses text-emerald-600 dark:text-emerald-400"></i>
+										<span>Amenities &amp; Visit</span>
+									</label>
+									<select id="resvAmenityFilter" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-3 py-2 text-xs font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6] cursor-pointer">
+										<option value="all" selected>All (With Amenities &amp; Visit Only)</option>
+										<option value="with_amenities">With Amenities only</option>
+										<option value="visit_only">Visit Only (No Amenities)</option>
+									</select>
+									<span class="text-[0.68rem] text-hp-text-muted/80">Filter by booked amenities</span>
 								</div>
 
 								{{-- 3. CHECKOUT STATUS --}}
@@ -1032,6 +1057,7 @@
 											->filter()
 											->unique();
 										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
+										$isVisitOnly = empty($rowAmenityNames);
 
 										$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
 										$checkoutDue = false;
@@ -1098,6 +1124,8 @@
 										class="reservation-row {{ $highlightClass }} {{ $rowBgClass }} cursor-pointer select-none transition-colors duration-150 focus-visible:outline-none"
 										data-reservation-id="{{ $reservation->id }}"
 										data-reservation-type="{{ $reservation->reservation_type }}"
+										data-has-amenities="{{ $isVisitOnly ? 'false' : 'true' }}"
+										data-amenity-mode="{{ $isVisitOnly ? 'visit_only' : 'with_amenities' }}"
 										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
 										data-checkin-timestamp="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->timestamp : 0 }}"
 										data-checkout-at="{{ $checkoutAtStr ?? '' }}"
@@ -1107,7 +1135,7 @@
 										data-amenities-name="{{ strtolower($rowAmenityNames) }}"
 										data-amount-total="{{ (float) ($reservation->total_amount ?? 0) }}"
 										data-guest-count="{{ $totalResGuests }}"
-										data-reservation-search="{{ strtolower(trim($reservation->formatted_id . ' ' . $reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
+										data-reservation-search="{{ strtolower(trim($reservation->formatted_id . ' ' . $reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . ($isVisitOnly ? 'visit only visit' : 'with amenities') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
 										data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"
 										tabindex="0"
 										role="button"
@@ -1175,12 +1203,21 @@
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
-											<div class="flex items-center gap-1.5">
-												<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted" title="{{ $amenityNames ?: 'None' }}">{{ $amenityNames ?: 'None' }}</span>
-												@if($isSpecificAmenityDue)
-													<span class="amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
-												@endif
-											</div>
+											@if ($isVisitOnly)
+												<div class="flex items-center gap-1.5">
+													<span class="inline-flex items-center gap-1 rounded-full border border-teal-500/30 bg-teal-500/10 dark:bg-teal-500/15 text-teal-800 dark:text-teal-300 px-2.5 py-0.5 text-[0.72rem] font-bold shadow-2xs tracking-wide" title="Visit Only (No amenities booked)">
+														<i class="bi bi-geo-alt-fill text-teal-600 dark:text-teal-400 text-[0.68rem]"></i>
+														Visit Only
+													</span>
+												</div>
+											@else
+												<div class="flex items-center gap-1.5">
+													<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted" title="{{ $amenityNames }}">{{ $amenityNames }}</span>
+													@if($isSpecificAmenityDue)
+														<span class="amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
+													@endif
+												</div>
+											@endif
 										</td>
 										<td class="px-5 py-3.5 align-middle whitespace-nowrap">
 											<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $totalResGuests }} Total</div>

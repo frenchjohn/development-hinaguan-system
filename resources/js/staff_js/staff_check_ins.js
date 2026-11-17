@@ -581,6 +581,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneAmenities" style="min-height: 44px;">
                     <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                     <span class="truncate">Amenities (${validAmenities.length})</span>
+                    ${validAmenities.length === 0 ? '<span class="text-[0.62rem] font-bold text-teal-700 dark:text-teal-300 bg-teal-500/15 border border-teal-500/30 px-1.5 py-0.5 rounded-full ms-1">Visit Only</span>' : ''}
                     ${hasAmenityDue ? '<span class="amenity-tab-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Amenity is time to checkout"></span>' : ''}
                 </button>
                 <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneBilling" style="min-height: 44px;">
@@ -808,8 +809,17 @@ window.AppPage['staff_check_ins'] = function () {
             }).join('')}
                         </div>
                     ` : `
-                        <div class="rounded-xl border border-glass-border bg-glass p-6 text-center text-xs text-hp-text-muted italic">
-                            No amenities booked on this stay. Click "+ Add Amenity" to rent one mid-stay.
+                        <div class="rounded-2xl border border-teal-500/25 bg-teal-500/5 dark:bg-teal-950/20 p-6 text-center shadow-2xs">
+                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500/15 text-teal-700 dark:text-teal-300 mb-2.5 border border-teal-500/30">
+                                <i class="bi bi-geo-alt-fill text-xl"></i>
+                            </div>
+                            <div class="text-sm font-bold text-hp-text">Visit Only Stay</div>
+                            <div class="text-xs text-hp-text-muted mt-1 max-w-sm mx-auto">No cottage or overnight amenities availed on this stay (Entrance fee only). Click "+ Add Amenity" below to rent an amenity mid-stay.</div>
+                            <div class="mt-4">
+                                <button type="button" class="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-hp-green text-white px-4 py-2 text-xs font-bold hover:bg-hp-green-dark transition-all shadow-xs" data-open-add-amenity-modal="true" data-reservation-id="${reservation.id}">
+                                    <i class="bi bi-plus-circle"></i> Add Amenity Mid-Stay
+                                </button>
+                            </div>
                         </div>
                     `}
                 </div>
@@ -2215,6 +2225,65 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
+    const resolveEffectiveStayWindow = (res) => {
+        const today = window.SERVER_TODAY || todayStr;
+        const curSession = window.SERVER_CURRENT_SESSION || 'Daytime';
+        const isCheckedIn = /checked[\s_-]?in/i.test(res?.status || '') || res?.status === 'Active';
+
+        let masterStartDate = res?.reservation_date ? String(res.reservation_date).split('T')[0].split(' ')[0] : today;
+        let masterStartSlot = res?.start_slot || 'Daytime';
+        let masterEndDate = res?.end_date ? String(res.end_date).split('T')[0].split(' ')[0] : masterStartDate;
+        let masterEndSlot = res?.end_slot || res?.start_slot || 'Daytime';
+
+        // 1. If checkout_at is defined and extends beyond masterEndDate
+        if (res?.checkout_at) {
+            const coDate = String(res.checkout_at).split('T')[0].split(' ')[0];
+            if (coDate > masterEndDate) {
+                masterEndDate = coDate;
+                masterEndSlot = 'Daytime';
+            }
+        }
+
+        // 2. Overnight stays (Nighttime to Nighttime on same date) depart the next morning
+        if (masterEndSlot === 'Nighttime' && masterStartDate === masterEndDate) {
+            const nextD = new Date(masterEndDate + 'T00:00:00');
+            nextD.setDate(nextD.getDate() + 1);
+            const nextDStr = toDateKey(nextD);
+            if (nextDStr > masterEndDate) {
+                masterEndDate = nextDStr;
+                masterEndSlot = 'Daytime';
+            }
+        }
+
+        // 3. For active / checked-in reservations currently on site:
+        // Guest is physically in the park today, so their stay window cannot end before today.
+        if (isCheckedIn && masterEndDate < today) {
+            masterEndDate = today;
+            masterEndSlot = (curSession === 'Nighttime' || res?.end_slot === 'Nighttime') ? 'Nighttime' : 'Daytime';
+        }
+
+        // 4. If checked-in guest is on site today and current session is Nighttime, ensure masterEndSlot is Nighttime
+        if (isCheckedIn && masterEndDate === today && curSession === 'Nighttime') {
+            masterEndSlot = 'Nighttime';
+        }
+
+        // 5. If checked-in guest has a Nighttime reservation end_slot, retain Nighttime on the final day
+        if (isCheckedIn && res?.end_slot === 'Nighttime' && masterEndDate === today) {
+            masterEndSlot = 'Nighttime';
+        }
+
+        if (masterEndDate < masterStartDate) {
+            masterEndDate = masterStartDate;
+        }
+
+        return {
+            masterStartDate,
+            masterStartSlot,
+            masterEndDate,
+            masterEndSlot,
+        };
+    };
+
     const openExtendAmenityModal = async (reservationId, raId) => {
         const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
         if (!res) return;
@@ -2257,8 +2326,9 @@ window.AppPage['staff_check_ins'] = function () {
             currDurEl.textContent = `${formatDate(amStartDate)} (${amStartSlot}) to ${formatDate(amEndDate)} (${amEndSlot})`;
         }
 
-        const masterEndDate = res.end_date || res.reservation_date || todayStr;
-        const masterEndSlot = res.end_slot || res.start_slot || 'Daytime';
+        const stayWin = resolveEffectiveStayWindow(res);
+        const masterEndDate = stayWin.masterEndDate;
+        const masterEndSlot = stayWin.masterEndSlot;
         extendAmenityCalState.masterEndDate = masterEndDate;
         extendAmenityCalState.masterEndSlot = masterEndSlot;
 
@@ -2266,8 +2336,17 @@ window.AppPage['staff_check_ins'] = function () {
             limitEl.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
         }
 
-        extendAmenityCalState.selectedEndDate = amEndDate;
-        extendAmenityCalState.selectedEndSlot = amEndSlot === 'Nighttime' ? 'Nighttime' : 'Daytime';
+        let initialEndDate = amEndDate;
+        let initialEndSlot = amEndSlot === 'Nighttime' ? 'Nighttime' : 'Daytime';
+        if (initialEndDate < todayStr && /checked[\s_-]?in/i.test(res.status || '')) {
+            initialEndDate = todayStr;
+        }
+        if (initialEndDate > masterEndDate) {
+            initialEndDate = masterEndDate;
+        }
+
+        extendAmenityCalState.selectedEndDate = initialEndDate;
+        extendAmenityCalState.selectedEndSlot = initialEndSlot;
 
         if (newEndDateInput) newEndDateInput.value = extendAmenityCalState.selectedEndDate;
         if (newEndSlotInput) newEndSlotInput.value = extendAmenityCalState.selectedEndSlot;
@@ -2628,6 +2707,12 @@ window.AppPage['staff_check_ins'] = function () {
                 }
             }
 
+            if (dateStr === todayStr) {
+                const dot = document.createElement('span');
+                dot.className = 'absolute bottom-1 h-1 w-1 rounded-full bg-emerald-400';
+                btn.appendChild(dot);
+            }
+
             btn.addEventListener('click', () => {
                 if (btn.disabled) return;
 
@@ -2851,21 +2936,33 @@ window.AppPage['staff_check_ins'] = function () {
         if (resIdInput) resIdInput.value = reservationId;
         if (resIdEl) resIdEl.textContent = formatReservationId(reservationId);
 
-        const today = window.SERVER_TODAY || todayStr;
-        const curSession = window.SERVER_CURRENT_SESSION || 'Daytime';
-        const masterStartDate = res.reservation_date || today;
-        const masterStartSlot = res.start_slot || 'Daytime';
-        const masterEndDate = res.end_date || masterStartDate;
-        const masterEndSlot = res.end_slot || res.start_slot || 'Daytime';
+        const stayWin = resolveEffectiveStayWindow(res);
+        const masterStartDate = stayWin.masterStartDate;
+        const masterStartSlot = stayWin.masterStartSlot;
+        const masterEndDate = stayWin.masterEndDate;
+        const masterEndSlot = stayWin.masterEndSlot;
 
         const resolvedStart = resolveMidStayStart();
-        const initialStartDate = (resolvedStart.date < masterStartDate) ? masterStartDate : resolvedStart.date;
-        const initialStartSlot = (resolvedStart.date < masterStartDate) ? masterStartSlot : resolvedStart.slot;
+        let initialStartDate = (resolvedStart.date < masterStartDate) ? masterStartDate : resolvedStart.date;
+        let initialStartSlot = (resolvedStart.date < masterStartDate) ? masterStartSlot : resolvedStart.slot;
+
+        if (initialStartDate > masterEndDate) {
+            initialStartDate = masterEndDate;
+            initialStartSlot = masterEndSlot;
+        }
+
+        let initialEndDate = masterEndDate;
+        let initialEndSlot = masterEndSlot;
+
+        if (slotOrderIndex(initialEndDate, initialEndSlot) < slotOrderIndex(initialStartDate, initialStartSlot)) {
+            initialEndDate = initialStartDate;
+            initialEndSlot = initialStartSlot;
+        }
 
         addAmenityCalState.startDate = initialStartDate;
         addAmenityCalState.startSlot = initialStartSlot;
-        addAmenityCalState.selectedEndDate = masterEndDate;
-        addAmenityCalState.selectedEndSlot = masterEndSlot;
+        addAmenityCalState.selectedEndDate = initialEndDate;
+        addAmenityCalState.selectedEndSlot = initialEndSlot;
         addAmenityCalState.masterStartDate = masterStartDate;
         addAmenityCalState.masterStartSlot = masterStartSlot;
         addAmenityCalState.masterEndDate = masterEndDate;
@@ -2894,9 +2991,9 @@ window.AppPage['staff_check_ins'] = function () {
             }
         }
 
-        const initialDateObj = new Date(initialStartDate);
-        addAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
-        addAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
+        const [iy, im] = String(initialStartDate).split('-').map(Number);
+        addAmenityCalState.viewYear = iy || currentYear;
+        addAmenityCalState.viewMonth = (im !== undefined && !isNaN(im)) ? im - 1 : new Date().getMonth();
 
         const warningEl = document.getElementById('addAmenityWarning');
         if (warningEl) warningEl.classList.add('hidden');
@@ -9322,46 +9419,6 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         enforceWalkInAmenityModalConstraints();
-        walkInAmenityScheduleModal.classList.add('is-open');
-        walkInAmenityScheduleModal.setAttribute('aria-hidden', 'false');
-    };
-
-    const closeAmenityScheduleModal = () => {
-        if (!walkInAmenityScheduleModal) return;
-        walkInAmenityScheduleModal.classList.remove('is-open');
-        walkInAmenityScheduleModal.setAttribute('aria-hidden', 'true');
-        currentEditingAmenityIndex = null;
-    };
-
-    walkInAmenityScheduleCloseBtns.forEach(btn => btn.addEventListener('click', closeAmenityScheduleModal));
-
-    selectedAmenitiesContainer?.addEventListener('click', (e) => {
-        const customizeBtn = e.target.closest('.walkin-customize-amenity-btn');
-        if (customizeBtn) {
-            const idx = parseInt(customizeBtn.dataset.index);
-            if (!isNaN(idx)) {
-                openAmenityScheduleModal(idx);
-            }
-        }
-    });
-
-    const enforceWalkInAmenityModalConstraints = () => {
-        if (currentEditingAmenityIndex === null || !selectedAmenities[currentEditingAmenityIndex]) return;
-        const am = selectedAmenities[currentEditingAmenityIndex];
-
-        const bStart = walkInSchedule.startDate;
-        const bEnd = walkInSchedule.endDate;
-        const bStartSlot = walkInSchedule.startSlot;
-        const bEndSlot = walkInSchedule.endSlot;
-
-        // Start Date clamping
-        if (walkInAmenityStartDate) {
-            walkInAmenityStartDate.min = bStart;
-            walkInAmenityStartDate.max = bEnd;
-            if (walkInAmenityStartDate.value < bStart) walkInAmenityStartDate.value = bStart;
-            if (walkInAmenityStartDate.value > bEnd) walkInAmenityStartDate.value = bEnd;
-        }
-
         const curStart = walkInAmenityStartDate?.value || bStart;
 
         // End Date clamping
@@ -9480,6 +9537,7 @@ window.AppPage['staff_check_ins'] = function () {
     const resvSearchInput = document.getElementById('resvSearchInput');
     const resvTypeFilter = document.getElementById('resvTypeFilter');
     const resvStatusFilter = document.getElementById('resvStatusFilter');
+    const resvAmenityFilter = document.getElementById('resvAmenityFilter');
     const resvSortSelect = document.getElementById('resvSortSelect');
     const resvDateFrom = document.getElementById('resvDateFrom');
     const resvDateTo = document.getElementById('resvDateTo');
@@ -9487,6 +9545,7 @@ window.AppPage['staff_check_ins'] = function () {
     const resvResultsCount = document.getElementById('resvResultsCount');
     const resvActiveFilterCount = document.getElementById('resvActiveFilterCount');
     const resvQuickFilters = document.querySelectorAll('.resv-quick-filter');
+    const resvAmenityFilters = document.querySelectorAll('.resv-amenity-filter');
 
     const openFilterPanel = () => {
         closeSortDropdown();
@@ -9617,6 +9676,7 @@ window.AppPage['staff_check_ins'] = function () {
         const searchTerm = (resvSearchInput?.value || '').trim().toLowerCase();
         const typeValue = resvTypeFilter?.value || 'all';
         const statusValue = resvStatusFilter?.value || 'all';
+        const amenityValue = resvAmenityFilter?.value || 'all';
         const fromValue = resvDateFrom?.value || '';
         const toValue = resvDateTo?.value || '';
         const sortValue = resvSortSelect?.value || 'nearest_checkout';
@@ -9640,6 +9700,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         if (typeValue !== 'all') activeFilterCount++;
         if (statusValue !== 'all') activeFilterCount++;
+        if (amenityValue !== 'all') activeFilterCount++;
         if (fromValue) activeFilterCount++;
         if (toValue) activeFilterCount++;
         if (sortValue !== 'nearest_checkout') activeFilterCount++;
@@ -9671,6 +9732,12 @@ window.AppPage['staff_check_ins'] = function () {
             if (show && statusValue !== 'all') {
                 const rowStatus = row.getAttribute('data-checkout-status') || 'normal';
                 if (rowStatus !== statusValue) show = false;
+            }
+
+            if (show && amenityValue !== 'all') {
+                const hasAmenities = row.getAttribute('data-has-amenities') === 'true';
+                if (amenityValue === 'visit_only' && hasAmenities) show = false;
+                if (amenityValue === 'with_amenities' && !hasAmenities) show = false;
             }
 
             if (show && fromValue) {
@@ -9764,14 +9831,51 @@ window.AppPage['staff_check_ins'] = function () {
 
         // 4. Update Clear/Reset Button visibility
         if (resvFiltersClear) {
-            const isFiltered = Boolean(searchTerm || typeValue !== 'all' || statusValue !== 'all' || fromValue || toValue || sortValue !== 'nearest_checkout');
+            const isFiltered = Boolean(searchTerm || typeValue !== 'all' || statusValue !== 'all' || amenityValue !== 'all' || fromValue || toValue || sortValue !== 'nearest_checkout');
             resvFiltersClear.classList.toggle('hidden', !isFiltered);
         }
     };
 
-    [resvSearchInput, resvTypeFilter, resvStatusFilter, resvSortSelect, resvDateFrom, resvDateTo].forEach((control) => {
+    [resvSearchInput, resvTypeFilter, resvStatusFilter, resvAmenityFilter, resvSortSelect, resvDateFrom, resvDateTo].forEach((control) => {
         control?.addEventListener('input', applyResvFilters);
         control?.addEventListener('change', applyResvFilters);
+    });
+
+    resvAmenityFilters.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            const filterVal = chip.getAttribute('data-amenity-filter') || 'all';
+            resvAmenityFilters.forEach((c) => {
+                const isMatch = c === chip;
+                c.classList.toggle('active', isMatch);
+                c.classList.toggle('bg-white', isMatch);
+                c.classList.toggle('dark:bg-[#1e2220]', isMatch);
+                c.classList.toggle('shadow-xs', isMatch);
+                c.classList.toggle('font-bold', isMatch);
+                c.classList.toggle('text-hp-text', isMatch);
+                c.classList.toggle('font-semibold', !isMatch);
+                c.classList.toggle('text-hp-text-muted', !isMatch);
+            });
+            if (resvAmenityFilter) {
+                resvAmenityFilter.value = filterVal;
+            }
+            applyResvFilters();
+        });
+    });
+
+    resvAmenityFilter?.addEventListener('change', () => {
+        const val = resvAmenityFilter.value || 'all';
+        resvAmenityFilters.forEach((c) => {
+            const isMatch = c.getAttribute('data-amenity-filter') === val;
+            c.classList.toggle('active', isMatch);
+            c.classList.toggle('bg-white', isMatch);
+            c.classList.toggle('dark:bg-[#1e2220]', isMatch);
+            c.classList.toggle('shadow-xs', isMatch);
+            c.classList.toggle('font-bold', isMatch);
+            c.classList.toggle('text-hp-text', isMatch);
+            c.classList.toggle('font-semibold', !isMatch);
+            c.classList.toggle('text-hp-text-muted', !isMatch);
+        });
+        applyResvFilters();
     });
 
     resvQuickFilters.forEach((chip) => {
@@ -9798,10 +9902,23 @@ window.AppPage['staff_check_ins'] = function () {
         if (resvSearchInput) resvSearchInput.value = '';
         if (resvTypeFilter) resvTypeFilter.value = 'all';
         if (resvStatusFilter) resvStatusFilter.value = 'all';
+        if (resvAmenityFilter) resvAmenityFilter.value = 'all';
         if (resvSortSelect) resvSortSelect.value = 'nearest_checkout';
         if (resvDateFrom) resvDateFrom.value = '';
         if (resvDateTo) resvDateTo.value = '';
         if (resvCurrentSortLabel) resvCurrentSortLabel.textContent = 'Nearest to Checkout';
+
+        resvAmenityFilters.forEach((c) => {
+            const isAll = c.getAttribute('data-amenity-filter') === 'all';
+            c.classList.toggle('active', isAll);
+            c.classList.toggle('bg-white', isAll);
+            c.classList.toggle('dark:bg-[#1e2220]', isAll);
+            c.classList.toggle('shadow-xs', isAll);
+            c.classList.toggle('font-bold', isAll);
+            c.classList.toggle('text-hp-text', isAll);
+            c.classList.toggle('font-semibold', !isAll);
+            c.classList.toggle('text-hp-text-muted', !isAll);
+        });
 
         resvQuickFilters.forEach((c) => {
             const isAll = c.getAttribute('data-status-filter') === 'all';
