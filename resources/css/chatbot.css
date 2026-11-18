@@ -205,6 +205,7 @@
         opacity: 0;
         transform: translateY(20px) scale(0.94);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -221,6 +222,7 @@
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+
     100% {
         opacity: 0;
         transform: translateY(20px) scale(0.92);
@@ -312,6 +314,7 @@
 }
 
 @media (max-width: 768px) {
+
     .chatbot-widget.is-fullscreen .chatbot-window,
     .chatbot-window.is-fullscreen {
         width: calc(100vw - 1.5rem) !important;
@@ -336,6 +339,7 @@
         opacity: 0;
         transform: translate(-30%, -20%) scale(0.82);
     }
+
     100% {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
@@ -347,6 +351,7 @@
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
     }
+
     100% {
         opacity: 0;
         transform: translate(-30%, -20%) scale(0.82);
@@ -358,6 +363,7 @@
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
     }
+
     100% {
         opacity: 0;
         transform: translate(-50%, -46%) scale(0.92);
@@ -489,9 +495,12 @@
 }
 
 @keyframes chatbotBadgePulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
     }
+
     50% {
         box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
     }
@@ -2616,10 +2625,26 @@
     box-shadow: none;
 }
 
-.chatbot-amenity-item:hover:not(.is-occupied) {
+.chatbot-amenity-item:hover:not(.is-occupied):not(.chatbot-amenity-item--display) {
     border-color: #059669;
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
     transform: translateY(-1px);
+}
+
+.chatbot-amenity-item--display {
+    cursor: default !important;
+}
+
+.chatbot-amenity-item--display:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transform: none;
+}
+
+[data-theme="dark"] .chatbot-amenity-item--display:hover,
+.dark .chatbot-amenity-item--display:hover {
+    border-color: #334155;
+    box-shadow: none;
 }
 
 .chatbot-amenity-item.is-selected {
@@ -4228,6 +4253,7 @@
         opacity: 0;
         transform: translateY(2px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

@@ -103,8 +103,8 @@
             </button>
         </div>
 
-        <!-- Docked Bottom Booking Action Bar (Always visible above chat input when in booking mode) -->
-        <div class="chatbot-dock hidden border-t border-emerald-200/90 bg-emerald-50/95 dark:border-emerald-900/60 dark:bg-emerald-950/95 px-3 py-1.5 flex items-center justify-between gap-2 shadow-sm transition-all" id="chatbotDock">
+        <!-- Docked Bottom Booking Action Bar (Permanently hidden for conversational booking experience) -->
+        <div class="chatbot-dock hidden border-t border-emerald-200/90 bg-emerald-50/95 dark:border-emerald-900/60 dark:bg-emerald-950/95 px-3 py-1.5 flex items-center justify-between gap-2 shadow-sm transition-all" id="chatbotDock" style="display: none !important;" aria-hidden="true">
             <div class="flex flex-col justify-center min-w-0 pr-1">
                 <div class="flex items-center gap-1 leading-none mb-0.5">
                     <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
@@ -374,8 +374,8 @@
                     <i class="bi bi-houses"></i>
                 </div>
                 <div class="min-w-0">
-                    <h3 class="text-base font-bold text-emerald-950 dark:text-emerald-300 m-0" id="chatbotAmenityModalTitle">Step 2: Choose Amenities</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0" id="chatbotAmenityModalSubtitle">Select one or more cottages, payags, or halls for your stay</p>
+                    <h3 class="text-base font-bold text-emerald-950 dark:text-emerald-300 m-0" id="chatbotAmenityModalTitle">Available Amenities</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0" id="chatbotAmenityModalSubtitle">Available amenities for your selected schedule</p>
                 </div>
             </div>
             <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" id="cbAmenityModalClose" aria-label="Close modal" title="Close">

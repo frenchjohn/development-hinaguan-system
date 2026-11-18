@@ -141,6 +141,35 @@ document.addEventListener('DOMContentLoaded', () => {
         formatted = formatted.replace(/^(\d+)\.\s+(.*)$/gm, '$1. $2');
         // Convert newlines to <br>
         formatted = formatted.replace(/\n/g, '<br>');
+
+        // Convert conversational booking button tokens
+        formatted = formatted.replace(/\[(?:view_amenities(?:_button)?|available_amenities)\]/gi, `
+            <div class="chatbot-inline-action-wrap mt-2.5 mb-1">
+                <button type="button" class="cb-btn-view-amenities inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer">
+                    <i class="bi bi-houses-fill text-sm"></i>
+                    <span>✨ View Available Amenities</span>
+                </button>
+            </div>
+        `);
+
+        formatted = formatted.replace(/\[(?:proceed_payment(?:_button)?|proceed_to_payment|pay_downpayment|downpayment_button)\]/gi, `
+            <div class="chatbot-inline-action-wrap mt-2.5 mb-1">
+                <button type="button" class="cb-btn-proceed-downpayment inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer">
+                    <i class="bi bi-credit-card-2-front-fill text-base"></i>
+                    <span>💳 Proceed to 50% Downpayment</span>
+                </button>
+            </div>
+        `);
+
+        formatted = formatted.replace(/\[(?:enter_guest(?:_button)?|open_guest_modal|guest_details_button)\]/gi, `
+            <div class="chatbot-inline-action-wrap mt-2 mb-1">
+                <button type="button" class="cb-btn-open-guest-modal inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 font-semibold text-xs transition-all cursor-pointer">
+                    <i class="bi bi-person-vcard text-sm"></i>
+                    <span>👤 Open Booker Details Form</span>
+                </button>
+            </div>
+        `);
+
         return formatted;
     };
 
@@ -153,6 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const getInitialDraft = () => ({
         active: false,
         step: 'date_slot', // 'date_slot' | 'amenity' | 'guest_info' | 'review' | 'payment' | 'confirmed'
+        tentativeDate: null,
+        tentativeSlot: 'Daytime',
         startDate: null,
         endDate: null,
         startSlot: 'Daytime', // 'Daytime' | 'Nighttime'
@@ -161,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dayCount: 1,
         nightCount: 0,
         daysSpan: 1,
+        tentativeAmenity: null,
         amenities: [],        // array of selected amenities
         amenity: null,        // backward compatibility
         guest: {
@@ -232,181 +264,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateBookingBarUI = () => {
-        if (!bookingDraft || !bookingDraft.active) {
-            if (chatbotBookingBar) {
-                chatbotBookingBar.hidden = true;
-                chatbotBookingBar.classList.add('hidden');
-            }
-            if (chatbotDock) {
-                chatbotDock.hidden = true;
-                chatbotDock.classList.add('hidden');
-            }
-            return;
-        }
-
+        // Suppress top booking bar and bottom dock to maintain pure conversational booking UX
         if (chatbotBookingBar) {
             chatbotBookingBar.hidden = true;
             chatbotBookingBar.classList.add('hidden');
+            chatbotBookingBar.style.display = 'none';
         }
-
-        let stepTitle = 'Step 1: Pick Dates';
-        let desc = 'Setting up reservation…';
-        let actionLabel = 'Pick Dates';
-        let actionIcon = 'bi-calendar3';
-
-        const total = calculateDraftTotal();
-        const deposit = Math.max(roundToTwo(total * 0.5), total > 0 ? 20.00 : 0);
-        const amCount = bookingDraft.amenities ? bookingDraft.amenities.length : (bookingDraft.amenity ? 1 : 0);
-
-        switch (bookingDraft.step) {
-            case 'date_slot':
-                stepTitle = 'Step 1: Dates & Sessions';
-                desc = bookingDraft.startDate
-                    ? `${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`
-                    : 'Pick your stay dates';
-                actionLabel = bookingDraft.startDate ? 'Edit Dates' : 'Pick Dates';
-                actionIcon = 'bi-calendar3';
-                break;
-            case 'amenity':
-                stepTitle = 'Step 2: Choose Amenities';
-                desc = amCount > 0
-                    ? `${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} Selected (₱${total.toFixed(2)})`
-                    : `Schedule: ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`;
-                actionLabel = amCount > 0 ? `Amenities (${amCount})` : 'Choose Amenities';
-                actionIcon = amCount > 0 ? 'bi-card-checklist' : 'bi-houses';
-                break;
-            case 'guest_info':
-                stepTitle = 'Step 3: Primary Booker Information';
-                desc = bookingDraft.guest?.name
-                    ? `Booker: ${bookingDraft.guest.name} (${bookingDraft.guest.guests_count || 1} pax)`
-                    : `${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} • Fill booker details`;
-                actionLabel = bookingDraft.guest?.name ? 'Edit Booker' : 'Enter Info in Modal';
-                actionIcon = 'bi-person-vcard';
-                break;
-            case 'review':
-                stepTitle = 'Step 4: Review Booking';
-                desc = `50% Deposit: ₱${deposit.toFixed(2)} (Total: ₱${total.toFixed(2)})`;
-                actionLabel = 'Review & Pay';
-                actionIcon = 'bi-credit-card';
-                break;
-            case 'payment':
-                stepTitle = 'Step 4: Complete Downpayment';
-                desc = `Pay ₱${deposit.toFixed(2)} via Xendit QR/E-Wallet`;
-                actionLabel = 'Pay Deposit';
-                actionIcon = 'bi-shield-check';
-                break;
-            case 'confirmed':
-                stepTitle = 'Booking Confirmed!';
-                desc = `Ref #${bookingDraft.confirmedReservationId || 'Online'}`;
-                actionLabel = 'View Receipt';
-                actionIcon = 'bi-receipt';
-                break;
-        }
-
-        if (chatbotBookingBarStepName) chatbotBookingBarStepName.textContent = stepTitle;
-        if (chatbotBookingBarDesc) chatbotBookingBarDesc.textContent = desc;
-
-        if (chatbotBarActionBtn) {
-            chatbotBarActionBtn.innerHTML = `<i class="bi ${actionIcon} me-1"></i> <span id="chatbotBarActionBtnText">${actionLabel}</span>`;
-        }
-        if (chatbotBarViewPickBtn) {
-            chatbotBarViewPickBtn.innerHTML = `<i class="bi ${actionIcon} me-1" id="chatbotBarViewPickIcon"></i> <span id="chatbotBarViewPickText">${actionLabel}</span>`;
-        }
-
-        // Update Bottom Floating Dock (Always docked right above chat input)
         if (chatbotDock) {
-            chatbotDock.hidden = false;
-            chatbotDock.classList.remove('hidden');
-
-            if (chatbotDockBadgeText) {
-                chatbotDockBadgeText.textContent = 'Booking Mode';
-            }
-
-            if (chatbotDockSchedule) {
-                if (bookingDraft.step === 'amenity') {
-                    chatbotDockSchedule.textContent = amCount > 0
-                        ? `Step 2: ${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} (₱${total.toFixed(2)})`
-                        : 'Step 2: Choose Amenities';
-                } else if (bookingDraft.step === 'date_slot') {
-                    chatbotDockSchedule.textContent = bookingDraft.startDate
-                        ? `Step 1: ${bookingDraft.startDate}`
-                        : 'Step 1: Pick Dates';
-                } else if (bookingDraft.step === 'guest_info') {
-                    chatbotDockSchedule.textContent = bookingDraft.guest?.name
-                        ? `Step 3: ${bookingDraft.guest.name}`
-                        : 'Step 3: Primary Booker';
-                } else if (bookingDraft.step === 'review') {
-                    chatbotDockSchedule.textContent = 'Step 4: Review Booking';
-                } else if (bookingDraft.step === 'payment') {
-                    chatbotDockSchedule.textContent = `Step 4: Pay ₱${deposit.toFixed(2)}`;
-                } else {
-                    chatbotDockSchedule.textContent = desc;
-                }
-            }
-            if (chatbotDockActionBtn) {
-                let dockAction = actionLabel;
-                let dockIcon = actionIcon;
-                if (bookingDraft.step === 'amenity' && amCount > 0) {
-                    dockAction = 'Continue to Booker →';
-                    dockIcon = 'bi-arrow-right-circle';
-                }
-                chatbotDockActionBtn.innerHTML = `<i class="bi ${dockIcon} text-[12px]" id="chatbotDockActionIcon"></i> <span id="chatbotDockActionText">${dockAction}</span>`;
-            }
-        }
-
-        // Update Step Pills with Tailwind classes
-        const curStep = bookingDraft.step;
-
-        // Step 1: Dates
-        if (cbBarStep1) {
-            const isDone = Boolean(bookingDraft.startDate);
-            const isActive = curStep === 'date_slot';
-            cbBarStep1.className = isActive ? pillActiveCls : (isDone ? pillDoneCls : pillPendingCls);
-            cbBarStep1.innerHTML = `
-                <span class="w-4 h-4 rounded-full ${isActive ? 'bg-emerald-600 text-white' : (isDone ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 text-emerald-300')} flex items-center justify-center text-[10px] font-bold">
-                    ${isDone ? '<i class="bi bi-check-lg"></i>' : '1'}
-                </span>
-                <span class="truncate">${isDone ? 'Dates ✓' : 'Dates'}</span>
-            `;
-        }
-
-        // Step 2: Amenities
-        if (cbBarStep2) {
-            const isDone = amCount > 0;
-            const isActive = curStep === 'amenity';
-            cbBarStep2.className = isActive ? pillActiveCls : (isDone ? pillDoneCls : pillPendingCls);
-            cbBarStep2.innerHTML = `
-                <span class="w-4 h-4 rounded-full ${isActive ? 'bg-emerald-600 text-white' : (isDone ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 text-emerald-300')} flex items-center justify-center text-[10px] font-bold">
-                    ${isDone ? '<i class="bi bi-check-lg"></i>' : '2'}
-                </span>
-                <span class="truncate">${isDone ? `${amCount} Amenity✓` : 'Amenities'}</span>
-            `;
-        }
-
-        // Step 3: Guest Info
-        if (cbBarStep3) {
-            const isDone = Boolean(bookingDraft.guest?.name);
-            const isActive = curStep === 'guest_info';
-            cbBarStep3.className = isActive ? pillActiveCls : (isDone ? pillDoneCls : pillPendingCls);
-            cbBarStep3.innerHTML = `
-                <span class="w-4 h-4 rounded-full ${isActive ? 'bg-emerald-600 text-white' : (isDone ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 text-emerald-300')} flex items-center justify-center text-[10px] font-bold">
-                    ${isDone ? '<i class="bi bi-check-lg"></i>' : '3'}
-                </span>
-                <span class="truncate">${isDone ? 'Guest ✓' : 'Guest Info'}</span>
-            `;
-        }
-
-        // Step 4: Review & Pay
-        if (cbBarStep4) {
-            const isDone = curStep === 'confirmed';
-            const isActive = curStep === 'review' || curStep === 'payment';
-            cbBarStep4.className = isActive ? pillActiveCls : (isDone ? pillDoneCls : pillPendingCls);
-            cbBarStep4.innerHTML = `
-                <span class="w-4 h-4 rounded-full ${isActive ? 'bg-emerald-600 text-white' : (isDone ? 'bg-emerald-400 text-emerald-950' : 'bg-emerald-800 text-emerald-300')} flex items-center justify-center text-[10px] font-bold">
-                    ${isDone ? '<i class="bi bi-check-lg"></i>' : '4'}
-                </span>
-                <span class="truncate">${isDone ? 'Paid ✓' : 'Review & Pay'}</span>
-            `;
+            chatbotDock.hidden = true;
+            chatbotDock.classList.add('hidden');
+            chatbotDock.style.display = 'none';
         }
     };
 
@@ -462,6 +329,31 @@ document.addEventListener('DOMContentLoaded', () => {
             || '/storage/design_images/main_logo.jpeg';
     };
 
+    // Bind interactive buttons inside message bubbles
+    const bindMessageActionButtons = (container) => {
+        if (!container) return;
+        container.querySelectorAll('.cb-btn-view-amenities').forEach(b => {
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', () => triggerAmenitySelection());
+        });
+        container.querySelectorAll('.cb-btn-proceed-downpayment').forEach(b => {
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', (e) => {
+                const btn = e.currentTarget;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting to payment…';
+                initiateXenditPayment(btn);
+            });
+        });
+        container.querySelectorAll('.cb-btn-open-guest-modal').forEach(b => {
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', () => openGuestModal());
+        });
+    };
+
     // Add plain text / markdown message to chat
     const addMessage = (content, isBot = true, shouldSave = true) => {
         if (isBot) {
@@ -485,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
+            bindMessageActionButtons(messageDiv);
         } else {
             messageDiv.innerHTML = `
                 <div class="chatbot-message__body">
@@ -533,6 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         messageDiv.appendChild(bodyDiv);
+        bindMessageActionButtons(messageDiv);
 
         chatbotMessages.appendChild(messageDiv);
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
@@ -599,87 +493,446 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let awaitingBookingConfirmation = false;
 
-    // Ask for Confirmation before entering Booking Mode
-    const askBookingConfirmation = () => {
-        if (bookingDraft && bookingDraft.active) {
-            addMessage(`You are already in booking mode! Your current step is **${bookingDraft.step === 'amenity' ? 'Choose Amenities' : (bookingDraft.step === 'guest_info' ? 'Booker Details' : 'Pick Dates')}**. Click the button above to continue your booking or type 'cancel booking' to reset.`, true);
-            return;
-        }
-
-        awaitingBookingConfirmation = true;
-
-        const confirmCard = document.createElement('div');
-        confirmCard.className = 'chatbot-booking-card';
-        confirmCard.innerHTML = `
-            <div class="chatbot-card-header">
-                <span><i class="bi bi-calendar-check text-emerald-600 me-1.5"></i> Online Reservation Assistant</span>
-                <span class="text-xs text-emerald-600 font-bold">Hinaguan Park</span>
-            </div>
-            <div style="font-size:0.8rem;color:#064e3b;line-height:1.45;margin-bottom:0.6rem;">
-                I can guide you through reserving your stay:
-                <ul style="margin:0.35rem 0 0 1rem;padding:0;list-style-type:disc;color:#047857;font-size:0.75rem;">
-                    <li>Select check-in &amp; check-out dates and sessions</li>
-                    <li>Browse live available cottages, payags, and A-houses</li>
-                    <li>Provide guest details and receive your official digital pass</li>
-                </ul>
-            </div>
-            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbConfirmStartBookingBtn" style="flex:1;">
-                    <i class="bi bi-check-circle-fill me-1"></i> Yes, Let's Book Now
-                </button>
-                <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbDeclineStartBookingBtn" style="flex:1;">
-                    <i class="bi bi-chat-dots me-1"></i> Not Yet, Ask Questions
-                </button>
-            </div>
-        `;
-
-        confirmCard.querySelector('#cbConfirmStartBookingBtn')?.addEventListener('click', () => {
-            awaitingBookingConfirmation = false;
-            const b = confirmCard.querySelector('#cbConfirmStartBookingBtn');
-            if (b) {
-                b.disabled = true;
-                b.innerHTML = '<i class="bi bi-check-lg me-1"></i> Starting Booking…';
-            }
-            startBookingMode();
+    // ─────────────────────────────────────────────────────────────
+    // Conversational Action Buttons & Helpers
+    // ─────────────────────────────────────────────────────────────
+    const createViewAmenitiesButton = (label = '✨ View Available Amenities') => {
+        const wrap = document.createElement('div');
+        wrap.className = 'chatbot-inline-action-wrap mt-2.5 mb-1';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cb-btn-view-amenities inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer';
+        btn.innerHTML = `<i class="bi bi-houses-fill text-sm"></i> <span>${escapeHtml(label)}</span>`;
+        btn.addEventListener('click', () => {
+            triggerAmenitySelection();
         });
-
-        confirmCard.querySelector('#cbDeclineStartBookingBtn')?.addEventListener('click', () => {
-            awaitingBookingConfirmation = false;
-            const b = confirmCard.querySelector('#cbDeclineStartBookingBtn');
-            if (b) b.disabled = true;
-            addMessage("No problem at all! 😊 Feel free to ask about our cottages, payags, pool rates, day/night schedules, or park policies anytime.", true);
-        });
-
-        addCustomCardMessage(
-            "I can certainly book a reservation for you right here in our chat! 🌿\n\nWould you like to start your booking now?",
-            confirmCard
-        );
+        wrap.appendChild(btn);
+        return wrap;
     };
 
-    // Start Booking Mode
-    const startBookingMode = () => {
+    const createProceedPaymentButton = (depositAmount = 0) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'chatbot-inline-action-wrap mt-2.5 mb-1 flex flex-col gap-1.5';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cb-btn-proceed-downpayment inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer';
+        btn.innerHTML = `<i class="bi bi-credit-card-2-front-fill text-base"></i> <span>Proceed to 50% Downpayment (₱${Number(depositAmount).toFixed(2)})</span>`;
+        btn.addEventListener('click', (e) => {
+            const b = e.currentTarget;
+            b.disabled = true;
+            b.innerHTML = '<i class="bi bi-hourglass-split"></i> Connecting to payment…';
+            initiateXenditPayment(b);
+        });
+        wrap.appendChild(btn);
+        return wrap;
+    };
+
+    const createEnterGuestDetailsButton = () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'chatbot-inline-action-wrap mt-2 mb-1';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cb-btn-open-guest-modal inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 font-semibold text-xs transition-all cursor-pointer';
+        btn.innerHTML = `<i class="bi bi-person-vcard text-sm"></i> <span>Open Booker Details Form</span>`;
+        btn.addEventListener('click', () => {
+            openGuestModal();
+        });
+        wrap.appendChild(btn);
+        return wrap;
+    };
+
+    // Typing indicator
+    const showTyping = () => {
+        const existing = document.getElementById('chatbotTyping');
+        if (existing) return;
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chatbot-message chatbot-message--bot chatbot-message--typing';
+        typingDiv.id = 'chatbotTyping';
+        typingDiv.innerHTML = `
+            <div class="chatbot-message__avatar">
+                <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
+            </div>
+            <div class="chatbot-message__body">
+                <div class="chatbot-message__content">
+                    <div class="chatbot-typing">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatbotMessages.appendChild(typingDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    };
+
+    const hideTyping = () => {
+        const typingDiv = document.getElementById('chatbotTyping');
+        if (typingDiv) typingDiv.remove();
+    };
+
+    // Central dispatcher: Sends user message and bookingDraft to Bren AI
+    const sendMessagePayloadToBot = async (userMessage) => {
+        const modelSelectEl = document.getElementById('chatbotModel');
+        const currentModel = modelSelectEl ? modelSelectEl.value : 'openrouter/free';
+
+        const historyPayload = messages
+            .filter(m => !/(?:user\s+safety|response\s+safety)/i.test(m.content) && !m.content.includes("im confuse can you state it again"))
+            .slice(-6)
+            .map(m => ({
+                role: m.isBot ? 'assistant' : 'user',
+                content: m.content
+            }));
+
+        showTyping();
+        if (chatbotSend) chatbotSend.disabled = true;
+
+        try {
+            const response = await fetch('/guest-chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: userMessage,
+                    history: historyPayload,
+                    model: currentModel,
+                    booking_draft: bookingDraft,
+                }),
+            });
+
+            const data = await response.json();
+            hideTyping();
+            if (chatbotSend) chatbotSend.disabled = false;
+
+            if (conversationCleared) return;
+
+            // Sync bookingDraft returned from backend
+            if (data.booking_draft) {
+                bookingDraft = Object.assign({}, bookingDraft, data.booking_draft);
+                saveBookingDraft();
+            }
+
+            if (data.booking_action === 'show_picks') {
+                showBookingPicksSummary();
+                return;
+            } else if (data.booking_action === 'cancel_booking') {
+                clearBookingDraft();
+            }
+
+            if (data.reply) {
+                const msgEl = addMessage(data.reply, true);
+
+                // If in guest info step, attach the enter guest details button
+                if (bookingDraft.active && bookingDraft.step === 'guest_info' && msgEl) {
+                    if (!msgEl.querySelector('.cb-btn-open-guest-modal')) {
+                        const guestBtn = createEnterGuestDetailsButton();
+                        msgEl.querySelector('.chatbot-message__body')?.appendChild(guestBtn);
+                    }
+                }
+                // If in payment step, attach the proceed payment button (only if not currently evaluating tentative additions/changes)
+                else if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && msgEl) {
+                    if (!msgEl.querySelector('.cb-btn-proceed-downpayment')) {
+                        const total = calculateDraftTotal();
+                        const deposit = Math.max(roundToTwo(total * 0.5), total > 0 ? 20.00 : 0);
+                        const btnWrap = createProceedPaymentButton(deposit);
+                        msgEl.querySelector('.chatbot-message__body')?.appendChild(btnWrap);
+                    }
+                }
+            } else {
+                addMessage('I apologize, but I encountered an error. Please try again.', true);
+            }
+        } catch (error) {
+            console.error('Guest chatbot error:', error);
+            hideTyping();
+            if (chatbotSend) chatbotSend.disabled = false;
+            if (conversationCleared) return;
+            addMessage('I apologize, but the service is temporarily unavailable. Please try again later.', true);
+        } finally {
+            if (chatbotSend) chatbotSend.disabled = false;
+            chatbotInput?.focus();
+        }
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // Conversational Date & Session Parser (NLP)
+    // ─────────────────────────────────────────────────────────────
+    const parseDateAndSession = (rawText, referenceDate = new Date()) => {
+        if (!rawText || typeof rawText !== 'string') return null;
+        const text = rawText.trim().toLowerCase();
+
+        // 1. Detect slot / session
+        let startSlot = null;
+        let endSlot = null;
+        let isWholeDay = false;
+
+        if (/\b(?:whole\s*day|wholeday|24\s*(?:hrs?|hours?)|day\s*(?:and|&)\s*night)\b/i.test(text)) {
+            isWholeDay = true;
+            startSlot = 'Daytime';
+            endSlot = 'Nighttime';
+        } else if (/\b(?:night(?:time)?|overnight|evening|gabii|gabi)\b/i.test(text)) {
+            startSlot = 'Nighttime';
+            endSlot = 'Nighttime';
+        } else if (/\b(?:day(?:time)?|morning|afternoon|buntag|hapon|adlaw|araw)\b/i.test(text)) {
+            startSlot = 'Daytime';
+            endSlot = 'Daytime';
+        }
+
+        if (!startSlot) {
+            startSlot = 'Daytime';
+            endSlot = 'Daytime';
+        }
+
+        const toIso = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        const curYear = referenceDate.getFullYear();
+        let startDate = null;
+        let endDate = null;
+
+        // Relative dates
+        if (/\b(?:today|karon|karong\s+adlawa|ngayon)\b/i.test(text)) {
+            const d = new Date(referenceDate);
+            startDate = toIso(d);
+            endDate = startDate;
+        } else if (/\b(?:tomorrow|ugma|bukas)\b/i.test(text)) {
+            const d = new Date(referenceDate);
+            d.setDate(d.getDate() + 1);
+            startDate = toIso(d);
+            endDate = startDate;
+        } else if (/\b(?:day\s+after\s+tomorrow|sunod\s+ugma|samakalawa)\b/i.test(text)) {
+            const d = new Date(referenceDate);
+            d.setDate(d.getDate() + 2);
+            startDate = toIso(d);
+            endDate = startDate;
+        }
+
+        // Days of week
+        const daysOfWeek = {
+            sunday: 0, sun: 0,
+            monday: 1, mon: 1,
+            tuesday: 2, tue: 2, tues: 2,
+            wednesday: 3, wed: 3,
+            thursday: 4, thu: 4, thur: 4, thurs: 4,
+            friday: 5, fri: 5,
+            saturday: 6, sat: 6
+        };
+
+        if (!startDate) {
+            const dowMatch = text.match(/\b(?:this|next|coming)?\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)\b/i);
+            if (dowMatch) {
+                const targetDay = daysOfWeek[dowMatch[1].toLowerCase()];
+                if (targetDay !== undefined) {
+                    const currentDay = referenceDate.getDay();
+                    let diff = targetDay - currentDay;
+                    if (diff <= 0) diff += 7;
+                    if (/next\s+/i.test(text) && diff < 7) diff += 7;
+                    const d = new Date(referenceDate);
+                    d.setDate(d.getDate() + diff);
+                    startDate = toIso(d);
+                    endDate = startDate;
+                }
+            }
+        }
+
+        // Month parsing
+        const monthMap = {
+            january: 1, jan: 1,
+            february: 2, feb: 2,
+            march: 3, mar: 3,
+            april: 4, apr: 4,
+            may: 5,
+            june: 6, jun: 6,
+            july: 7, jul: 7,
+            august: 8, aug: 8,
+            september: 9, sep: 9, sept: 9,
+            october: 10, oct: 10,
+            november: 11, nov: 11,
+            december: 12, dec: 12
+        };
+
+        // Range like: "Nov 25 to Nov 27", "Nov 25 - 28", "December 1 to 5", "Nov 25 to Dec 2"
+        if (!startDate) {
+            const rangeRegex = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,\s*(\d{4}))?\s*(?:to|until|-|–|hangtod|hanggang)\s*(?:(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+)?(\d{1,2})(?:st|nd|rd|th)?(?:\s*,\s*(\d{4}))?\b/i;
+            const rMatch = text.match(rangeRegex);
+            if (rMatch) {
+                const m1 = monthMap[rMatch[1].toLowerCase()];
+                const d1 = parseInt(rMatch[2], 10);
+                const y1 = rMatch[3] ? parseInt(rMatch[3], 10) : curYear;
+
+                const m2 = rMatch[4] ? monthMap[rMatch[4].toLowerCase()] : m1;
+                const d2 = parseInt(rMatch[5], 10);
+                const y2 = rMatch[6] ? parseInt(rMatch[6], 10) : y1;
+
+                startDate = `${y1}-${String(m1).padStart(2, '0')}-${String(d1).padStart(2, '0')}`;
+                endDate = `${y2}-${String(m2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`;
+            }
+        }
+
+        // Single month day: "Nov 25", "November 25, 2026", "25 Nov"
+        if (!startDate) {
+            const singleRegex = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,\s*(\d{4}))?\b/i;
+            const sMatch = text.match(singleRegex);
+            if (sMatch) {
+                const m = monthMap[sMatch[1].toLowerCase()];
+                const d = parseInt(sMatch[2], 10);
+                let y = sMatch[3] ? parseInt(sMatch[3], 10) : curYear;
+                const candidate = new Date(y, m - 1, d);
+                if (candidate < referenceDate && (referenceDate - candidate) > (30 * 86400000)) {
+                    y += 1;
+                }
+                startDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                endDate = startDate;
+            }
+        }
+
+        // Format like: "25 Nov", "25th of November"
+        if (!startDate) {
+            const reverseMatch = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?(?:\s*,\s*(\d{4}))?\b/i;
+            const revMatch = text.match(reverseMatch);
+            if (revMatch) {
+                const d = parseInt(revMatch[1], 10);
+                const m = monthMap[revMatch[2].toLowerCase()];
+                const y = revMatch[3] ? parseInt(revMatch[3], 10) : curYear;
+                startDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                endDate = startDate;
+            }
+        }
+
+        // ISO format: "2026-11-25"
+        if (!startDate) {
+            const isoMatch = text.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+            if (isoMatch) {
+                startDate = `${isoMatch[1]}-${String(isoMatch[2]).padStart(2, '0')}-${String(isoMatch[3]).padStart(2, '0')}`;
+                endDate = startDate;
+            }
+        }
+
+        // Slash format: "11/25/2026", "11/25"
+        if (!startDate) {
+            const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+            if (slashMatch) {
+                const m = parseInt(slashMatch[1], 10);
+                const d = parseInt(slashMatch[2], 10);
+                let y = slashMatch[3] ? parseInt(slashMatch[3], 10) : curYear;
+                if (y < 100) y += 2000;
+                if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                    startDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    endDate = startDate;
+                }
+            }
+        }
+
+        if (!startDate) return null;
+
+        if (!endDate || endDate < startDate) {
+            endDate = startDate;
+        }
+
+        const isMultiDay = startDate !== endDate;
+        if (isMultiDay && isWholeDay) {
+            endSlot = 'Nighttime';
+        }
+
+        return {
+            startDate,
+            endDate,
+            startSlot,
+            endSlot,
+            isWholeDay,
+            isMultiDay,
+            success: true
+        };
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // Conversational Guest Info Parser (NLP)
+    // ─────────────────────────────────────────────────────────────
+    const parseGuestInfoFromText = (text) => {
+        if (!text || typeof text !== 'string') return null;
+
+        // Mobile: 09171234567, +639171234567, 639171234567, 0917 123 4567
+        const phoneMatch = text.match(/(?:(?:\+?63\s*9|09)\d{2}[\s\-]?\d{3}[\s\-]?\d{4}|\b(?:09|639)\d{9}\b)/);
+        let phone = null;
+        if (phoneMatch) {
+            let clean = phoneMatch[0].replace(/[\s\-\+\(\)]/g, '');
+            if (clean.startsWith('639')) clean = '0' + clean.slice(2);
+            phone = clean;
+        }
+
+        // Email
+        const emailMatch = text.match(/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/);
+        const email = emailMatch ? emailMatch[0].trim() : null;
+
+        // Headcount
+        const paxMatch = text.match(/\b(\d+)\s*(?:pax|people|persons|guests|heads|ka\s+tawo|tao)\b/i);
+        const count = paxMatch ? parseInt(paxMatch[1], 10) : null;
+
+        // Name extraction
+        let name = null;
+        const nameMatch = text.match(/(?:name\s*(?:is|:)?|ako\s+si|i\s+am|im)\s+([A-Za-z\s\.\-]{2,40})/i);
+        if (nameMatch) {
+            name = nameMatch[1].trim();
+        } else if (phone || email) {
+            let remaining = text;
+            if (phoneMatch) remaining = remaining.replace(phoneMatch[0], '');
+            if (emailMatch) remaining = remaining.replace(emailMatch[0], '');
+            if (paxMatch) remaining = remaining.replace(paxMatch[0], '');
+            remaining = remaining.replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ').trim();
+            if (/^[A-Za-z\s\.\-]{2,40}$/.test(remaining) && remaining.split(' ').length <= 5) {
+                name = remaining;
+            }
+        }
+
+        if (!phone && !email && !name && !count) return null;
+
+        return {
+            name,
+            phone,
+            email,
+            count
+        };
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // Conversational Booking Start (Purely Chat-Driven, No Popups)
+    // ─────────────────────────────────────────────────────────────
+    const startBookingMode = (prefilledDate = null) => {
         stopPaymentPolling();
         isPaymentConfirmed = false;
         bookingSuccessCardRendered = false;
         isCheckingPayment = false;
+        markTermsAccepted(); // Accept terms silently so no popup interrupts conversation
+
         bookingDraft.active = true;
-        bookingDraft.step = 'date_slot';
+        if (!bookingDraft.step) bookingDraft.step = 'date_slot';
+
+        if (prefilledDate && prefilledDate.startDate) {
+            bookingDraft.startDate = prefilledDate.startDate;
+            bookingDraft.endDate = prefilledDate.endDate || prefilledDate.startDate;
+            bookingDraft.startSlot = prefilledDate.startSlot || 'Daytime';
+            bookingDraft.endSlot = prefilledDate.endSlot || prefilledDate.startSlot || 'Daytime';
+            bookingDraft.slot = bookingDraft.startSlot;
+            bookingDraft.step = 'amenity';
+            saveBookingDraft();
+
+            const schedText = `${formatDateReadable(bookingDraft.startDate)} (${bookingDraft.startSlot})`;
+            sendMessagePayloadToBot(`I would like to book for ${schedText}.`);
+            return;
+        }
+
         saveBookingDraft();
+        sendMessagePayloadToBot("I would like to book via chat.");
+    };
 
-        const card = createDateSlotCard();
-        addCustomCardMessage(
-            "Welcome to online booking at Hinaguan Nature Park. Let's arrange your reservation through our conversation.\n\nPlease review and agree to our **Terms & Conditions**, then choose your **Check-in & Check-out dates and session slots** in our schedule chooser:",
-            card
-        );
-
-        // Open Terms Modal first if not yet accepted in this session, otherwise open Date modal
-        setTimeout(() => {
-            if (!hasAcceptedTerms()) {
-                openTermsModal();
-            } else {
-                openDateModal();
-            }
-        }, 150);
+    const askBookingConfirmation = () => {
+        startBookingMode();
     };
 
     // Step 1: Create Date & Slot In-Chat Card (Compact trigger for Date Modal)
@@ -1350,6 +1603,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Date & Slot Confirmed -> Advance to Step 2 (Amenity)
     const onDateSlotConfirmed = async (startDate, endDate, startSlot, endSlot) => {
+        bookingDraft.active = true;
         bookingDraft.startDate = startDate;
         bookingDraft.endDate = endDate || startDate;
         bookingDraft.startSlot = startSlot;
@@ -1358,28 +1612,29 @@ document.addEventListener('DOMContentLoaded', () => {
         bookingDraft.step = 'amenity';
         saveBookingDraft();
 
+        if (chatbotDateModal && !chatbotDateModal.hidden) {
+            closeDateModal();
+        }
+
         const startFmt = formatDateReadable(startDate);
         const endFmt = formatDateReadable(endDate);
         let scheduleDesc = '';
         if (startDate === endDate) {
             if (startSlot === 'Daytime' && endSlot === 'Nighttime') {
-                scheduleDesc = `**${startFmt} [Whole Day 24 hrs (Day & Night)]**`;
+                scheduleDesc = `${startFmt} [Whole Day 24 hrs]`;
             } else {
-                scheduleDesc = `**${startFmt} [${startSlot}]**`;
+                scheduleDesc = `${startFmt} [${startSlot}]`;
             }
         } else {
-            scheduleDesc = `**${startFmt} [${startSlot}] → ${endFmt} [${endSlot}]**`;
+            scheduleDesc = `${startFmt} [${startSlot}] to ${endFmt} [${endSlot}]`;
         }
 
-        addMessage(`Great! I've set your schedule to ${scheduleDesc}. Checking our live database for available amenities...`, true);
-
-        // Fetch live amenities with live availability and conflict prevention
+        // Prefetch amenities silently in background
         try {
             const res = await fetch(`/guest-chatbot/booking/amenities?start_date=${startDate}&end_date=${endDate || startDate}&start_slot=${startSlot}&end_slot=${endSlot}`, {
                 headers: { 'Accept': 'application/json' }
             });
             const data = await res.json();
-
             if (res.ok && data.success && Array.isArray(data.amenities)) {
                 cachedAmenities = data.amenities;
                 cachedAmenitiesMeta = data;
@@ -1387,34 +1642,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 bookingDraft.nightCount = data.night_count || 0;
                 bookingDraft.daysSpan = data.days_span || 1;
                 saveBookingDraft();
-
-                if (data.slot_passed) {
-                    addMessage("⚠️ Note: Daytime session for today has already passed. Please choose Nighttime or pick an upcoming date.", true);
-                    const retryCard = createDateSlotCard();
-                    addCustomCardMessage("Please pick a different session slot or upcoming date in our date modal:", retryCard);
-                    setTimeout(() => {
-                        openDateModal();
-                    }, 150);
-                    return;
-                }
-
-                const card = createAmenitySelectionCard(data.amenities, data);
-                addCustomCardMessage(
-                    `Here are our live amenities for ${scheduleDesc}. Please pick your amenities in our visual chooser dialog:`,
-                    card
-                );
-
-                // Seamlessly open the spacious visual amenity choosing modal
-                setTimeout(() => {
-                    openAmenityModal(data.amenities, data);
-                }, 150);
-            } else {
-                addMessage("I couldn't fetch live amenities right now. Please try again or refresh.", true);
             }
-        } catch (err) {
-            console.error('Error fetching amenities availability:', err);
-            addMessage("Network error fetching available amenities. Please check your connection.", true);
-        }
+        } catch (err) { }
+
+        const userMsg = `I want to book for ${scheduleDesc}.`;
+        addMessage(userMsg, false);
+        sendMessagePayloadToBot(userMsg);
     };
 
     // Step 2: Create Amenity Selection In-Chat Card (Compact trigger for modal)
@@ -1494,19 +1727,34 @@ document.addEventListener('DOMContentLoaded', () => {
             openAmenityModal(cachedAmenities, cachedAmenitiesMeta);
             return;
         }
-        await onDateSlotConfirmed(
-            bookingDraft.startDate,
-            bookingDraft.endDate || bookingDraft.startDate,
-            bookingDraft.startSlot || 'Daytime',
-            bookingDraft.endSlot || bookingDraft.startSlot || 'Daytime'
-        );
+        showTyping();
+        try {
+            const startSlot = bookingDraft.startSlot || bookingDraft.slot || 'Daytime';
+            const endSlot = bookingDraft.endSlot || bookingDraft.slot || 'Daytime';
+            const res = await fetch(`/guest-chatbot/booking/amenities?start_date=${bookingDraft.startDate}&end_date=${bookingDraft.endDate || bookingDraft.startDate}&start_slot=${startSlot}&end_slot=${endSlot}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+            hideTyping();
+            if (res.ok && data.success && Array.isArray(data.amenities)) {
+                cachedAmenities = data.amenities;
+                cachedAmenitiesMeta = data;
+                openAmenityModal(cachedAmenities, cachedAmenitiesMeta);
+            }
+        } catch (e) {
+            hideTyping();
+        }
     };
 
+    // Open Amenity Choosing Modal (Full Viewport Dialog)
     // Open Amenity Choosing Modal (Full Viewport Dialog)
     const openAmenityModal = (amenities, metaData) => {
         if (!chatbotAmenityModal || !cbAmenityModalBody || !cbAmenityModalFooter) return;
         cachedAmenities = amenities;
         cachedAmenitiesMeta = metaData;
+
+        // Display ONLY available amenities on this schedule!
+        const availableAmenities = (amenities || []).filter(a => Boolean(a.is_available));
 
         const startFmt = formatDateReadable(metaData.start_date || bookingDraft.startDate);
         const endFmt = formatDateReadable(metaData.end_date || bookingDraft.endDate || metaData.start_date);
@@ -1515,22 +1763,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const staySummary = `${metaData.day_count} Day · ${metaData.night_count} Night`;
 
         if (chatbotAmenityModalSubtitle) {
-            chatbotAmenityModalSubtitle.textContent = `Schedule: ${startFmt} [${startSlot}] → ${endFmt} [${endSlot}] (${staySummary})`;
+            chatbotAmenityModalSubtitle.textContent = `Available for ${startFmt} [${startSlot}] → ${endFmt} [${endSlot}] (${staySummary})`;
         }
 
         const counts = {
-            all: amenities.length,
-            cottage: amenities.filter(a => a.category === 'Cottage').length,
-            payag: amenities.filter(a => a.category === 'Payag').length,
-            ahouse: amenities.filter(a => a.category === 'A-House').length,
-            hall: amenities.filter(a => a.category === 'Function Hall').length,
+            all: availableAmenities.length,
+            cottage: availableAmenities.filter(a => a.category === 'Cottage').length,
+            payag: availableAmenities.filter(a => a.category === 'Payag').length,
+            ahouse: availableAmenities.filter(a => a.category === 'A-House').length,
+            hall: availableAmenities.filter(a => a.category === 'Function Hall').length,
         };
-
-        const selectedIds = new Set(
-            (bookingDraft.amenities && bookingDraft.amenities.length > 0)
-                ? bookingDraft.amenities.map(a => String(a.id))
-                : (bookingDraft.amenity ? [String(bookingDraft.amenity.id)] : [])
-        );
 
         const getCategoryIconHtml = (category) => {
             switch (category) {
@@ -1545,17 +1787,20 @@ document.addEventListener('DOMContentLoaded', () => {
             <!-- Category Filter Tabs -->
             <div class="chatbot-category-tabs" id="cbModalCategoryTabs">
                 <button type="button" class="chatbot-tab-btn is-active" data-cat="all">
-                    <i class="bi bi-grid-fill me-1"></i> All <span class="chatbot-tab-count">${counts.all}</span>
+                    <i class="bi bi-grid-fill me-1"></i> All Available <span class="chatbot-tab-count">${counts.all}</span>
                 </button>
+                ${counts.cottage > 0 ? `
                 <button type="button" class="chatbot-tab-btn" data-cat="Cottage">
                     <i class="bi bi-house me-1"></i> Cottages <span class="chatbot-tab-count">${counts.cottage}</span>
-                </button>
+                </button>` : ''}
+                ${counts.payag > 0 ? `
                 <button type="button" class="chatbot-tab-btn" data-cat="Payag">
                     <i class="bi bi-tree me-1"></i> Payags <span class="chatbot-tab-count">${counts.payag}</span>
-                </button>
+                </button>` : ''}
+                ${counts.ahouse > 0 ? `
                 <button type="button" class="chatbot-tab-btn" data-cat="A-House">
                     <i class="bi bi-house-door me-1"></i> A-Houses <span class="chatbot-tab-count">${counts.ahouse}</span>
-                </button>
+                </button>` : ''}
                 ${counts.hall > 0 ? `
                 <button type="button" class="chatbot-tab-btn" data-cat="Function Hall">
                     <i class="bi bi-building me-1"></i> Function Halls <span class="chatbot-tab-count">${counts.hall}</span>
@@ -1567,34 +1812,18 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         cbAmenityModalFooter.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span id="cbModalCartCountLabel" style="font-size:0.8rem;font-weight:700;color:#065f46;display:flex;align-items:center;gap:0.35rem;">
-                    <i class="bi bi-cart-check"></i>
-                    <span>0 Amenities Selected</span>
-                </span>
-                <strong id="cbModalCartTotalLabel" style="font-size:0.95rem;color:#047857;">₱0.00</strong>
-            </div>
-            <div id="cbModalDepositNotice" style="font-size:0.75rem;color:#047857;display:flex;align-items:center;gap:0.35rem;">
-                <i class="bi bi-shield-check text-emerald-600"></i>
-                <span>50% Required Downpayment: <strong id="cbModalDepositLabel">₱0.00</strong></span>
-            </div>
-            <div class="chatbot-cart-chips" id="cbModalCartChips"></div>
-            <div style="display:flex;gap:0.5rem;margin-top:0.35rem;">
-                <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbModalCancelBtn" style="width:30%;">
-                    <i class="bi bi-x-circle me-1"></i> Close
-                </button>
-                <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbModalConfirmBtn" style="width:70%;" disabled>
-                    Select Amenity to Continue <i class="bi bi-arrow-right ms-1"></i>
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:1rem;flex-wrap:wrap;">
+                <div style="font-size:0.8rem;color:#047857;display:flex;align-items:center;gap:0.4rem;">
+                    <i class="bi bi-info-circle-fill text-emerald-600"></i>
+                    <span>Browse our available amenities above, then tell Bren in the chat which one you would like to reserve!</span>
+                </div>
+                <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbModalCancelBtn" style="padding:0.45rem 1.25rem;width:auto;">
+                    <i class="bi bi-x-circle me-1"></i> Close &amp; Back to Chat
                 </button>
             </div>
         `;
 
         const gridContainer = cbAmenityModalBody.querySelector('#cbModalGrid');
-        const cartCountLabel = cbAmenityModalFooter.querySelector('#cbModalCartCountLabel');
-        const cartTotalLabel = cbAmenityModalFooter.querySelector('#cbModalCartTotalLabel');
-        const cartDepositLabel = cbAmenityModalFooter.querySelector('#cbModalDepositLabel');
-        const cartChipsContainer = cbAmenityModalFooter.querySelector('#cbModalCartChips');
-        const confirmBtn = cbAmenityModalFooter.querySelector('#cbModalConfirmBtn');
         const cancelBtn = cbAmenityModalFooter.querySelector('#cbModalCancelBtn');
         const tabBtns = cbAmenityModalBody.querySelectorAll('#cbModalCategoryTabs .chatbot-tab-btn');
 
@@ -1603,32 +1832,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const renderGrid = (activeCat = 'all') => {
             gridContainer.innerHTML = '';
             const filtered = activeCat === 'all'
-                ? amenities
-                : amenities.filter(a => a.category === activeCat);
+                ? availableAmenities
+                : availableAmenities.filter(a => a.category === activeCat);
 
             if (filtered.length === 0) {
-                gridContainer.innerHTML = `<p style="font-size:0.8rem;color:#6b7280;text-align:center;padding:2rem;grid-column:1/-1;">No amenities found in this category.</p>`;
+                gridContainer.innerHTML = `
+                    <div style="font-size:0.85rem;color:#6b7280;text-align:center;padding:2.5rem 1rem;grid-column:1/-1;">
+                        <i class="bi bi-calendar-x text-2xl text-emerald-600 mb-1.5 block"></i>
+                        <strong>No available amenities found in this category for this schedule.</strong>
+                    </div>
+                `;
                 return;
             }
 
             filtered.forEach(am => {
-                const isSelected = selectedIds.has(String(am.id));
                 const item = document.createElement('div');
-                item.className = `chatbot-amenity-item ${am.is_available ? '' : 'is-occupied'} ${isSelected ? 'is-selected' : ''}`;
+                item.className = 'chatbot-amenity-item chatbot-amenity-item--display';
+                item.style.cursor = 'default';
                 item.dataset.amenityId = String(am.id);
 
-                const badgeHtml = am.is_available
-                    ? '<span class="chatbot-badge chatbot-badge--avail"><i class="bi bi-check-circle-fill me-1"></i> Available</span>'
-                    : '<span class="chatbot-badge chatbot-badge--taken"><i class="bi bi-x-circle-fill me-1"></i> Booked</span>';
-
-                let buttonHtml = '';
-                if (!am.is_available) {
-                    buttonHtml = `<button type="button" class="chatbot-amenity-select-btn" disabled title="Already booked on this schedule"><i class="bi bi-slash-circle me-1"></i> Unavailable</button>`;
-                } else if (isSelected) {
-                    buttonHtml = `<button type="button" class="chatbot-amenity-select-btn is-active" data-action="toggle"><i class="bi bi-check-lg me-1"></i> Selected</button>`;
-                } else {
-                    buttonHtml = `<button type="button" class="chatbot-amenity-select-btn" data-action="toggle"><i class="bi bi-plus-lg me-1"></i> Add</button>`;
-                }
+                const badgeHtml = '<span class="chatbot-badge chatbot-badge--avail"><i class="bi bi-check-circle-fill me-1"></i> Available</span>';
 
                 const thumbHtml = am.image
                     ? `<img src="${escapeHtml(am.image)}" alt="${escapeHtml(am.name)}" loading="lazy">`
@@ -1654,81 +1877,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="chatbot-amenity-features">
                             ${inclusions.join('')}
                         </div>
+                        ${am.description ? `<p style="font-size:0.72rem;color:#64748b;margin:0.25rem 0 0;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(am.description)}</p>` : ''}
                     </div>
-                    ${buttonHtml}
                 `;
-
-                if (am.is_available) {
-                    const toggleBtn = item.querySelector('[data-action="toggle"]');
-                    toggleBtn?.addEventListener('click', () => {
-                        const amId = String(am.id);
-                        if (selectedIds.has(amId)) {
-                            selectedIds.delete(amId);
-                            item.classList.remove('is-selected');
-                            toggleBtn.classList.remove('is-active');
-                            toggleBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add';
-                        } else {
-                            selectedIds.add(amId);
-                            item.classList.add('is-selected');
-                            toggleBtn.classList.add('is-active');
-                            toggleBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Selected';
-                        }
-                        updateModalFooterUI();
-                    });
-                }
 
                 gridContainer.appendChild(item);
             });
-        };
-
-        const updateModalFooterUI = () => {
-            const selectedAmenities = amenities.filter(a => selectedIds.has(String(a.id)));
-            const count = selectedAmenities.length;
-            const subtotal = selectedAmenities.reduce((sum, a) => sum + Number(a.price), 0);
-            const deposit = subtotal * 0.5;
-
-            if (cartCountLabel) {
-                cartCountLabel.innerHTML = `
-                    <i class="bi bi-cart-check"></i>
-                    <span>${count === 1 ? '1 Amenity Selected' : `${count} Amenities Selected`}</span>
-                `;
-            }
-
-            if (cartTotalLabel) {
-                cartTotalLabel.textContent = `₱${subtotal.toFixed(2)}`;
-            }
-
-            if (cartDepositLabel) {
-                cartDepositLabel.textContent = `₱${deposit.toFixed(2)}`;
-            }
-
-            if (cartChipsContainer) {
-                cartChipsContainer.innerHTML = '';
-                selectedAmenities.forEach(am => {
-                    const chip = document.createElement('span');
-                    chip.className = 'chatbot-cart-chip';
-                    chip.innerHTML = `
-                        <span>${escapeHtml(am.name)}</span>
-                        <span class="chatbot-cart-chip__remove" title="Remove"><i class="bi bi-x"></i></span>
-                    `;
-                    chip.querySelector('.chatbot-cart-chip__remove')?.addEventListener('click', () => {
-                        selectedIds.delete(String(am.id));
-                        renderGrid(currentCat);
-                        updateModalFooterUI();
-                    });
-                    cartChipsContainer.appendChild(chip);
-                });
-            }
-
-            if (confirmBtn) {
-                if (count > 0) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = `Confirm ${count} Amenit${count > 1 ? 'ies' : 'y'} (₱${subtotal.toFixed(2)}) <i class="bi bi-arrow-right ms-1"></i>`;
-                } else {
-                    confirmBtn.disabled = true;
-                    confirmBtn.innerHTML = `Select Amenity to Continue <i class="bi bi-arrow-right ms-1"></i>`;
-                }
-            }
         };
 
         tabBtns.forEach(btn => {
@@ -1742,18 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cancelBtn?.addEventListener('click', closeAmenityModal);
 
-        confirmBtn?.addEventListener('click', () => {
-            const selectedAmenities = amenities.filter(a => selectedIds.has(String(a.id)));
-            if (selectedAmenities.length === 0) {
-                alert('Please select at least one amenity.');
-                return;
-            }
-            closeAmenityModal();
-            onAmenitiesConfirmed(selectedAmenities);
-        });
-
         renderGrid('all');
-        updateModalFooterUI();
         chatbotAmenityModal.hidden = false;
         chatbotAmenityModal.classList.remove('hidden');
     };
@@ -2088,6 +2231,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Amenities Confirmed -> Advance to Step 3 (Guest Info)
     const onAmenitiesConfirmed = (selectedAmenities) => {
+        if (chatbotAmenityModal && !chatbotAmenityModal.hidden) {
+            closeAmenityModal();
+        }
+        bookingDraft.active = true;
         bookingDraft.amenities = selectedAmenities.map(am => ({
             id: String(am.id),
             name: am.name,
@@ -2106,19 +2253,10 @@ document.addEventListener('DOMContentLoaded', () => {
         bookingDraft.step = 'guest_info';
         saveBookingDraft();
 
-        const totalAmount = calculateDraftTotal();
-        const amNames = bookingDraft.amenities.map(a => `**${a.name}**`).join(', ');
-
-        const card = createGuestInfoCard();
-        addCustomCardMessage(
-            `You picked ${amNames} (Total: ₱${totalAmount.toFixed(2)})! 🌿\n\nNext, please provide your primary booker details to generate your digital passes:`,
-            card
-        );
-
-        // Seamlessly open the Step 3 Primary Booker Information Modal
-        setTimeout(() => {
-            openGuestModal();
-        }, 150);
+        const amNames = selectedAmenities.map(a => a.name).join(', ');
+        const userMsg = `I would like to reserve ${amNames}.`;
+        addMessage(userMsg, false);
+        sendMessagePayloadToBot(userMsg);
     };
 
     // Shorthand for single selection
@@ -2255,18 +2393,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     };
 
-    // Guest Info Submitted -> Advance to Step 4 (Review Summary)
+    // Guest Info Submitted -> Advance to Step 4 (Payment Summary)
     const onGuestInfoSubmitted = (name, phone, email, count) => {
+        bookingDraft.active = true;
         bookingDraft.guest = {
             name,
             phone,
             email,
             guests_count: count,
         };
-        bookingDraft.step = 'review';
+        bookingDraft.step = 'payment';
         saveBookingDraft();
 
-        showBookingPicksSummary("Awesome! Your primary booker information is saved. Here is your final booking review before completing payment:");
+        const userMsg = `My booking details: Name: ${name}, Phone: ${phone}, Email: ${email}, Guests: ${count}`;
+        addMessage(userMsg, false);
+        sendMessagePayloadToBot(userMsg);
     };
 
     // Step 4 / "Show Me What Amenity I Just Availed" Summary Card
@@ -3378,34 +3519,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Typing indicator
-    const showTyping = () => {
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'chatbot-message chatbot-message--bot chatbot-message--typing';
-        typingDiv.id = 'chatbotTyping';
-        typingDiv.innerHTML = `
-            <div class="chatbot-message__avatar">
-                <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
-            </div>
-            <div class="chatbot-message__body">
-                <div class="chatbot-message__content">
-                    <div class="chatbot-typing">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
-        `;
-        chatbotMessages.appendChild(typingDiv);
-        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-    };
-
-    const hideTyping = () => {
-        const typingDiv = document.getElementById('chatbotTyping');
-        if (typingDiv) typingDiv.remove();
-    };
-
     // ─────────────────────────────────────────────────────────────
     // Form Submit Handler
     // ─────────────────────────────────────────────────────────────
@@ -3440,150 +3553,176 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage(`Sure thing! Opening our live amenity catalog for ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}] 🌿`, true);
                 triggerAmenitySelection();
                 return;
-            } else {
-                startBookingMode();
-                return;
             }
         }
 
-        // 2. Direct Interception: Start Booking Mode (Direct start for /book or "book via chat", confirmation for general queries)
-        if (/^(?:\/book|book\s+via\s+chat)$/i.test(rawMessage)) {
-            startBookingMode();
-            return;
-        }
-
-        if (isStartBookingQuery(rawMessage)) {
-            askBookingConfirmation();
-            return;
-        }
-
-        // 2.5 Awaiting Booking Confirmation Answer ("yes", "sure", "sige", "oo", etc.)
-        if (awaitingBookingConfirmation) {
-            if (isAffirmativeQuery(rawMessage)) {
-                awaitingBookingConfirmation = false;
-                startBookingMode();
-                return;
-            } else if (isNegativeQuery(rawMessage)) {
-                awaitingBookingConfirmation = false;
-                addMessage("No problem at all! 😊 Take your time. Feel free to ask about our amenities, rates, swimming pool, or operating hours anytime.", true);
-                return;
-            }
-            awaitingBookingConfirmation = false;
-        }
-
-        // 3. Direct Interception: Cancel Booking Mode
+        // 2. Cancel Booking
         if (isCancelBookingQuery(rawMessage)) {
             clearBookingDraft();
             addMessage("Booking mode has been cancelled. Your draft was cleared. How else may I assist you with Hinaguan Nature Park?", true);
             return;
         }
 
-        // 4. Conversational Amenity Name Picking if in 'amenity' step
-        if (bookingDraft.active && bookingDraft.step === 'amenity') {
-            const lower = rawMessage.toLowerCase();
-            // Check if user typed an amenity name like "cottage 1", "payag 2", "a-house 3"
-            if (/(?:cottage|payag|a-?house|cabin|function\s*hall)\s*\d*/i.test(lower)) {
-                showTyping();
-                try {
-                    const startSlot = bookingDraft.startSlot || bookingDraft.slot || 'Daytime';
-                    const endSlot = bookingDraft.endSlot || bookingDraft.slot || 'Daytime';
-                    const res = await fetch(`/guest-chatbot/booking/amenities?start_date=${bookingDraft.startDate}&end_date=${bookingDraft.endDate}&start_slot=${startSlot}&end_slot=${endSlot}`, {
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    const data = await res.json();
-                    hideTyping();
-
-                    if (res.ok && data.success && Array.isArray(data.amenities)) {
-                        // Find matching amenity
-                        const match = data.amenities.find(a => lower.includes(a.name.toLowerCase()));
-                        if (match) {
-                            if (match.is_available) {
-                                const currentList = (bookingDraft.amenities && bookingDraft.amenities.length > 0)
-                                    ? [...bookingDraft.amenities]
-                                    : [];
-                                if (!currentList.some(a => String(a.id) === String(match.id))) {
-                                    currentList.push(match);
-                                }
-                                onAmenitiesConfirmed(currentList);
-                                return;
-                            } else {
-                                const availables = data.amenities.filter(a => a.is_available).map(a => a.name).join(', ');
-                                addMessage(`⚠️ I checked our live system and **${match.name}** is already booked for this schedule.\n\nTo prevent booking conflicts, here are available options: ${availables}.`, true);
-                                return;
-                            }
-                        }
-                    }
-                } catch (err) {
-                    hideTyping();
-                }
-            }
+        // 3. Secretly Extract & Update Booking Draft (Dates, Amenity, Guest Info)
+        if (isStartBookingQuery(rawMessage) || /^(?:\/book|book\s+via\s+chat)$/i.test(rawMessage)) {
+            bookingDraft.active = true;
+            if (!bookingDraft.step) bookingDraft.step = 'date_slot';
         }
 
-        // Default: Send to AI Concierge endpoint
-        const currentModel = modelSelect ? modelSelect.value : 'openrouter/free';
+        // Secretly extract Date & Session if present
+        const parsedDate = parseDateAndSession(rawMessage);
+        if (parsedDate) {
+            const isTentativeDate = /(?:what\s+about|how\s+about|what\s+if|is\s+it\s+okay|pwede\s+ba|pwede\s+kaha|okay\s+ba|availab|good\s+date|\?)/i.test(rawMessage)
+                || !/(?:yes|sure|confirm|let'?s\s+go|go\s+with|i'?ll\s+take|book\s+for|reserve\s+for)\b/i.test(rawMessage);
 
-        const historyPayload = messages
-            .filter(m => !/(?:user\s+safety|response\s+safety)/i.test(m.content) && !m.content.includes("im confuse can you state it again"))
-            .slice(-6)
-            .map(m => ({
-                role: m.isBot ? 'assistant' : 'user',
-                content: m.content
-            }));
+            const hasAffirmation = /\b(?:yes|sure|yep|yeah|oo|opo|sige|proceed|confirm(?:ed)?|let'?s\s+go|go\s+with|okay|ok|pwede|locked\s*in|correct|right)\b/i.test(rawMessage);
 
-        showTyping();
-        chatbotSend.disabled = true;
-
-        try {
-            const response = await fetch('/guest-chatbot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: rawMessage,
-                    history: historyPayload,
-                    model: currentModel,
-                    booking_draft: bookingDraft,
-                }),
-            });
-
-            const data = await response.json();
-            hideTyping();
-
-            if (conversationCleared) return;
-
-            // Handle backend booking action
-            if (data.booking_action === 'confirm_booking_prompt') {
-                askBookingConfirmation();
-                return;
-            } else if (data.booking_action === 'enter_booking_mode' && !bookingDraft.active) {
-                startBookingMode();
-                return;
-            } else if (data.booking_action === 'show_picks') {
-                showBookingPicksSummary();
-                return;
-            } else if (data.booking_action === 'cancel_booking') {
-                clearBookingDraft();
-            }
-
-            if (data.reply) {
-                const msgEl = addMessage(data.reply, true);
-                if (bookingDraft.active && bookingDraft.step === 'amenity' && msgEl) {
-                    attachAmenityActionChips(msgEl, data.reply);
+            if (bookingDraft.tentativeDate && !bookingDraft.startDate && (hasAffirmation || parsedDate.startDate === bookingDraft.tentativeDate)) {
+                bookingDraft.active = true;
+                bookingDraft.startDate = bookingDraft.tentativeDate;
+                bookingDraft.endDate = bookingDraft.startDate;
+                bookingDraft.startSlot = parsedDate.startSlot || bookingDraft.tentativeSlot || 'Daytime';
+                bookingDraft.endSlot = bookingDraft.startSlot;
+                bookingDraft.slot = bookingDraft.startSlot;
+                bookingDraft.tentativeDate = null;
+                bookingDraft.tentativeSlot = null;
+                if (!bookingDraft.amenities || bookingDraft.amenities.length === 0) {
+                    bookingDraft.step = 'amenity';
                 }
+                saveBookingDraft();
+            } else if (!isTentativeDate) {
+                bookingDraft.active = true;
+                bookingDraft.startDate = parsedDate.startDate;
+                bookingDraft.endDate = parsedDate.endDate || parsedDate.startDate;
+                bookingDraft.startSlot = parsedDate.startSlot;
+                bookingDraft.endSlot = parsedDate.endSlot || parsedDate.startSlot;
+                bookingDraft.slot = parsedDate.startSlot;
+                bookingDraft.tentativeDate = null;
+                bookingDraft.tentativeSlot = null;
+                if (!bookingDraft.amenities || bookingDraft.amenities.length === 0) {
+                    bookingDraft.step = 'amenity';
+                }
+                saveBookingDraft();
             } else {
-                addMessage('I apologize, but I encountered an error. Please try again.', true);
+                bookingDraft.active = true;
+                bookingDraft.tentativeDate = parsedDate.startDate;
+                bookingDraft.tentativeSlot = parsedDate.startSlot || 'Daytime';
+                saveBookingDraft();
             }
-        } catch (error) {
-            console.error('Guest chatbot error:', error);
-            hideTyping();
-            if (conversationCleared) return;
-            addMessage('I apologize, but the service is temporarily unavailable. Please try again later.', true);
-        } finally {
-            chatbotSend.disabled = false;
-            chatbotInput?.focus();
+
+            // Silently prefetch amenities for this schedule if confirmed
+            if (bookingDraft.startDate) {
+                fetch(`/guest-chatbot/booking/amenities?start_date=${bookingDraft.startDate}&end_date=${bookingDraft.endDate}&start_slot=${bookingDraft.startSlot}&end_slot=${bookingDraft.endSlot}`, {
+                    headers: { 'Accept': 'application/json' }
+                }).then(r => r.json()).then(data => {
+                    if (data.success && Array.isArray(data.amenities)) {
+                        cachedAmenities = data.amenities;
+                        cachedAmenitiesMeta = data;
+                    }
+                }).catch(() => { });
+            }
         }
+
+        // Secretly extract Amenity if named (e.g. "Payag 2", "A-House 1", "Cottage 3")
+        const lower = rawMessage.toLowerCase();
+        const hasExistingAmenities = bookingDraft.amenities && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0;
+        const isExplicitAdd = /\b(?:add\s+(?:more|another|additional)?|dugang|dagdag|plus|also)\b/i.test(lower)
+            && !/\b(?:can\s+u|pwede\s+ba|pwede\s+kaha|is\s+it|\?)\b/i.test(lower);
+        const isExplicitSwitch = /\b(?:switch\s+(?:to)?|change\s+to|palit|replace|instead)\b/i.test(lower)
+            && !/\b(?:can\s+u|pwede\s+ba|pwede\s+kaha|is\s+it|\?)\b/i.test(lower);
+
+        if (/(?:cottage|payag|a-?house|cabin|function\s*hall|hall)\s*\d*/i.test(lower)) {
+            const isTentativeAm = /\b(?:think|better|right\??|what\s+about|how\s+about|is\s+it\s+good|availab|pwede\s+ba|pwede\s+kaha|magkano|how\s+much|pila|unsa|ano|\?|siguro|tingin\s+mo|nindot\s+ba|can\s+u\s+add|add\s+more|like)\b/i.test(lower)
+                || !/\b(?:yes|sure|reserve|book|i'?ll\s+take|i\s+will\s+take|let'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|add\s+(?:cottage|payag|a-?house|it)|switch\s+to)\b/i.test(lower);
+
+            if (cachedAmenities && Array.isArray(cachedAmenities)) {
+                const cleanLower = lower.replace(/[-\s]/g, '');
+                const match = cachedAmenities.find(a => {
+                    const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
+                    return cleanLower.includes(cleanAm) || cleanAm.includes(cleanLower);
+                });
+                if (match && match.is_available) {
+                    if (isTentativeAm && !isExplicitAdd && !isExplicitSwitch) {
+                        bookingDraft.active = true;
+                        bookingDraft.tentativeAmenity = match.name;
+                        saveBookingDraft();
+                    } else if (hasExistingAmenities && isExplicitAdd) {
+                        bookingDraft.active = true;
+                        if (!bookingDraft.amenities.some(a => String(a.id) === String(match.id))) {
+                            bookingDraft.amenities.push(match);
+                        }
+                        bookingDraft.amenity = bookingDraft.amenities[0];
+                        bookingDraft.tentativeAmenity = null;
+                        saveBookingDraft();
+                    } else if (hasExistingAmenities && isExplicitSwitch) {
+                        bookingDraft.active = true;
+                        bookingDraft.amenities = [match];
+                        bookingDraft.amenity = match;
+                        bookingDraft.tentativeAmenity = null;
+                        saveBookingDraft();
+                    } else {
+                        bookingDraft.active = true;
+                        bookingDraft.amenities = [match];
+                        bookingDraft.amenity = match;
+                        bookingDraft.tentativeAmenity = null;
+                        if (!bookingDraft.guest.name || !bookingDraft.guest.phone) {
+                            bookingDraft.step = 'guest_info';
+                        }
+                        saveBookingDraft();
+                    }
+                }
+            }
+        } else if (bookingDraft.tentativeAmenity && bookingDraft.startDate) {
+            const isAgreeToView = /(?:show|view|pakita|patingin)/i.test(lower);
+            const isAddConfirm = /\b(?:add(?:\s+it)?|yes\s+add|dugang|dagdag|both|together)\b/i.test(lower) && !isAgreeToView;
+            const isSwitchConfirm = /\b(?:switch(?:\s+to\s+it)?|change(?:\s+to\s+it)?|palit|replace|instead)\b/i.test(lower) && !isAgreeToView;
+            const isGeneralConfirm = /\b(?:yes|sure|reserve|book|i'?ll\s+take|confirm(?:ed)?|let'?s\s+go|go\s+with|sige)\b/i.test(lower) && !isAgreeToView;
+
+            if ((isAddConfirm || isSwitchConfirm || isGeneralConfirm) && cachedAmenities && Array.isArray(cachedAmenities)) {
+                const cleanTentative = bookingDraft.tentativeAmenity.toLowerCase().replace(/[-\s]/g, '');
+                const match = cachedAmenities.find(a => {
+                    const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
+                    return cleanAm.includes(cleanTentative) || cleanTentative.includes(cleanAm);
+                });
+                if (match && match.is_available) {
+                    bookingDraft.active = true;
+                    if (hasExistingAmenities && isAddConfirm) {
+                        if (!bookingDraft.amenities.some(a => String(a.id) === String(match.id))) {
+                            bookingDraft.amenities.push(match);
+                        }
+                    } else {
+                        bookingDraft.amenities = [match];
+                    }
+                    bookingDraft.amenity = bookingDraft.amenities[0];
+                    bookingDraft.tentativeAmenity = null;
+                    if (!bookingDraft.guest.name || !bookingDraft.guest.phone) {
+                        bookingDraft.step = 'guest_info';
+                    }
+                    saveBookingDraft();
+                }
+            }
+        }
+
+        // Secretly extract Guest Details if present
+        const guestInfo = parseGuestInfoFromText(rawMessage);
+        if (guestInfo) {
+            if (guestInfo.name) bookingDraft.guest.name = guestInfo.name;
+            if (guestInfo.phone) bookingDraft.guest.phone = guestInfo.phone;
+            if (guestInfo.email) bookingDraft.guest.email = guestInfo.email;
+            if (guestInfo.count) bookingDraft.guest.guests_count = guestInfo.count;
+            if (bookingDraft.guest.name && bookingDraft.guest.phone && bookingDraft.guest.email && bookingDraft.amenities && bookingDraft.amenities.length > 0) {
+                bookingDraft.step = 'payment';
+            }
+            saveBookingDraft();
+        }
+
+        // If in payment step and user says "proceed to payment" or "pay"
+        if ((bookingDraft.step === 'payment' || bookingDraft.step === 'review') && /^(?:proceed|pay|bayad|sige|proceed\s+to\s+payment|downpayment)\b/i.test(rawMessage.trim())) {
+            initiateXenditPayment();
+            return;
+        }
+
+        // Forward to AI Concierge!
+        sendMessagePayloadToBot(rawMessage);
     });
 });
