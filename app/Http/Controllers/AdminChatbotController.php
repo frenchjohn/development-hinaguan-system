@@ -22,6 +22,7 @@ use App\Models\ReservationEntranceFee;
 use App\Models\ReservationGuest;
 use App\Models\StaffAccount;
 use App\Models\UserActivityRead;
+use App\Services\OpenAiKeyService;
 use App\Services\OpenRouterKeyService;
 use App\Services\WeatherService;
 use Carbon\Carbon;
@@ -76,10 +77,16 @@ class AdminChatbotController extends Controller
             }
         }
 
-        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
-        $model = $request->input('model', 'openrouter/free');
+        $requestedModel = $request->input('model', 'gpt-6-luna');
+        if (empty($requestedModel)) {
+            $requestedModel = 'gpt-6-luna';
+        }
 
-        if (!$apiKey) {
+        $openAiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
+        $openRouterKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
+
+        if (!$openAiKey && !$openRouterKey) {
+            $openAiStatus = OpenAiKeyService::getStatus();
             $keyStatus = OpenRouterKeyService::getStatus();
             $fallback = $this->generateDirectAdminFallbackResponse($userMessage);
             if ($userId) {
@@ -93,6 +100,8 @@ class AdminChatbotController extends Controller
             }
             return response()->json([
                 'reply' => $fallback,
+                'active_model' => 'local/fallback',
+                'openai_status' => $openAiStatus,
                 'openrouter_status' => $keyStatus,
             ]);
         }
@@ -178,97 +187,135 @@ class AdminChatbotController extends Controller
             'content' => $userMessage
         ];
 
-        try {
-            $requestPayload = [
-                'messages' => $messagesPayload,
-                'max_tokens' => 1200,
-                'temperature' => 0.2,
-            ];
+        $openAiModel = config('services.openai.model') ?: env('OPENAI_MODEL', 'gpt-6-luna');
+        $openAiBaseUrl = rtrim(config('services.openai.base_url') ?: env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/');
 
-            if ($model === 'openrouter/free' || empty($model)) {
-                $requestPayload['models'] = [
-                    'recursive/flint-v1.0:free',
-                    'liquid/lfm-2.5-2.6b:free',
-                    'openrouter/free',
-                ];
-            } else {
-                $requestPayload['model'] = $model;
+        $rawReply = '';
+        $activeModel = null;
+        $fallbackReason = null;
+
+        $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai'));
+
+        // 1. Primary Model: OpenAI GPT-6 Luna
+        if ($shouldTryOpenAi && !empty($openAiKey) && OpenAiKeyService::isAvailable()) {
+            try {
+                $openAiResponse = Http::timeout(15)->withHeaders([
+                    'Authorization' => 'Bearer ' . $openAiKey,
+                    'Content-Type' => 'application/json',
+                ])->post("{$openAiBaseUrl}/chat/completions", [
+                    'model' => $openAiModel,
+                    'messages' => $messagesPayload,
+                    'max_tokens' => 1200,
+                    'temperature' => 0.2,
+                ]);
+
+                if ($openAiResponse->successful()) {
+                    OpenAiKeyService::markActive();
+                    $data = $openAiResponse->json();
+                    $msgObj = $data['choices'][0]['message'] ?? [];
+                    $candidate = trim($msgObj['content'] ?? '');
+                    if (!empty($candidate)) {
+                        $rawReply = $candidate;
+                        $activeModel = 'gpt-6-luna';
+                    }
+                } else {
+                    $openAiStatus = OpenAiKeyService::markFromCompletionResponse($openAiResponse->status(), $openAiResponse->body());
+                    Log::warning("Admin Chatbot OpenAI Error (HTTP {$openAiResponse->status()}). Automatically switching to OpenRouter Free backup: " . $openAiResponse->body());
+                    $fallbackReason = 'OpenAI GPT-6 Luna credits are 0 or unavailable; automatically switched to OpenRouter Free.';
+                }
+            } catch (\Exception $e) {
+                Log::warning('Admin Chatbot OpenAI Exception (switching to OpenRouter Free): ' . $e->getMessage());
+                $fallbackReason = 'OpenAI connection error; automatically switched to OpenRouter Free.';
             }
+        } elseif ($shouldTryOpenAi) {
+            $fallbackReason = 'OpenAI GPT-6 Luna key is missing, expired, or credit is 0; automatically using OpenRouter Free backup.';
+        }
 
-            $response = Http::timeout(15)->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => request()->getHttpHost(),
-                'X-Title' => 'Hinaguan Nature Park Admin Portal',
-            ])->post("https://openrouter.ai/api/v1/chat/completions", $requestPayload);
-
-            if ($response->successful()) {
-                OpenRouterKeyService::markActive();
-                $data = $response->json();
-                $msgObj = $data['choices'][0]['message'] ?? [];
-                $rawReply = trim($msgObj['content'] ?? '');
-
-                if (empty($rawReply) && !empty($msgObj['reasoning'])) {
-                    $rawReply = $this->cleanChatbotReply($msgObj['reasoning']);
-                }
-
-                $reply = !empty($rawReply) ? $this->cleanChatbotReply($rawReply) : 'I could not process your admin query at this moment.';
-
-                if ($userId) {
-                    ChatbotMessage::create([
-                        'user_type' => 'admin',
-                        'user_id' => $userId,
-                        'role' => 'assistant',
-                        'content' => $reply,
-                        'model' => $model,
-                    ]);
-                }
-
-                return response()->json([
-                    'reply' => $reply,
-                    'openrouter_status' => [
-                        'is_expired' => false,
-                        'status' => 'active',
-                        'code' => 200,
-                        'label' => 'Online',
+        // 2. Backup Model: OpenRouter Free
+        if (empty($rawReply) && !empty($openRouterKey)) {
+            try {
+                $requestPayload = [
+                    'messages' => $messagesPayload,
+                    'max_tokens' => 1200,
+                    'temperature' => 0.2,
+                    'models' => [
+                        'recursive/flint-v1.0:free',
+                        'liquid/lfm-2.5-2.6b:free',
+                        'openrouter/free',
                     ],
-                ]);
-            } else {
-                $keyStatus = OpenRouterKeyService::markFromCompletionResponse($response->status(), $response->body());
-                Log::warning('Admin Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
-                $fallback = $this->generateDirectAdminFallbackResponse($userMessage);
-                if ($userId) {
-                    ChatbotMessage::create([
-                        'user_type' => 'admin',
-                        'user_id' => $userId,
-                        'role' => 'assistant',
-                        'content' => $fallback,
-                        'model' => 'local/fallback',
-                    ]);
+                ];
+
+                $response = Http::timeout(15)->withHeaders([
+                    'Authorization' => 'Bearer ' . $openRouterKey,
+                    'Content-Type' => 'application/json',
+                    'HTTP-Referer' => request()->getHttpHost(),
+                    'X-Title' => 'Hinaguan Nature Park Admin Portal',
+                ])->post("https://openrouter.ai/api/v1/chat/completions", $requestPayload);
+
+                if ($response->successful()) {
+                    OpenRouterKeyService::markActive();
+                    $data = $response->json();
+                    $msgObj = $data['choices'][0]['message'] ?? [];
+                    $candidate = trim($msgObj['content'] ?? '');
+
+                    if (empty($candidate) && !empty($msgObj['reasoning'])) {
+                        $candidate = $this->cleanChatbotReply($msgObj['reasoning']);
+                    }
+
+                    if (!empty($candidate)) {
+                        $rawReply = $candidate;
+                        $activeModel = 'openrouter/free';
+                    }
+                } else {
+                    $keyStatus = OpenRouterKeyService::markFromCompletionResponse($response->status(), $response->body());
+                    Log::warning('Admin Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
                 }
-                return response()->json([
-                    'reply' => $fallback,
-                    'openrouter_status' => $keyStatus,
-                ]);
+            } catch (\Exception $e) {
+                Log::warning('Admin Chatbot OpenRouter Exception: ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            $keyStatus = OpenRouterKeyService::getStatus();
-            Log::warning('Admin Chatbot Exception (engaging intelligent fallback): ' . $e->getMessage());
-            $fallback = $this->generateDirectAdminFallbackResponse($userMessage);
+        }
+
+        // 3. Deliver Output or Fallback to Local Database Intelligence Engine
+        if (!empty($rawReply)) {
+            $reply = $this->cleanChatbotReply($rawReply);
             if ($userId) {
                 ChatbotMessage::create([
                     'user_type' => 'admin',
                     'user_id' => $userId,
                     'role' => 'assistant',
-                    'content' => $fallback,
-                    'model' => 'local/fallback',
+                    'content' => $reply,
+                    'model' => $activeModel ?: 'ai',
                 ]);
             }
+
             return response()->json([
-                'reply' => $fallback,
-                'openrouter_status' => $keyStatus,
+                'reply' => $reply,
+                'active_model' => $activeModel,
+                'fallback_reason' => $fallbackReason,
+                'openai_status' => OpenAiKeyService::getStatus(),
+                'openrouter_status' => OpenRouterKeyService::getStatus(),
             ]);
         }
+
+        $keyStatus = OpenRouterKeyService::getStatus();
+        $fallback = $this->generateDirectAdminFallbackResponse($userMessage);
+        if ($userId) {
+            ChatbotMessage::create([
+                'user_type' => 'admin',
+                'user_id' => $userId,
+                'role' => 'assistant',
+                'content' => $fallback,
+                'model' => 'local/fallback',
+            ]);
+        }
+
+        return response()->json([
+            'reply' => $fallback,
+            'active_model' => 'local/fallback',
+            'fallback_reason' => $fallbackReason ?: 'External cloud LLMs unavailable; local intelligence engine active.',
+            'openai_status' => OpenAiKeyService::getStatus(),
+            'openrouter_status' => $keyStatus,
+        ]);
     }
 
     /**
@@ -302,6 +349,8 @@ class AdminChatbotController extends Controller
 
         return response()->json([
             'messages' => $messages,
+            'active_model' => OpenAiKeyService::isAvailable() ? 'gpt-6-luna' : 'openrouter/free',
+            'openai_status' => OpenAiKeyService::getStatus(),
             'openrouter_status' => OpenRouterKeyService::getStatus(),
         ]);
     }
@@ -387,7 +436,17 @@ class AdminChatbotController extends Controller
         $quickActionPrompt = "Give me an admin intelligence briefing on revenue and operations";
         $actionBtnLabel = "Admin Briefing";
 
-        if ($isParkClosed) {
+        // Check AI Health status for admin proactive notification
+        $openAiHealth = OpenAiKeyService::getStatus();
+        if (!empty($openAiHealth['is_expired']) && $openAiHealth['status'] !== 'missing') {
+            $scenario = 'ai_model_notice';
+            $currentKey = "admin_ai_openai_{$openAiHealth['status']}_{$todayStr}";
+            $headline = 'AI Model Advisory';
+            $message = "Attention {$firstName}: Primary AI model OpenAI GPT-6 Luna is currently unavailable (" . ($openAiHealth['label'] ?? 'Credit 0') . ").";
+            $followUp = "All AI chat assistants have automatically switched to OpenRouter Free backup with zero downtime. Would you like to check the AI health status?";
+            $quickActionPrompt = "Check current AI model status and API credit health";
+            $actionBtnLabel = "Check AI Status";
+        } elseif ($isParkClosed) {
             $scenario = 'park_closed';
             $currentKey = "admin_closed_{$closeDesc}";
             $headline = 'Park Closed Notice';
@@ -431,6 +490,8 @@ class AdminChatbotController extends Controller
                 'announced_key' => $currentKey,
                 'announced_keys' => array_keys($announcedKeys),
                 'timestamp' => $now->toDateTimeString(),
+                'active_model' => OpenAiKeyService::isAvailable() ? 'gpt-6-luna' : 'openrouter/free',
+                'openai_status' => OpenAiKeyService::getStatus(),
                 'openrouter_status' => OpenRouterKeyService::getStatus(),
             ]);
         }
@@ -449,7 +510,7 @@ class AdminChatbotController extends Controller
                 'user_id' => $userId,
                 'role' => 'assistant',
                 'content' => $fullSpeech,
-                'model' => 'openrouter/free',
+                'model' => OpenAiKeyService::isAvailable() ? 'gpt-6-luna' : 'openrouter/free',
             ]);
         }
 
@@ -465,6 +526,8 @@ class AdminChatbotController extends Controller
             'announced_key' => $currentKey,
             'announced_keys' => array_keys($announcedKeys),
             'timestamp' => $now->toDateTimeString(),
+            'active_model' => OpenAiKeyService::isAvailable() ? 'gpt-6-luna' : 'openrouter/free',
+            'openai_status' => OpenAiKeyService::getStatus(),
             'openrouter_status' => OpenRouterKeyService::getStatus(),
         ]);
     }

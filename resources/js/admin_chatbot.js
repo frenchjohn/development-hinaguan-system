@@ -190,8 +190,8 @@ function initAdminChatbot() {
         if (selectedModel) {
             modelSelect.value = selectedModel;
         }
-        if (!modelSelect.value || modelSelect.value !== 'openrouter/free') {
-            modelSelect.value = 'openrouter/free';
+        if (!modelSelect.value) {
+            modelSelect.value = 'gpt-6-luna';
         }
         selectedModel = modelSelect.value;
         savePreferences(isOpen, selectedModel);
@@ -483,7 +483,7 @@ function initAdminChatbot() {
         }
 
         const modelSelect = document.getElementById('chatbotModel');
-        const activeModel = modelSelect ? modelSelect.value : 'openrouter/free';
+        const activeModel = modelSelect ? modelSelect.value : 'gpt-6-luna';
 
         // Add user message to UI immediately
         addMessage(message, false);

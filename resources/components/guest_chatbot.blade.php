@@ -94,7 +94,8 @@
             </svg>
             <label for="chatbotModel" class="chatbot-model-label">AI Model</label>
             <select id="chatbotModel" class="chatbot-model-select">
-                <option value="openrouter/free" selected>OpenRouter Free (Auto)</option>
+                <option value="gpt-6-luna" selected>OpenAI GPT-6 Luna (Primary)</option>
+                <option value="openrouter/free">OpenRouter Free (Backup)</option>
             </select>
             <button type="button" class="chatbot-model-selector__hide" id="chatbotModelHide" aria-label="Hide AI Model Selector" title="Hide AI Model Selector">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

@@ -134,8 +134,42 @@
                     }
                     $donutStyle = $donutTotal > 0 ? 'background: conic-gradient(' . implode(', ', $donutStops) . ');' : '';
                     $revenueMax = max(1, max($weekRevenue));
+                    $openAiStatus = \App\Services\OpenAiKeyService::getStatus();
                     $aiStatus = $openRouterStatus ?? \App\Services\OpenRouterKeyService::getStatus();
                 @endphp
+
+                {{-- ===== OPENAI GPT-6 LUNA AI ADVISORY BANNER (ADMIN ONLY) ===== --}}
+                @if (!empty($openAiStatus['is_expired']))
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-rose-500/30 bg-gradient-to-r from-rose-500/15 via-rose-500/5 to-transparent p-4 shadow-sm backdrop-blur-sm dark:border-rose-400/25 dark:from-rose-950/50 dark:via-rose-900/25 transition-all duration-300" id="adminOpenAiKeyAdvisoryBanner" role="alert">
+                    <div class="flex items-start gap-3.5 min-w-[280px] flex-1">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:bg-rose-400/15 dark:text-rose-400 shadow-sm border border-rose-500/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h4 class="m-0 text-sm font-bold text-rose-950 dark:text-rose-200">AI Model Advisory: OpenAI GPT-6 Luna {{ $openAiStatus['label'] ?? 'Unavailable' }}</h4>
+                                <span class="inline-flex items-center rounded-full bg-rose-500/15 px-2.5 py-0.5 text-[0.68rem] font-bold tracking-wide text-rose-800 dark:text-rose-300 border border-rose-400/40">{{ $openAiStatus['status'] === 'exhausted' ? 'Credits 0' : ($openAiStatus['code'] ? 'HTTP ' . $openAiStatus['code'] : 'Key Missing') }}</span>
+                                <span class="inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[0.68rem] font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-400/30">Auto-Switched to OpenRouter Free</span>
+                            </div>
+                            <p class="m-0 mt-1 text-xs text-rose-900/80 dark:text-rose-200/80 leading-relaxed max-w-4xl">
+                                Primary model <strong>OpenAI GPT-6 Luna</strong> is currently unavailable (<code>{{ $openAiStatus['message'] ?? 'Credits 0 or key not configured' }}</code>).
+                                All chatbots (Guest, Staff, and Admin) have <strong>automatically switched to OpenRouter Free</strong> backup with zero downtime. Settle credits or update <code>OPENAI_API_KEY</code> in <code>.env</code> to switch back to GPT-6 Luna automatically.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="https://platform.openai.com/billing" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 dark:bg-rose-500 dark:hover:bg-rose-600">
+                            <span>OpenAI Billing &amp; Keys</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        <button type="button" onclick="document.getElementById('adminOpenAiKeyAdvisoryBanner')?.remove()" class="rounded-xl p-2 text-rose-700 hover:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-400/15 transition" aria-label="Dismiss notice" title="Dismiss notice">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+                @endif
 
                 {{-- ===== OPENROUTER AI ADVISORY BANNER (ADMIN ONLY) ===== --}}
                 @if (!empty($aiStatus['is_expired']))

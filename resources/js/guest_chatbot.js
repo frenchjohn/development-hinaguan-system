@@ -128,6 +128,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // Format bot responses with clean markdown rendering
     const formatBotMessage = (text) => {
         let formatted = escapeHtml(sanitizeChatbotContent(text));
+
+        // Markdown table parser (extract before newlines are converted)
+        const tables = [];
+        formatted = formatted.replace(/(?:(?:^|\n)\|[^\n]+\|\r?\n(?:\|[^\n]+\|\r?\n?)+)/g, (tableText) => {
+            const lines = tableText.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) return tableText;
+
+            let headerCells = [];
+            let bodyRows = [];
+            let hasSeparator = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (/^\|[\s\-:]+(\|[\s\-:]+)+\|?$/.test(line)) {
+                    hasSeparator = true;
+                    continue;
+                }
+                const cells = line.split('|').slice(1, -1).map(c => c.trim());
+                if (headerCells.length === 0 && !hasSeparator) {
+                    headerCells = cells;
+                } else {
+                    bodyRows.push(cells);
+                }
+            }
+
+            if (headerCells.length === 0 && bodyRows.length === 0) return tableText;
+
+            let html = '<div class="overflow-x-auto my-2.5 rounded-xl border border-emerald-100 dark:border-emerald-800/60 bg-white/90 dark:bg-emerald-950/40 shadow-sm">';
+            html += '<table class="w-full text-xs text-left divide-y divide-emerald-100 dark:divide-emerald-800/40">';
+            if (headerCells.length > 0) {
+                html += '<thead class="bg-emerald-50/90 dark:bg-emerald-900/40 text-emerald-950 dark:text-emerald-100 font-semibold">';
+                html += '<tr>';
+                headerCells.forEach((c, idx) => {
+                    const alignClass = idx > 0 ? 'text-right' : 'text-left';
+                    html += `<th class="px-3 py-2 ${alignClass}">${c}</th>`;
+                });
+                html += '</tr></thead>';
+            }
+            html += '<tbody class="divide-y divide-emerald-50/70 dark:divide-emerald-900/30 text-gray-700 dark:text-emerald-100/90">';
+            bodyRows.forEach((row) => {
+                html += '<tr class="hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition-colors">';
+                row.forEach((cell, idx) => {
+                    const alignClass = idx > 0 ? 'text-right font-medium text-emerald-900 dark:text-emerald-200' : 'text-left font-normal';
+                    html += `<td class="px-3 py-2 ${alignClass}">${cell}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+
+            const idx = tables.length;
+            tables.push(html);
+            return `%%TABLE_TOKEN_${idx}%%`;
+        });
+
         // Headers
         formatted = formatted.replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-sm text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h5>');
         formatted = formatted.replace(/^##\s+(.*)$/gm, '<h4 class="font-bold text-base text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h4>');
@@ -141,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
         formatted = formatted.replace(/^(\d+)\.\s+(.*)$/gm, '$1. $2');
         // Convert newlines to <br>
         formatted = formatted.replace(/\n/g, '<br>');
+
+        // Restore tables
+        tables.forEach((tblHtml, idx) => {
+            formatted = formatted.replace(new RegExp(`(?:<br>)?%%TABLE_TOKEN_${idx}%%(?:<br>)?`, 'g'), tblHtml);
+        });
 
         // Convert conversational booking button tokens
         formatted = formatted.replace(/\[(?:view_amenities(?:_button)?|available_amenities)\]/gi, `
@@ -199,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             name: '',
             phone: '',
             email: '',
-            guests_count: 1,
+            guests_count: null,
         },
         payment: {
             payment_intent_id: null,
@@ -224,6 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!parsed.endSlot) parsed.endSlot = parsed.slot || 'Daytime';
                 if (!parsed.dayCount) parsed.dayCount = 1;
                 if (!parsed.daysSpan) parsed.daysSpan = 1;
+                if (parsed.guest) {
+                    // Reset legacy or defaulted count if guest contact details are incomplete
+                    if (!parsed.guest.email || !parsed.guest.phone || !parsed.guest.name) {
+                        parsed.guest.guests_count = null;
+                    }
+                }
                 return parsed;
             }
         } catch (e) {
@@ -574,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Central dispatcher: Sends user message and bookingDraft to Bren AI
     const sendMessagePayloadToBot = async (userMessage) => {
         const modelSelectEl = document.getElementById('chatbotModel');
-        const currentModel = modelSelectEl ? modelSelectEl.value : 'openrouter/free';
+        const currentModel = modelSelectEl ? modelSelectEl.value : 'gpt-6-luna';
 
         const historyPayload = messages
             .filter(m => !/(?:user\s+safety|response\s+safety)/i.test(m.content) && !m.content.includes("im confuse can you state it again"))
@@ -625,15 +690,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.reply) {
                 const msgEl = addMessage(data.reply, true);
 
-                // If in guest info step, attach the enter guest details button
-                if (bookingDraft.active && bookingDraft.step === 'guest_info' && msgEl) {
-                    if (!msgEl.querySelector('.cb-btn-open-guest-modal')) {
-                        const guestBtn = createEnterGuestDetailsButton();
-                        msgEl.querySelector('.chatbot-message__body')?.appendChild(guestBtn);
-                    }
-                }
-                // If in payment step, attach the proceed payment button (only if not currently evaluating tentative additions/changes)
-                else if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && msgEl) {
+                // If in payment step, attach the proceed payment button (only if not currently evaluating tentative additions/changes AND all 4 guest details are fully completed)
+                const hasAllGuestInfo = Boolean(
+                    bookingDraft.guest?.name &&
+                    bookingDraft.guest?.phone &&
+                    bookingDraft.guest?.email &&
+                    bookingDraft.guest?.guests_count &&
+                    Number(bookingDraft.guest?.guests_count) > 0
+                );
+
+                if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && hasAllGuestInfo && msgEl) {
                     if (!msgEl.querySelector('.cb-btn-proceed-downpayment')) {
                         const total = calculateDraftTotal();
                         const deposit = Math.max(roundToTwo(total * 0.5), total > 0 ? 20.00 : 0);
@@ -871,21 +937,66 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = emailMatch ? emailMatch[0].trim() : null;
 
         // Headcount
+        let count = null;
         const paxMatch = text.match(/\b(\d+)\s*(?:pax|people|persons|guests|heads|ka\s+tawo|tao)\b/i);
-        const count = paxMatch ? parseInt(paxMatch[1], 10) : null;
+        if (paxMatch) {
+            count = parseInt(paxMatch[1], 10);
+        } else if (bookingDraft.step === 'guest_info' && bookingDraft.guest?.email && !emailMatch && !bookingDraft.guest?.guests_count) {
+            let candidateText = text;
+            if (phoneMatch) candidateText = candidateText.replace(phoneMatch[0], '');
+            if (emailMatch) candidateText = candidateText.replace(emailMatch[0], '');
+            const numMatch = candidateText.match(/\b(\d{1,3})\b/);
+            if (numMatch) {
+                const n = parseInt(numMatch[1], 10);
+                if (n >= 1 && n <= 200) count = n;
+            } else if (/\b(?:just\s+me|solo|ako\s*lang|only\s+me|just\s+1|1\s+person|1\s+pax)\b/i.test(candidateText)) {
+                count = 1;
+            } else {
+                const wordNumberMap = {
+                    'isa': 1, 'usa': 1, 'solo': 1,
+                    'duha': 2, 'dalawa': 2,
+                    'tulo': 3, 'tatlo': 3,
+                    'upat': 4, 'apat': 4,
+                    'lima': 5,
+                    'unom': 6, 'anim': 6,
+                    'pito': 7,
+                    'walo': 8,
+                    'siyam': 9,
+                    'napulo': 10, 'sampu': 10
+                };
+                const wm = candidateText.match(/\b(isa|usa|duha|dalawa|tulo|tatlo|upat|apat|lima|unom|anim|pito|walo|siyam|napulo|sampu)\b/i);
+                if (wm && wordNumberMap[wm[1].toLowerCase()]) {
+                    count = wordNumberMap[wm[1].toLowerCase()];
+                }
+            }
+        }
 
         // Name extraction
         let name = null;
-        const nameMatch = text.match(/(?:name\s*(?:is|:)?|ako\s+si|i\s+am|im)\s+([A-Za-z\s\.\-]{2,40})/i);
+        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im|it'?s)\s+([A-Za-z\s\.\-']{2,40})/i);
         if (nameMatch) {
             name = nameMatch[1].trim();
+        } else if (((bookingDraft.amenities && bookingDraft.amenities.length > 0) || bookingDraft.step === 'guest_info') && (!bookingDraft.guest || !bookingDraft.guest.name) && !phone && !email) {
+            const isAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve|book|both|thats\s+all)\b/i.test(text);
+            if (!isAffirmation) {
+                const clean = text.trim().replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ');
+                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done'];
+                const words = clean.split(' ').map(w => w.toLowerCase());
+                const hasReserved = words.some(w => nonNameWords.includes(w) || w.startsWith('yes'));
+                if (!hasReserved && /^[A-Za-z\s\.\-']{2,40}$/.test(clean) && words.length >= 1 && words.length <= 4) {
+                    name = clean;
+                }
+            }
         } else if (phone || email) {
             let remaining = text;
             if (phoneMatch) remaining = remaining.replace(phoneMatch[0], '');
             if (emailMatch) remaining = remaining.replace(emailMatch[0], '');
             if (paxMatch) remaining = remaining.replace(paxMatch[0], '');
             remaining = remaining.replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ').trim();
-            if (/^[A-Za-z\s\.\-]{2,40}$/.test(remaining) && remaining.split(' ').length <= 5) {
+            const nonNamePhrases = ['thats all', 'that is all', 'all good', 'thats good', 'that is good', 'only me', 'just me', 'lang', 'po', 'ko', 'na'];
+            const lowerRemaining = remaining.toLowerCase();
+            const isNonName = nonNamePhrases.some(p => lowerRemaining.includes(p)) || ['thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done'].includes(lowerRemaining);
+            if (!isNonName && /^[A-Za-z\s\.\-']{2,40}$/.test(remaining) && remaining.split(' ').length <= 5) {
                 name = remaining;
             }
         }
@@ -1915,8 +2026,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Step 3 Modal: Open Primary Booker Information Modal (Full Viewport Dialog)
+    // Step 3 Modal: Open Primary Booker Information Modal (Suppressed in favor of conversational 1-by-1 in chat)
     const openGuestModal = () => {
+        closeGuestModal();
+        chatbotInput?.focus();
+        return;
+    };
+
+    const _legacyOpenGuestModal = () => {
         if (!chatbotGuestModal || !cbGuestModalBody || !cbGuestModalFooter) return;
 
         // If dates or amenities are not yet selected, guide user
@@ -2542,7 +2659,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         editBookerBtn?.addEventListener('click', () => {
-            openGuestModal();
+            bookingDraft.guest = {};
+            bookingDraft.step = 'guest_info';
+            saveBookingDraft();
+            addMessage("Sure! Let's update your primary booker details. What is your **Full Name**?", true);
+            chatbotInput?.focus();
         });
 
         cancelBtn?.addEventListener('click', () => {
@@ -3229,7 +3350,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelSelect = document.getElementById('chatbotModel');
     if (modelSelect) {
         if (selectedModel) modelSelect.value = selectedModel;
-        if (!modelSelect.value || modelSelect.value !== 'openrouter/free') modelSelect.value = 'openrouter/free';
+        if (!modelSelect.value) modelSelect.value = 'gpt-6-luna';
         selectedModel = modelSelect.value;
         saveState(isOpen, messages, selectedModel);
         modelSelect.addEventListener('change', (e) => {
@@ -3637,65 +3758,106 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (cachedAmenities && Array.isArray(cachedAmenities)) {
                 const cleanLower = lower.replace(/[-\s]/g, '');
-                const match = cachedAmenities.find(a => {
+                const foundMatches = [];
+                const seenIds = new Set();
+
+                // Direct clean name match
+                cachedAmenities.forEach(a => {
                     const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
-                    return cleanLower.includes(cleanAm) || cleanAm.includes(cleanLower);
+                    if (cleanLower.includes(cleanAm) && !seenIds.has(String(a.id))) {
+                        seenIds.add(String(a.id));
+                        foundMatches.push(a);
+                    }
                 });
-                if (match && match.is_available) {
+
+                // Shorthand list match like "cottage 1 and 2", "payag 3, 4"
+                const shorthandRegex = /\b(payag|a-?house|cottage)\s*(\d+)\s*(?:and|&|,|\+)\s*(\d+)\b/gi;
+                let sm;
+                while ((sm = shorthandRegex.exec(lower)) !== null) {
+                    const cat = sm[1].toLowerCase().replace(/[-\s]/g, '');
+                    const n1 = sm[2];
+                    const n2 = sm[3];
+                    [n1, n2].forEach(num => {
+                        const target = (cat.includes('house') ? 'ahouse' : cat) + num;
+                        const match = cachedAmenities.find(a => a.name.toLowerCase().replace(/[-\s]/g, '') === target);
+                        if (match && !seenIds.has(String(match.id))) {
+                            seenIds.add(String(match.id));
+                            foundMatches.push(match);
+                        }
+                    });
+                }
+
+                if (foundMatches.length > 0) {
                     if (isTentativeAm && !isExplicitAdd && !isExplicitSwitch) {
                         bookingDraft.active = true;
-                        bookingDraft.tentativeAmenity = match.name;
+                        bookingDraft.tentativeAmenities = foundMatches.map(m => m.name);
+                        bookingDraft.tentativeAmenity = foundMatches.map(m => m.name).join(', ');
                         saveBookingDraft();
                     } else if (hasExistingAmenities && isExplicitAdd) {
                         bookingDraft.active = true;
-                        if (!bookingDraft.amenities.some(a => String(a.id) === String(match.id))) {
-                            bookingDraft.amenities.push(match);
-                        }
+                        foundMatches.forEach(m => {
+                            if (!bookingDraft.amenities.some(a => String(a.id) === String(m.id))) {
+                                bookingDraft.amenities.push(m);
+                            }
+                        });
                         bookingDraft.amenity = bookingDraft.amenities[0];
                         bookingDraft.tentativeAmenity = null;
+                        bookingDraft.tentativeAmenities = null;
                         saveBookingDraft();
                     } else if (hasExistingAmenities && isExplicitSwitch) {
                         bookingDraft.active = true;
-                        bookingDraft.amenities = [match];
-                        bookingDraft.amenity = match;
+                        bookingDraft.amenities = foundMatches;
+                        bookingDraft.amenity = foundMatches[0];
                         bookingDraft.tentativeAmenity = null;
+                        bookingDraft.tentativeAmenities = null;
                         saveBookingDraft();
                     } else {
                         bookingDraft.active = true;
-                        bookingDraft.amenities = [match];
-                        bookingDraft.amenity = match;
+                        bookingDraft.amenities = foundMatches;
+                        bookingDraft.amenity = foundMatches[0];
                         bookingDraft.tentativeAmenity = null;
-                        if (!bookingDraft.guest.name || !bookingDraft.guest.phone) {
+                        bookingDraft.tentativeAmenities = null;
+                        if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
                             bookingDraft.step = 'guest_info';
                         }
                         saveBookingDraft();
                     }
                 }
             }
-        } else if (bookingDraft.tentativeAmenity && bookingDraft.startDate) {
+        } else if ((bookingDraft.tentativeAmenities?.length || bookingDraft.tentativeAmenity) && bookingDraft.startDate) {
             const isAgreeToView = /(?:show|view|pakita|patingin)/i.test(lower);
             const isAddConfirm = /\b(?:add(?:\s+it)?|yes\s+add|dugang|dagdag|both|together)\b/i.test(lower) && !isAgreeToView;
             const isSwitchConfirm = /\b(?:switch(?:\s+to\s+it)?|change(?:\s+to\s+it)?|palit|replace|instead)\b/i.test(lower) && !isAgreeToView;
-            const isGeneralConfirm = /\b(?:yes|sure|reserve|book|i'?ll\s+take|confirm(?:ed)?|let'?s\s+go|go\s+with|sige)\b/i.test(lower) && !isAgreeToView;
+            const hasPhoneInMsg = /(?:(?:\+?63\s*9|09)\d{2}[\s\-]?\d{3}[\s\-]?\d{4}|\b(?:09|639)\d{9}\b)/.test(rawMessage);
+            const hasEmailInMsg = /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/.test(rawMessage);
+            const hasAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both)?|book(?:\s+both)?|both|yes\s+both|confirm(?:ed)?|let'?s\s+go|go\s+with|go|i'?ll\s+take|we'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede)\b/i.test(lower);
+            const isGeneralConfirm = (hasAffirmation || hasPhoneInMsg || hasEmailInMsg) && !isAgreeToView;
 
             if ((isAddConfirm || isSwitchConfirm || isGeneralConfirm) && cachedAmenities && Array.isArray(cachedAmenities)) {
-                const cleanTentative = bookingDraft.tentativeAmenity.toLowerCase().replace(/[-\s]/g, '');
-                const match = cachedAmenities.find(a => {
+                const targetNames = bookingDraft.tentativeAmenities && bookingDraft.tentativeAmenities.length > 0
+                    ? bookingDraft.tentativeAmenities
+                    : (bookingDraft.tentativeAmenity ? bookingDraft.tentativeAmenity.split(',').map(s => s.trim()) : []);
+
+                const confirmedMatches = cachedAmenities.filter(a => {
                     const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
-                    return cleanAm.includes(cleanTentative) || cleanTentative.includes(cleanAm);
+                    return targetNames.some(tn => cleanAm === tn.toLowerCase().replace(/[-\s]/g, ''));
                 });
-                if (match && match.is_available) {
+
+                if (confirmedMatches.length > 0) {
                     bookingDraft.active = true;
                     if (hasExistingAmenities && isAddConfirm) {
-                        if (!bookingDraft.amenities.some(a => String(a.id) === String(match.id))) {
-                            bookingDraft.amenities.push(match);
-                        }
+                        confirmedMatches.forEach(m => {
+                            if (!bookingDraft.amenities.some(a => String(a.id) === String(m.id))) {
+                                bookingDraft.amenities.push(m);
+                            }
+                        });
                     } else {
-                        bookingDraft.amenities = [match];
+                        bookingDraft.amenities = confirmedMatches;
                     }
                     bookingDraft.amenity = bookingDraft.amenities[0];
                     bookingDraft.tentativeAmenity = null;
-                    if (!bookingDraft.guest.name || !bookingDraft.guest.phone) {
+                    bookingDraft.tentativeAmenities = null;
+                    if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
                         bookingDraft.step = 'guest_info';
                     }
                     saveBookingDraft();
@@ -3706,18 +3868,51 @@ document.addEventListener('DOMContentLoaded', () => {
         // Secretly extract Guest Details if present
         const guestInfo = parseGuestInfoFromText(rawMessage);
         if (guestInfo) {
+            // If contact details are provided while tentative amenities exist, automatically finalize them!
+            if ((bookingDraft.tentativeAmenities?.length || bookingDraft.tentativeAmenity) && (guestInfo.phone || guestInfo.email || guestInfo.name)) {
+                const targetNames = bookingDraft.tentativeAmenities && bookingDraft.tentativeAmenities.length > 0
+                    ? bookingDraft.tentativeAmenities
+                    : (bookingDraft.tentativeAmenity ? bookingDraft.tentativeAmenity.split(',').map(s => s.trim()) : []);
+                const confirmedMatches = cachedAmenities && Array.isArray(cachedAmenities)
+                    ? cachedAmenities.filter(a => targetNames.some(tn => a.name.toLowerCase().replace(/[-\s]/g, '') === tn.toLowerCase().replace(/[-\s]/g, '')))
+                    : [];
+                if (confirmedMatches.length > 0) {
+                    bookingDraft.amenities = confirmedMatches;
+                    bookingDraft.amenity = confirmedMatches[0];
+                    bookingDraft.tentativeAmenity = null;
+                    bookingDraft.tentativeAmenities = null;
+                }
+            }
+
             if (guestInfo.name) bookingDraft.guest.name = guestInfo.name;
             if (guestInfo.phone) bookingDraft.guest.phone = guestInfo.phone;
             if (guestInfo.email) bookingDraft.guest.email = guestInfo.email;
             if (guestInfo.count) bookingDraft.guest.guests_count = guestInfo.count;
-            if (bookingDraft.guest.name && bookingDraft.guest.phone && bookingDraft.guest.email && bookingDraft.amenities && bookingDraft.amenities.length > 0) {
+            const hasAllGuestInfo = Boolean(
+                bookingDraft.guest?.name &&
+                bookingDraft.guest?.phone &&
+                bookingDraft.guest?.email &&
+                bookingDraft.guest?.guests_count &&
+                Number(bookingDraft.guest?.guests_count) > 0
+            );
+
+            if (hasAllGuestInfo && bookingDraft.amenities && bookingDraft.amenities.length > 0) {
                 bookingDraft.step = 'payment';
+            } else if (bookingDraft.amenities && bookingDraft.amenities.length > 0) {
+                bookingDraft.step = 'guest_info';
             }
             saveBookingDraft();
         }
 
-        // If in payment step and user says "proceed to payment" or "pay"
-        if ((bookingDraft.step === 'payment' || bookingDraft.step === 'review') && /^(?:proceed|pay|bayad|sige|proceed\s+to\s+payment|downpayment)\b/i.test(rawMessage.trim())) {
+        // If in payment step and user says "proceed to payment" or "pay" (STRICTLY only if all guest details are completed)
+        const canProceedPayment = Boolean(
+            bookingDraft.guest?.name &&
+            bookingDraft.guest?.phone &&
+            bookingDraft.guest?.email &&
+            bookingDraft.guest?.guests_count &&
+            Number(bookingDraft.guest?.guests_count) > 0
+        );
+        if ((bookingDraft.step === 'payment' || bookingDraft.step === 'review') && canProceedPayment && /^(?:proceed|pay|bayad|sige|proceed\s+to\s+payment|downpayment)\b/i.test(rawMessage.trim())) {
             initiateXenditPayment();
             return;
         }
