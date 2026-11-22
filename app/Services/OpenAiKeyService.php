@@ -57,15 +57,34 @@ class OpenAiKeyService
      */
     public static function checkKeyDirectly(string $apiKey): array
     {
+        // Allow developer simulation of depleted credits if requested in .env
+        if (env('OPENAI_SIMULATE_NO_CREDIT', false) || env('OPENAI_FORCE_EXPIRED', false)) {
+            return [
+                'is_expired' => true,
+                'status' => 'exhausted',
+                'code' => 429,
+                'label' => 'Credits 0 / Quota Exceeded',
+                'message' => 'OpenAI credit balance is 0 (Simulated). Chatbots automatically switched to OpenRouter Free.',
+            ];
+        }
+
         try {
             $baseUrl = rtrim(config('services.openai.base_url') ?: env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/');
+            $model = config('services.openai.model') ?: env('OPENAI_MODEL', 'gpt-6-luna');
             
-            // Lightweight model retrieval request to test auth and account quota
-            $response = Http::timeout(4)->withToken($apiKey)->get("{$baseUrl}/models");
+            // Minimal chat completion ping to verify authentic credentials AND available credit balance
+            $response = Http::timeout(10)->withToken($apiKey)->post("{$baseUrl}/chat/completions", [
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'user', 'content' => '1']
+                ],
+                'max_completion_tokens' => 200,
+            ]);
             $status = $response->status();
             $body = $response->body();
+            $bodyLower = strtolower($body);
 
-            if ($status === 401) {
+            if ($status === 401 || str_contains($bodyLower, 'invalid api key') || str_contains($bodyLower, 'incorrect api key')) {
                 $err = $response->json('error.message') ?? 'Invalid API key';
                 return [
                     'is_expired' => true,
@@ -76,15 +95,14 @@ class OpenAiKeyService
                 ];
             }
 
-            if ($status === 402 || $status === 429) {
+            if ($status === 402 || $status === 429 || str_contains($bodyLower, 'insufficient_quota') || str_contains($bodyLower, 'exceeded your current quota') || str_contains($bodyLower, 'quota') || str_contains($bodyLower, 'credit') || str_contains($bodyLower, 'billing')) {
                 $err = $response->json('error.message') ?? 'Credit is 0 or quota exceeded';
-                $isQuota = str_contains(strtolower($err), 'quota') || str_contains(strtolower($err), 'billing') || str_contains(strtolower($err), 'credit');
                 return [
                     'is_expired' => true,
                     'status' => 'exhausted',
                     'code' => $status,
-                    'label' => $isQuota ? 'Credits 0 / Quota Exceeded' : 'Rate Limited / Insufficient Credits',
-                    'message' => 'OpenAI credit balance is 0 or quota exceeded: ' . $err,
+                    'label' => 'Credits 0 / Quota Exceeded',
+                    'message' => 'OpenAI credit balance is 0 or quota is depleted: ' . $err,
                 ];
             }
 
@@ -108,22 +126,14 @@ class OpenAiKeyService
                 ];
             }
 
-            if (str_contains(strtolower($body), 'insufficient_quota') || str_contains(strtolower($body), 'exceeded your current quota') || str_contains(strtolower($body), 'billing')) {
-                return [
-                    'is_expired' => true,
-                    'status' => 'exhausted',
-                    'code' => $status,
-                    'label' => 'Credits 0 / Quota Exceeded',
-                    'message' => 'OpenAI credit balance is depleted or quota exceeded.',
-                ];
-            }
-
+            // Any other 4xx/5xx failure prevents OpenAI from running
+            $err = $response->json('error.message') ?? ('HTTP ' . $status);
             return [
-                'is_expired' => false,
-                'status' => 'unknown',
+                'is_expired' => true,
+                'status' => 'error',
                 'code' => $status,
-                'label' => 'Status Check Issue',
-                'message' => 'OpenAI responded with status ' . $status,
+                'label' => 'OpenAI Error (' . $status . ')',
+                'message' => 'OpenAI model returned an error: ' . $err,
             ];
         } catch (\Exception $e) {
             Log::debug('OpenAI key verification network exception: ' . $e->getMessage());
@@ -154,7 +164,7 @@ class OpenAiKeyService
             $statusStr = 'expired';
             $label = 'Key Invalid / Expired';
             $msg = 'OpenAI API key is invalid or revoked (401 Unauthorized).';
-        } elseif ($statusCode === 402 || $statusCode === 429 || str_contains($bodyLower, 'insufficient_quota') || str_contains($bodyLower, 'exceeded your current quota') || str_contains($bodyLower, 'credit') || str_contains($bodyLower, 'billing')) {
+        } elseif ($statusCode === 402 || $statusCode === 429 || str_contains($bodyLower, 'insufficient_quota') || str_contains($bodyLower, 'exceeded your current quota') || str_contains($bodyLower, 'credit') || str_contains($bodyLower, 'billing') || str_contains($bodyLower, 'quota')) {
             $isExpired = true;
             $statusStr = 'exhausted';
             $label = 'Credits 0 / Quota Exceeded';
@@ -164,6 +174,11 @@ class OpenAiKeyService
             $statusStr = 'revoked';
             $label = 'Access Forbidden';
             $msg = 'OpenAI access is forbidden (403 Forbidden).';
+        } else {
+            $isExpired = true;
+            $statusStr = 'error';
+            $label = 'OpenAI Error (' . $statusCode . ')';
+            $msg = 'OpenAI returned HTTP ' . $statusCode . '. Automatically switched to OpenRouter Free.';
         }
 
         $result = [

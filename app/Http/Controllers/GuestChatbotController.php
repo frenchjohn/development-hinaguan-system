@@ -272,15 +272,19 @@ class GuestChatbotController extends Controller
         // 1. Primary Model: OpenAI GPT-6 Luna
         if ($shouldTryOpenAi && !empty($openAiKey) && OpenAiKeyService::isAvailable()) {
             try {
-                $openAiResponse = Http::timeout(15)->withHeaders([
-                    'Authorization' => 'Bearer ' . $openAiKey,
-                    'Content-Type' => 'application/json',
-                ])->post("{$openAiBaseUrl}/chat/completions", [
+                $openAiPayload = [
                     'model' => $openAiModel,
                     'messages' => $messagesPayload,
-                    'max_tokens' => 1200,
-                    'temperature' => 0.3,
-                ]);
+                    'max_completion_tokens' => 1200,
+                ];
+                if (!str_contains($openAiModel, 'gpt-6') && !str_contains($openAiModel, 'o1') && !str_contains($openAiModel, 'o3')) {
+                    $openAiPayload['temperature'] = 0.3;
+                }
+
+                $openAiResponse = Http::timeout(25)->withHeaders([
+                    'Authorization' => 'Bearer ' . $openAiKey,
+                    'Content-Type' => 'application/json',
+                ])->post("{$openAiBaseUrl}/chat/completions", $openAiPayload);
 
                 if ($openAiResponse->successful()) {
                     OpenAiKeyService::markActive();
@@ -370,11 +374,6 @@ class GuestChatbotController extends Controller
             'openai_status' => OpenAiKeyService::getStatus(),
             'openrouter_status' => $keyStatus,
         ]);
-                'booking_action' => $bookingAction,
-                'booking_draft' => $bookingDraft,
-                'openrouter_status' => $keyStatus,
-            ]);
-        }
     }
 
     /**
