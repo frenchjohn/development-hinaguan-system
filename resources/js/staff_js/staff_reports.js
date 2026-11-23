@@ -370,8 +370,11 @@ window.AppPage['staff_reports'] = function () {
 
             updateTriggerButtonUI();
 
-            // Refresh search rows in ledger modal
+            // Refresh search and category filter in ledger modal
             initLedgerSearch();
+            if (activeCategoryFilter) {
+                filterLedgerRows();
+            }
 
             if (pushState) {
                 window.history.pushState({ url: url }, '', url);
@@ -436,24 +439,195 @@ window.AppPage['staff_reports'] = function () {
     });
 
     // ------------------------------------------------------------
-    // 3. SHIFT ACTIVITY & PAYMENT LEDGER MODAL
+    // 3. SHIFT ACTIVITY & PAYMENT LEDGER MODAL WITH CATEGORY FILTER
     // ------------------------------------------------------------
     const ledgerModal = document.getElementById('ledgerModal');
     const closeLedgerModalBtn = document.getElementById('closeLedgerModalBtn');
     const closeLedgerModalBtnFooter = document.getElementById('closeLedgerModalBtnFooter');
 
-    const openLedgerModal = function () {
+    let activeCategoryFilter = null; // null | 'checked_in' | 'additional_charge_paid' | 'added_amenity' | 'companion_added' | 'reservation_extended' | 'all_payments' | 'amenities_and_extras'
+    let activeCategoryTitle = null;
+    let activeCategoryTotal = null;
+
+    function filterLedgerRows() {
+        const tableBody = document.getElementById('ledgerTableBody');
+        const countDisplay = document.getElementById('ledgerCountDisplay');
+        const footerTotal = document.getElementById('ledgerFooterTotal');
+        const searchInput = document.getElementById('ledgerSearchInput');
+        if (!tableBody) return;
+
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        const rows = Array.from(tableBody.querySelectorAll('.ledger-row'));
+
+        let visibleCount = 0;
+        let visibleSum = 0;
+
+        rows.forEach(function (row) {
+            const rowAction = row.getAttribute('data-action') || '';
+            const rowAmount = parseFloat(row.getAttribute('data-amount') || '0');
+            const searchData = row.getAttribute('data-search') || '';
+
+            // 1. Check category filter
+            let categoryMatches = true;
+            if (activeCategoryFilter) {
+                if (activeCategoryFilter === 'all_payments') {
+                    categoryMatches = rowAmount > 0;
+                } else if (activeCategoryFilter === 'checked_in') {
+                    categoryMatches = (rowAction === 'checked_in' || rowAction === 'check_in');
+                } else if (activeCategoryFilter === 'additional_charge_paid') {
+                    categoryMatches = (rowAction === 'additional_charge_paid');
+                } else if (activeCategoryFilter === 'added_amenity') {
+                    categoryMatches = (rowAction === 'added_amenity' || rowAction === 'amenity_added');
+                } else if (activeCategoryFilter === 'companion_added') {
+                    categoryMatches = (rowAction === 'companion_added');
+                } else if (activeCategoryFilter === 'reservation_extended') {
+                    categoryMatches = (rowAction === 'reservation_extended' || rowAction === 'stay_extended' || rowAction === 'amenity_extended');
+                } else if (activeCategoryFilter === 'amenities_and_extras') {
+                    categoryMatches = ['added_amenity', 'amenity_added', 'companion_added', 'reservation_extended', 'stay_extended', 'amenity_extended'].includes(rowAction);
+                } else {
+                    categoryMatches = (rowAction === activeCategoryFilter);
+                }
+            }
+
+            // 2. Check search text query
+            const searchMatches = !query || searchData.includes(query);
+
+            if (categoryMatches && searchMatches) {
+                row.style.display = '';
+                visibleCount++;
+                visibleSum += rowAmount;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update count display
+        if (countDisplay) {
+            if (activeCategoryFilter) {
+                countDisplay.textContent = query
+                    ? `Showing ${visibleCount} record(s) matching "${query}" for ${activeCategoryTitle || 'this category'}`
+                    : `Showing ${visibleCount} record(s) for ${activeCategoryTitle || 'this category'}`;
+            } else {
+                countDisplay.textContent = query
+                    ? `Showing ${visibleCount} of ${rows.length} transaction(s)`
+                    : `Showing ${rows.length} transaction(s)`;
+            }
+        }
+
+        // Update footer total
+        if (footerTotal) {
+            const formattedSum = '₱' + visibleSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (activeCategoryFilter) {
+                footerTotal.innerHTML = `${escapeHtml(activeCategoryTitle || 'Category')} Total: <strong class="text-emerald-600 dark:text-emerald-400 font-display text-sm font-bold">${formattedSum}</strong>`;
+            } else {
+                footerTotal.innerHTML = `Total Collections: <strong class="text-emerald-600 dark:text-emerald-400 font-display text-sm font-bold">${formattedSum}</strong>`;
+            }
+        }
+
+        // Handle empty row message
+        let emptyMsgRow = document.getElementById('searchEmptyRow');
+        const defaultEmptyRow = document.getElementById('ledgerEmptyRow');
+        if (defaultEmptyRow) {
+            defaultEmptyRow.style.display = rows.length === 0 ? '' : 'none';
+        }
+
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!emptyMsgRow) {
+                emptyMsgRow = document.createElement('tr');
+                emptyMsgRow.id = 'searchEmptyRow';
+                tableBody.appendChild(emptyMsgRow);
+            }
+            if (query) {
+                emptyMsgRow.innerHTML = `
+                    <td colspan="6" class="py-8 text-center text-hp-text-muted text-xs">
+                        <div class="flex flex-col items-center justify-center gap-1.5">
+                            <i class="bi bi-search text-xl text-hp-text-muted/60"></i>
+                            <span>No transactions matching "<strong>${escapeHtml(query)}</strong>" in this view.</span>
+                        </div>
+                    </td>
+                `;
+            } else {
+                emptyMsgRow.innerHTML = `
+                    <td colspan="6" class="py-8 text-center text-hp-text-muted text-xs">
+                        <div class="flex flex-col items-center justify-center gap-1.5">
+                            <i class="bi bi-clipboard2-x text-2xl text-hp-text-muted/60"></i>
+                            <span>No ledger records found for <strong>${escapeHtml(activeCategoryTitle || 'this category')}</strong> during this period.</span>
+                        </div>
+                    </td>
+                `;
+            }
+        } else if (emptyMsgRow) {
+            emptyMsgRow.remove();
+        }
+    }
+
+    const openLedgerModal = function (filterAction = null, filterTitle = null, filterTotal = null) {
         const m = document.getElementById('ledgerModal');
         if (!m) return;
+
+        activeCategoryFilter = filterAction || null;
+        activeCategoryTitle = filterTitle || null;
+        activeCategoryTotal = filterTotal || null;
+
+        const categoryBanner = document.getElementById('ledgerCategoryBanner');
+        const categoryNameEl = document.getElementById('ledgerCategoryName');
+        const categoryTotalBadge = document.getElementById('ledgerCategoryTotalBadge');
+        const modalTitle = document.getElementById('ledgerModalTitle');
+        const modalSubtitle = document.getElementById('ledgerModalSubtitle');
+        const defaultTitle = 'Shift Activity & Payment Ledger';
+
+        if (activeCategoryFilter) {
+            if (categoryBanner) categoryBanner.classList.remove('hidden');
+            if (categoryNameEl) categoryNameEl.textContent = activeCategoryTitle || 'Category Breakdown';
+            if (categoryTotalBadge) categoryTotalBadge.textContent = activeCategoryTotal || '';
+            if (modalTitle) modalTitle.textContent = `${activeCategoryTitle || 'Ledger'} Breakdown`;
+            if (modalSubtitle) {
+                if (!modalSubtitle.hasAttribute('data-default-sub')) {
+                    modalSubtitle.setAttribute('data-default-sub', modalSubtitle.textContent);
+                }
+                modalSubtitle.textContent = `Itemized contributing ledger transactions for ${activeCategoryTitle} (${activeCategoryTotal || ''})`;
+            }
+        } else {
+            if (categoryBanner) categoryBanner.classList.add('hidden');
+            if (modalTitle) modalTitle.textContent = defaultTitle;
+            if (modalSubtitle && modalSubtitle.hasAttribute('data-default-sub')) {
+                modalSubtitle.textContent = modalSubtitle.getAttribute('data-default-sub');
+            }
+        }
+
+        const searchInput = document.getElementById('ledgerSearchInput');
+        if (searchInput) searchInput.value = '';
+
+        filterLedgerRows();
+
         m.classList.remove('hidden');
         m.classList.add('flex', 'is-open');
         m.setAttribute('aria-hidden', 'false');
-        const searchInput = document.getElementById('ledgerSearchInput');
+
         if (searchInput) {
             setTimeout(() => {
                 searchInput.focus({ preventScroll: true });
             }, 80);
         }
+    };
+
+    const clearCategoryFilter = function () {
+        activeCategoryFilter = null;
+        activeCategoryTitle = null;
+        activeCategoryTotal = null;
+
+        const categoryBanner = document.getElementById('ledgerCategoryBanner');
+        if (categoryBanner) categoryBanner.classList.add('hidden');
+
+        const modalTitle = document.getElementById('ledgerModalTitle');
+        if (modalTitle) modalTitle.textContent = 'Shift Activity & Payment Ledger';
+
+        const modalSubtitle = document.getElementById('ledgerModalSubtitle');
+        if (modalSubtitle && modalSubtitle.hasAttribute('data-default-sub')) {
+            modalSubtitle.textContent = modalSubtitle.getAttribute('data-default-sub');
+        }
+
+        filterLedgerRows();
     };
 
     const closeLedgerModal = function () {
@@ -480,59 +654,17 @@ window.AppPage['staff_reports'] = function () {
 
     function initLedgerSearch() {
         const searchInput = document.getElementById('ledgerSearchInput');
-        const tableBody = document.getElementById('ledgerTableBody');
-        const countDisplay = document.getElementById('ledgerCountDisplay');
+        if (!searchInput) return;
 
-        if (!searchInput || !tableBody) return;
-
-        const rows = Array.from(tableBody.querySelectorAll('.ledger-row'));
-
-        // Remove previous listener if exists
         if (ledgerSearchHandler) {
             searchInput.removeEventListener('input', ledgerSearchHandler);
         }
 
         ledgerSearchHandler = function () {
-            const query = searchInput.value.trim().toLowerCase();
-            let visibleCount = 0;
-
-            rows.forEach(function (row) {
-                const searchData = row.getAttribute('data-search') || '';
-                if (!query || searchData.includes(query)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            if (countDisplay) {
-                countDisplay.textContent = `Showing ${visibleCount} of ${rows.length} transaction(s)`;
-            }
-
-            let emptyMsgRow = document.getElementById('searchEmptyRow');
-            if (visibleCount === 0 && rows.length > 0) {
-                if (!emptyMsgRow) {
-                    emptyMsgRow = document.createElement('tr');
-                    emptyMsgRow.id = 'searchEmptyRow';
-                    emptyMsgRow.innerHTML = `
-                        <td colspan="6" class="py-6 text-center text-hp-text-muted text-xs">
-                            No transactions matching "<strong>${escapeHtml(query)}</strong>".
-                        </td>
-                    `;
-                    tableBody.appendChild(emptyMsgRow);
-                }
-            } else if (emptyMsgRow) {
-                emptyMsgRow.remove();
-            }
+            filterLedgerRows();
         };
 
         searchInput.addEventListener('input', ledgerSearchHandler);
-
-        // If search input already has a value, re-apply filter on new rows
-        if (searchInput.value.trim() !== '') {
-            ledgerSearchHandler();
-        }
     }
 
     initLedgerSearch();
@@ -588,6 +720,8 @@ window.AppPage['staff_reports'] = function () {
         applyFilters,
         openLedgerModal,
         closeLedgerModal,
+        clearCategoryFilter,
+        filterLedgerRows,
         openHandoverModal,
         closeHandoverModal,
         fetchAndSwapReports,
@@ -597,7 +731,7 @@ window.AppPage['staff_reports'] = function () {
     if (!window.__staffReportsGlobalListenersAttached) {
         window.__staffReportsGlobalListenersAttached = true;
 
-        // Delegated click handling for period pills, reset, and modal triggers
+        // Delegated click handling for period pills, reset, breakdown items, and modal triggers
         document.addEventListener('click', function (e) {
             // Period pill click
             const pill = e.target.closest('[data-preset]');
@@ -624,7 +758,25 @@ window.AppPage['staff_reports'] = function () {
                 return;
             }
 
-            // Ledger Modal triggers
+            // Clear category filter inside ledger modal
+            if (e.target.closest('#clearCategoryFilterBtn')) {
+                e.preventDefault();
+                window.__staffReportsController?.clearCategoryFilter();
+                return;
+            }
+
+            // Clickable Breakdown Row / Total / KPI Card click
+            const breakdownItem = e.target.closest('[data-breakdown-action]');
+            if (breakdownItem) {
+                e.preventDefault();
+                const action = breakdownItem.getAttribute('data-breakdown-action');
+                const title = breakdownItem.getAttribute('data-breakdown-title');
+                const total = breakdownItem.getAttribute('data-breakdown-total');
+                window.__staffReportsController?.openLedgerModal(action, title, total);
+                return;
+            }
+
+            // Ledger Modal triggers (Full ledger)
             if (e.target.closest('#openLedgerBtn') || e.target.closest('.open-ledger-trigger')) {
                 e.preventDefault();
                 window.__staffReportsController?.openLedgerModal();
@@ -653,8 +805,14 @@ window.AppPage['staff_reports'] = function () {
             }
         });
 
-        // Global Escape key
+        // Global Keyboard Handler (Escape, Enter/Space for accessible breakdown rows)
         document.addEventListener('keydown', function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-breakdown-action]') && !e.target.closest('input, select, textarea, button')) {
+                e.preventDefault();
+                e.target.closest('[data-breakdown-action]').click();
+                return;
+            }
+
             if (e.key === 'Escape') {
                 const lm = document.getElementById('ledgerModal');
                 if (lm && !lm.classList.contains('hidden')) {

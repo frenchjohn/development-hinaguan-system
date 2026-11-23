@@ -194,7 +194,21 @@ class AdminChatbotController extends Controller
         $activeModel = null;
         $fallbackReason = null;
 
-        $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai'));
+        $isManuallySelectedOpenAi = ($requestedModel === 'gpt-6-luna');
+        $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai') || $requestedModel === 'auto');
+
+        // If the admin manually selected OpenAI GPT-6 Luna, but it has 0 credits:
+        // Strictly prevent silent fallback so the administrator is immediately informed!
+        if ($isManuallySelectedOpenAi && !OpenAiKeyService::isAvailable()) {
+            $keyStatus = OpenAiKeyService::getStatus();
+            return response()->json([
+                'reply' => "⚠️ **OpenAI GPT-6 Luna** cannot be used: You have 0 credits remaining on your OpenAI account (" . ($keyStatus['message'] ?? 'Credit balance exhausted') . ").\n\nPlease add credits at [OpenAI Billing](https://platform.openai.com/billing) or switch the AI model to **OpenRouter Free (Backup)**.",
+                'active_model' => 'none',
+                'fallback_reason' => 'OpenAI GPT-6 Luna credits are 0. Auto-fallback disabled for manual model selection.',
+                'openai_status' => $keyStatus,
+                'openrouter_status' => OpenRouterKeyService::getStatus(),
+            ]);
+        }
 
         // 1. Primary Model: OpenAI GPT-6 Luna
         if ($shouldTryOpenAi && !empty($openAiKey) && OpenAiKeyService::isAvailable()) {
@@ -224,14 +238,32 @@ class AdminChatbotController extends Controller
                     }
                 } else {
                     $openAiStatus = OpenAiKeyService::markFromCompletionResponse($openAiResponse->status(), $openAiResponse->body());
-                    Log::warning("Admin Chatbot OpenAI Error (HTTP {$openAiResponse->status()}). Automatically switching to OpenRouter Free backup: " . $openAiResponse->body());
+                    Log::warning("Admin Chatbot OpenAI Error (HTTP {$openAiResponse->status()}): " . $openAiResponse->body());
+                    if ($isManuallySelectedOpenAi) {
+                        return response()->json([
+                            'reply' => "⚠️ **OpenAI GPT-6 Luna** cannot be used: You have 0 credits remaining on your OpenAI account (" . ($openAiStatus['message'] ?? 'Credit balance exhausted') . ").\n\nPlease add credits at [OpenAI Billing](https://platform.openai.com/billing) or switch the AI model to **OpenRouter Free (Backup)**.",
+                            'active_model' => 'none',
+                            'fallback_reason' => 'OpenAI GPT-6 Luna credits are 0.',
+                            'openai_status' => $openAiStatus,
+                            'openrouter_status' => OpenRouterKeyService::getStatus(),
+                        ]);
+                    }
                     $fallbackReason = 'OpenAI GPT-6 Luna credits are 0 or unavailable; automatically switched to OpenRouter Free.';
                 }
             } catch (\Exception $e) {
-                Log::warning('Admin Chatbot OpenAI Exception (switching to OpenRouter Free): ' . $e->getMessage());
+                Log::warning('Admin Chatbot OpenAI Exception: ' . $e->getMessage());
+                if ($isManuallySelectedOpenAi) {
+                    return response()->json([
+                        'reply' => "⚠️ **OpenAI GPT-6 Luna** connection failed: " . $e->getMessage() . ".\n\nPlease switch to **OpenRouter Free (Backup)** in the AI Model selector.",
+                        'active_model' => 'none',
+                        'fallback_reason' => 'OpenAI connection error.',
+                        'openai_status' => OpenAiKeyService::getStatus(),
+                        'openrouter_status' => OpenRouterKeyService::getStatus(),
+                    ]);
+                }
                 $fallbackReason = 'OpenAI connection error; automatically switched to OpenRouter Free.';
             }
-        } elseif ($shouldTryOpenAi) {
+        } elseif ($shouldTryOpenAi && !$isManuallySelectedOpenAi) {
             $fallbackReason = 'OpenAI GPT-6 Luna key is missing, expired, or credit is 0; automatically using OpenRouter Free backup.';
         }
 

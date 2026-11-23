@@ -7295,7 +7295,7 @@ window.AppPage['staff_reservations'] = function () {
             window.alert('No reservations to export.');
             return;
         }
-        const header = ['Reservation ID', 'Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Amount'];
+        const header = ['Reservation ID', 'Main Guest', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Amount'];
         const body = visibleRows.map(row => {
             const cells = row.querySelectorAll('td');
             return [

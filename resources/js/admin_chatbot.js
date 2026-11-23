@@ -101,7 +101,7 @@ function initAdminChatbot() {
     };
 
     // Add message to chat UI
-    const addMessage = (content, isBot = true) => {
+    const addMessage = (content, isBot = true, modelTag = null) => {
         if (isBot) {
             content = sanitizeChatbotContent(content);
         }
@@ -110,13 +110,18 @@ function initAdminChatbot() {
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 
         if (isBot) {
+            let modelBadgeHtml = '';
+            if (modelTag === 'none' || modelTag === 'system' || modelTag === 'notice') {
+                modelBadgeHtml = `<span class="ml-2 inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300">System Notice</span>`;
+            }
             messageDiv.innerHTML = `
                 <div class="chatbot-message__avatar">
                     <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
-                    <div class="chatbot-message__meta">
+                    <div class="chatbot-message__meta flex items-center">
                         <span class="chatbot-message__author">Admin Bren</span>
+                        ${modelBadgeHtml}
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -517,8 +522,19 @@ function initAdminChatbot() {
 
             if (conversationCleared) return;
 
+            if (data.openai_status) {
+                const optGpt = modelSelect?.querySelector('option[value="gpt-6-luna"]');
+                if (optGpt) {
+                    if (data.openai_status.is_expired) {
+                        optGpt.textContent = 'OpenAI GPT-6 Luna (Credits 0 - Depleted)';
+                    } else {
+                        optGpt.textContent = 'OpenAI GPT-6 Luna (Primary)';
+                    }
+                }
+            }
+
             if (data.reply) {
-                addMessage(data.reply, true);
+                addMessage(data.reply, true, data.active_model);
                 messages.push({ content: data.reply, isBot: true });
             } else {
                 addMessage('I apologize, but I encountered an error processing your query. Please try again.', true);

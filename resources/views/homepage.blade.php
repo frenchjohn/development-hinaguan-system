@@ -243,7 +243,8 @@
                     </div>
                 </div>
 
-                {{-- Celebrity In The Park Card (Brenda Mage) --}}
+                {{-- Celebrity In The Park Card (Brenda Mage) - Only visible when Brenda's Park Availability is active in Admin Settings --}}
+                @if (!empty($parkSettings->brenda_available))
                 <div class="w-full max-w-sm sm:max-w-md bg-[#092215]/95 backdrop-blur-md border border-emerald-500/20 rounded-2xl sm:rounded-3xl flex items-stretch shadow-xl mt-3.5 relative overflow-hidden group h-[110px] sm:h-[118px]">
                     {{-- Left: Brenda's Photo with smooth right fade --}}
                     <div class="relative w-24 sm:w-28 shrink-0 self-stretch overflow-hidden">
@@ -303,6 +304,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
     </section>

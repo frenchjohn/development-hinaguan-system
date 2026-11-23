@@ -286,7 +286,7 @@
                             <input 
                                 type="search" 
                                 id="reservationSearchInput" 
-                                placeholder="Search booker, ID, phone..." 
+                                placeholder="Search main guest, ID, phone..." 
                                 autocomplete="off"
                                 spellcheck="false"
                                 class="h-10 w-[220px] sm:w-[280px] md:w-[320px] rounded-xl border border-[#dfe5e0] bg-white pl-10 pr-9 text-sm font-medium text-[#183d28] placeholder-[#718076] shadow-sm transition-all duration-150 focus:border-[#2d6a4f] focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/15 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:placeholder-[#9ca3af] dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
@@ -332,8 +332,8 @@
                         <select id="reservationSortSelect" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
                             <option value="date-asc">Reservation date (soonest)</option>
                             <option value="date-desc">Reservation date (latest)</option>
-                            <option value="name-asc">Booker (A-Z)</option>
-                            <option value="name-desc">Booker (Z-A)</option>
+                            <option value="name-asc">Main Guest (A-Z)</option>
+                            <option value="name-desc">Main Guest (Z-A)</option>
                             <option value="amount-desc">Amount (High-Low)</option>
                         </select>
                     </label>
@@ -379,7 +379,7 @@
                         <thead class="bg-[#f7faf8] dark:bg-[#1e2220]">
                             <tr class="border-b border-[#e8eee9] dark:border-white/10">
                                 <th class="py-3.5 pl-5 pr-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] whitespace-nowrap">ID</th>
-                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">BOOKER</th>
+                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">MAIN GUEST</th>
                                 <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">RESERVATION DATE</th>
                                 <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">SESSION</th>
                                 <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">STATUS</th>
@@ -894,7 +894,7 @@
                 <!-- Booker & Reservation Card -->
                 <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                     <div>
-                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 block">Guest / Booker</span>
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 block">Main Guest</span>
                         <div class="font-bold text-slate-900 dark:text-white text-sm" id="sendReschedBookerName">—</div>
                     </div>
                     <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 font-mono font-bold text-xs" id="sendReschedIdBadge">#—</span>
@@ -1033,7 +1033,7 @@
             <!-- Refund Info Card -->
             <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-xs mb-4 space-y-2">
                 <div class="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-800/40">
-                    <span class="text-slate-600 dark:text-slate-400 font-medium">Guest Booker:</span>
+                    <span class="text-slate-600 dark:text-slate-400 font-medium">Main Guest:</span>
                     <span class="font-bold text-slate-900 dark:text-white" id="refundModalBookerName">—</span>
                 </div>
                 <div class="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-800/40">

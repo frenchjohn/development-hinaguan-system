@@ -213,7 +213,7 @@
                                     <div class="flex flex-wrap items-center gap-3">
                                         <div class="relative">
                                             <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#889b8a]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                                            <input type="search" id="reservationSearchInput" placeholder="Search booker, email, phone, ID..." class="w-60 sm:w-68 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] py-2.5 pl-9 pr-3 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] placeholder:text-[#889b8a] focus:bg-white dark:focus:bg-[#181b19] focus:border-[#178a52] focus:ring-2 focus:ring-[#178a52]/20 focus:outline-none transition-all shadow-xs">
+                                            <input type="search" id="reservationSearchInput" placeholder="Search main guest, email, phone, ID..." class="w-60 sm:w-68 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] py-2.5 pl-9 pr-3 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] placeholder:text-[#889b8a] focus:bg-white dark:focus:bg-[#181b19] focus:border-[#178a52] focus:ring-2 focus:ring-[#178a52]/20 focus:outline-none transition-all shadow-xs">
                                         </div>
 
                                         <button type="button" class="guest-filter-toggle inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] shadow-xs cursor-pointer" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
@@ -267,8 +267,8 @@
                                                 <option value="date-asc">Date (Oldest first)</option>
                                                 <option value="res-id-desc">Reservation ID (High-Low)</option>
                                                 <option value="res-id-asc">Reservation ID (Low-High)</option>
-                                                <option value="name-asc">Booker Name (A-Z)</option>
-                                                <option value="name-desc">Booker Name (Z-A)</option>
+                                                <option value="name-asc">Main Guest Name (A-Z)</option>
+                                                <option value="name-desc">Main Guest Name (Z-A)</option>
                                                 <option value="amount-desc">Amount Paid (High-Low)</option>
                                             </select>
                                         </label>
@@ -290,7 +290,7 @@
                                     <thead class="bg-[#f4f8f5] dark:bg-[#151c17] border-b border-[#e2e8e4] dark:border-[#282c29]">
                                         <tr>
                                             <th class="py-3.5 px-5 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">RESERVATION ID</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">MAIN BOOKER</th>
+                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">MAIN GUEST</th>
                                             <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider text-center">GUESTS</th>
                                             <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider text-center">STATUS</th>
                                             <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">SCHEDULE / CHECK-IN</th>
@@ -1033,7 +1033,7 @@
                     <span class="font-bold font-mono text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmResId">#0</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-[#718774] dark:text-[#889b8a]">Booker Name:</span>
+                    <span class="text-[#718774] dark:text-[#889b8a]">Main Guest:</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmBookerName">—</span>
                 </div>
 

@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Add plain text / markdown message to chat
-    const addMessage = (content, isBot = true, shouldSave = true) => {
+    const addMessage = (content, isBot = true, shouldSave = true, modelTag = null) => {
         if (isBot) {
             content = sanitizeChatbotContent(content);
         }
@@ -429,13 +429,18 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 
         if (isBot) {
+            let modelBadgeHtml = '';
+            if (modelTag === 'none' || modelTag === 'system' || modelTag === 'notice') {
+                modelBadgeHtml = `<span class="ml-2 inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300">System Notice</span>`;
+            }
             messageDiv.innerHTML = `
                 <div class="chatbot-message__avatar">
                     <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
-                    <div class="chatbot-message__meta">
+                    <div class="chatbot-message__meta flex items-center">
                         <span class="chatbot-message__author">Bren</span>
+                        ${modelBadgeHtml}
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -687,8 +692,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearBookingDraft();
             }
 
+            if (data.openai_status) {
+                const optGpt = modelSelect?.querySelector('option[value="gpt-6-luna"]');
+                if (optGpt) {
+                    if (data.openai_status.is_expired) {
+                        optGpt.textContent = 'OpenAI GPT-6 Luna (Credits 0 - Depleted)';
+                    } else {
+                        optGpt.textContent = 'OpenAI GPT-6 Luna (Primary)';
+                    }
+                }
+            }
+
             if (data.reply) {
-                const msgEl = addMessage(data.reply, true);
+                const msgEl = addMessage(data.reply, true, true, data.active_model);
 
                 // If in payment step, attach the proceed payment button (only if not currently evaluating tentative additions/changes AND all 4 guest details are fully completed)
                 const hasAllGuestInfo = Boolean(

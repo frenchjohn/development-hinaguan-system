@@ -251,10 +251,16 @@
                     {{-- KPI METRICS CARDS (6 METRICS) --}}
                     <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     {{-- 1. Total Collections --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-emerald-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="all_payments"
+                             data-breakdown-title="Total Collections"
+                             data-breakdown-total="₱{{ number_format($totalCollections, 2) }}"
+                             title="Click to view all collected ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Total Collections</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Total Collections</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             </div>
                         </div>
@@ -262,15 +268,24 @@
                             <div class="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
                                 ₱{{ number_format($totalCollections, 2) }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Personally collected on this shift</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>Personally collected on this shift</span>
+                                <span class="text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
 
                     {{-- 2. Check-Ins --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-green-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="checked_in"
+                             data-breakdown-title="Check-In Collections"
+                             data-breakdown-total="₱{{ number_format($checkInCollections, 2) }}"
+                             title="Click to view check-in ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Check-Ins</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 text-green-700 dark:text-green-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Check-Ins</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 text-green-700 dark:text-green-400 group-hover:bg-green-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
                             </div>
                         </div>
@@ -278,7 +293,10 @@
                             <div class="text-2xl font-display font-bold text-hp-text leading-tight">
                                 {{ $checkInsCount }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">₱{{ number_format($checkInCollections, 2) }} entrance/room fees</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>₱{{ number_format($checkInCollections, 2) }} entrance/room fees</span>
+                                <span class="text-[0.65rem] font-bold text-green-600 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
 
@@ -315,10 +333,16 @@
                     </article>
 
                     {{-- 5. Damage Charges --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-amber-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="additional_charge_paid"
+                             data-breakdown-title="Damage & Incident Payments"
+                             data-breakdown-total="₱{{ number_format($damageChargesCollected, 2) }}"
+                             title="Click to view damage ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Damage Fees</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Damage Fees</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             </div>
                         </div>
@@ -326,15 +350,24 @@
                             <div class="text-2xl font-display font-bold text-amber-700 dark:text-amber-400 leading-tight">
                                 ₱{{ number_format($damageChargesCollected, 2) }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $damageChargesCount }} incident collections</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>{{ $damageChargesCount }} incident collections</span>
+                                <span class="text-[0.65rem] font-bold text-amber-600 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
 
                     {{-- 6. Added Amenities & Extras --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-purple-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="amenities_and_extras"
+                             data-breakdown-title="Amenities & Extras"
+                             data-breakdown-total="₱{{ number_format($amenitiesCollected + $companionsCollected + $extensionsCollected, 2) }}"
+                             title="Click to view amenities & extras ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Amenities & Extras</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Amenities & Extras</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                             </div>
                         </div>
@@ -342,7 +375,10 @@
                             <div class="text-2xl font-display font-bold text-purple-700 dark:text-purple-400 leading-tight">
                                 ₱{{ number_format($amenitiesCollected + $companionsCollected + $extensionsCollected, 2) }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $amenitiesAddedCount }} amenities, {{ $companionsCount }} companions</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>{{ $amenitiesAddedCount }} amenities, {{ $companionsCount }} companions</span>
+                                <span class="text-[0.65rem] font-bold text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
                 </div>
@@ -352,67 +388,141 @@
                     {{-- Cash Handover Breakdown Card --}}
                     <div class="lg:col-span-1 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass flex flex-col justify-between">
                         <div>
-                            <div class="flex items-center justify-between border-b border-glass-border pb-3 mb-4">
+                            <div class="flex items-center justify-between border-b border-glass-border pb-3 mb-3">
                                 <div class="flex items-center gap-2.5">
                                     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c]">
                                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                     </div>
-                                    <h2 class="m-0 text-base font-display font-bold text-hp-text">Shift Cash Breakdown</h2>
+                                    <div>
+                                        <h2 class="m-0 text-base font-display font-bold text-hp-text">Shift Cash Breakdown</h2>
+                                        <p class="text-[0.65rem] text-hp-text-muted m-0">Click any total to view itemized ledger</p>
+                                    </div>
                                 </div>
                                 <span class="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300">Reconciled</span>
                             </div>
 
-                            <div class="space-y-3 text-sm">
-                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
-                                    <span class="text-hp-text-muted flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                            <div class="space-y-1.5 text-sm">
+                                {{-- 1. Entrance & Check-In --}}
+                                <div class="group flex items-center justify-between py-2 px-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                     role="button"
+                                     tabindex="0"
+                                     data-breakdown-action="checked_in"
+                                     data-breakdown-title="Entrance & Check-In Collections"
+                                     data-breakdown-total="₱{{ number_format($checkInCollections, 2) }}"
+                                     title="Click to view contributing ledger records">
+                                    <span class="text-hp-text-muted group-hover:text-hp-text flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors">
+                                        <span class="h-2 w-2 rounded-full bg-green-500 shrink-0"></span>
                                         Entrance & Check-In Collections
                                     </span>
-                                    <span class="font-semibold text-hp-text">₱{{ number_format($checkInCollections, 2) }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-hp-text group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">₱{{ number_format($checkInCollections, 2) }}</span>
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-md bg-black/5 dark:bg-white/10 group-hover:bg-emerald-600 group-hover:text-white text-hp-text-muted transition-colors text-[10px]">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
-                                    <span class="text-hp-text-muted flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                                {{-- 2. Damage & Incident Fees --}}
+                                <div class="group flex items-center justify-between py-2 px-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                     role="button"
+                                     tabindex="0"
+                                     data-breakdown-action="additional_charge_paid"
+                                     data-breakdown-title="Damage & Incident Payments"
+                                     data-breakdown-total="₱{{ number_format($damageChargesCollected, 2) }}"
+                                     title="Click to view contributing ledger records">
+                                    <span class="text-hp-text-muted group-hover:text-hp-text flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors">
+                                        <span class="h-2 w-2 rounded-full bg-amber-500 shrink-0"></span>
                                         Damage & Incident Payments
                                     </span>
-                                    <span class="font-semibold text-hp-text">₱{{ number_format($damageChargesCollected, 2) }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-hp-text group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">₱{{ number_format($damageChargesCollected, 2) }}</span>
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-md bg-black/5 dark:bg-white/10 group-hover:bg-emerald-600 group-hover:text-white text-hp-text-muted transition-colors text-[10px]">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
-                                    <span class="text-hp-text-muted flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-purple-500"></span>
+                                {{-- 3. Extra Amenities --}}
+                                <div class="group flex items-center justify-between py-2 px-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                     role="button"
+                                     tabindex="0"
+                                     data-breakdown-action="added_amenity"
+                                     data-breakdown-title="Extra Amenity Payments"
+                                     data-breakdown-total="₱{{ number_format($amenitiesCollected, 2) }}"
+                                     title="Click to view contributing ledger records">
+                                    <span class="text-hp-text-muted group-hover:text-hp-text flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors">
+                                        <span class="h-2 w-2 rounded-full bg-purple-500 shrink-0"></span>
                                         Extra Amenity Payments
                                     </span>
-                                    <span class="font-semibold text-hp-text">₱{{ number_format($amenitiesCollected, 2) }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-hp-text group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">₱{{ number_format($amenitiesCollected, 2) }}</span>
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-md bg-black/5 dark:bg-white/10 group-hover:bg-emerald-600 group-hover:text-white text-hp-text-muted transition-colors text-[10px]">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
-                                    <span class="text-hp-text-muted flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+                                {{-- 4. Companions / Extra Guests --}}
+                                <div class="group flex items-center justify-between py-2 px-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                     role="button"
+                                     tabindex="0"
+                                     data-breakdown-action="companion_added"
+                                     data-breakdown-title="Companions / Extra Guests"
+                                     data-breakdown-total="₱{{ number_format($companionsCollected, 2) }}"
+                                     title="Click to view contributing ledger records">
+                                    <span class="text-hp-text-muted group-hover:text-hp-text flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors">
+                                        <span class="h-2 w-2 rounded-full bg-teal-500 shrink-0"></span>
                                         Companions / Extra Guests
                                     </span>
-                                    <span class="font-semibold text-hp-text">₱{{ number_format($companionsCollected, 2) }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-hp-text group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">₱{{ number_format($companionsCollected, 2) }}</span>
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-md bg-black/5 dark:bg-white/10 group-hover:bg-emerald-600 group-hover:text-white text-hp-text-muted transition-colors text-[10px]">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
-                                    <span class="text-hp-text-muted flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                                {{-- 5. Reservation Extensions --}}
+                                <div class="group flex items-center justify-between py-2 px-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                     role="button"
+                                     tabindex="0"
+                                     data-breakdown-action="reservation_extended"
+                                     data-breakdown-title="Reservation Extensions"
+                                     data-breakdown-total="₱{{ number_format($extensionsCollected, 2) }}"
+                                     title="Click to view contributing ledger records">
+                                    <span class="text-hp-text-muted group-hover:text-hp-text flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors">
+                                        <span class="h-2 w-2 rounded-full bg-indigo-500 shrink-0"></span>
                                         Reservation Extensions
                                     </span>
-                                    <span class="font-semibold text-hp-text">₱{{ number_format($extensionsCollected, 2) }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-hp-text group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">₱{{ number_format($extensionsCollected, 2) }}</span>
+                                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-md bg-black/5 dark:bg-white/10 group-hover:bg-emerald-600 group-hover:text-white text-hp-text-muted transition-colors text-[10px]">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-5 pt-3 border-t-2 border-[#1c5c3c]/30">
-                            <div class="flex items-center justify-between">
+                        <div class="mt-4 pt-3 border-t-2 border-[#1c5c3c]/30">
+                            <div class="group flex items-center justify-between p-2.5 -mx-1 rounded-xl hover:bg-emerald-500/10 dark:hover:bg-emerald-500/15 cursor-pointer transition-all duration-150 border border-transparent hover:border-emerald-500/20 active:scale-[0.99]"
+                                 role="button"
+                                 tabindex="0"
+                                 data-breakdown-action="all_payments"
+                                 data-breakdown-title="Total Handover Collections"
+                                 data-breakdown-total="₱{{ number_format($totalCollections, 2) }}"
+                                 title="Click to view all collected ledger records">
                                 <div>
-                                    <span class="text-xs uppercase font-bold text-hp-text-muted">Total Handover Cash</span>
+                                    <span class="text-xs uppercase font-bold text-hp-text-muted group-hover:text-hp-text transition-colors">Total Handover Cash</span>
                                     <p class="text-[0.68rem] text-hp-text-muted">Net cash verified for drawer turnover</p>
                                 </div>
-                                <div class="text-xl font-display font-bold text-[#1c5c3c] dark:text-[#6ab88c]">
-                                    ₱{{ number_format($totalCollections, 2) }}
+                                <div class="flex items-center gap-2">
+                                    <div class="text-xl font-display font-bold text-[#1c5c3c] dark:text-[#6ab88c]">
+                                        ₱{{ number_format($totalCollections, 2) }}
+                                    </div>
+                                    <span class="inline-flex items-center justify-center h-6 w-6 rounded-md bg-[#1c5c3c]/10 dark:bg-emerald-500/20 group-hover:bg-[#1c5c3c] group-hover:text-white text-[#1c5c3c] dark:text-[#6ab88c] transition-colors text-xs">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -509,6 +619,22 @@
                 </button>
             </div>
 
+            {{-- Category Filter Banner (Active when clicked from Cash Breakdown or KPI) --}}
+            <div id="ledgerCategoryBanner" class="hidden px-6 py-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border-b border-emerald-500/20 dark:border-emerald-800/60 flex items-center justify-between text-xs transition-all">
+                <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 flex-wrap">
+                    <span class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                        <i class="bi bi-funnel-fill text-xs"></i>
+                        <span>Filter:</span>
+                    </span>
+                    <span id="ledgerCategoryName" class="font-bold text-emerald-950 dark:text-emerald-100">Damage &amp; Incident Payments</span>
+                    <span id="ledgerCategoryTotalBadge" class="rounded-md bg-[#1c5c3c]/15 dark:bg-emerald-500/20 text-[#1c5c3c] dark:text-[#6ab88c] font-bold px-2 py-0.5 text-[0.7rem]">₱0.00</span>
+                </div>
+                <button type="button" id="clearCategoryFilterBtn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 underline cursor-pointer">
+                    <i class="bi bi-arrow-counterclockwise text-xs"></i>
+                    <span>Show All Shift Activities</span>
+                </button>
+            </div>
+
             {{-- Search & Controls --}}
             <div class="px-6 pt-4 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#161a17]">
                 <div class="relative w-full sm:w-80">
@@ -526,7 +652,7 @@
                             <th class="px-5 py-3">Time & Date</th>
                             <th class="px-3 py-3">Shift</th>
                             <th class="px-3 py-3">Action</th>
-                            <th class="px-4 py-3">Reservation & Guest</th>
+                            <th class="px-4 py-3">Reservation & Main Guest</th>
                             <th class="px-4 py-3">Transaction Details</th>
                             <th class="px-5 py-3 text-right">Collected Amount</th>
                         </tr>
@@ -534,6 +660,8 @@
                     <tbody id="ledgerTableBody" class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($ledgerRows as $row)
                             <tr class="ledger-row hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                                data-action="{{ $row['action'] }}"
+                                data-amount="{{ $row['payment_amount'] }}"
                                 data-search="{{ strtolower($row['guest_name'] . ' ' . $row['action'] . ' ' . $row['title'] . ' ' . $row['description'] . ' res#' . $row['reservation_id']) }}">
                                 {{-- Timestamp --}}
                                 <td class="px-5 py-3 whitespace-nowrap">

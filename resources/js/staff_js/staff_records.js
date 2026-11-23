@@ -828,7 +828,7 @@ window.AppPage['staff_records'] = function () {
             <!-- Stay Schedule & Booker Information -->
             <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
-                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Stay & Booker Details</span>
+                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Stay & Main Guest Details</span>
                     <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]">${reservation.total_days || 1} Day Stay</span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -975,7 +975,7 @@ window.AppPage['staff_records'] = function () {
                                 <div class="p-2.5 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex items-center justify-between gap-3 text-xs">
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(g.name || reservation.booker_name || 'Primary Booker')}</span>
+                                            <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(g.name || reservation.booker_name || 'Main Guest')}</span>
                                             <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-[#8fd0ab]">Primary</span>
                                             ${g.has_pool_access ? '<span class="px-1.5 py-0.5 rounded text-[0.65rem] font-medium bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">Pool</span>' : ''}
                                         </div>
@@ -1926,7 +1926,7 @@ window.AppPage['staff_records'] = function () {
             <tr>
                 <th style="width: 32px; text-align: center;">#</th>
                 <th style="width: 85px;">RES ID &amp; TYPE</th>
-                <th>MAIN BOOKER & CONTACT</th>
+                <th>MAIN GUEST & CONTACT</th>
                 <th style="width: 55px; text-align: center;">GUESTS</th>
                 <th style="width: 90px; text-align: center;">STATUS</th>
                 <th style="width: 145px;">SCHEDULE / CHECK-IN</th>

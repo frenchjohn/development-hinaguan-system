@@ -70,15 +70,14 @@ class OpenAiKeyService
 
         try {
             $baseUrl = rtrim(config('services.openai.base_url') ?: env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/');
-            $model = config('services.openai.model') ?: env('OPENAI_MODEL', 'gpt-6-luna');
             
-            // Minimal chat completion ping to verify authentic credentials AND available credit balance
-            $response = Http::timeout(10)->withToken($apiKey)->post("{$baseUrl}/chat/completions", [
-                'model' => $model,
+            // Standard OpenAI probe: gpt-4o-mini checks actual account billing & credit balance
+            $response = Http::timeout(6)->withToken($apiKey)->post("{$baseUrl}/chat/completions", [
+                'model' => 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'user', 'content' => '1']
                 ],
-                'max_completion_tokens' => 200,
+                'max_tokens' => 1,
             ]);
             $status = $response->status();
             $body = $response->body();
@@ -95,14 +94,14 @@ class OpenAiKeyService
                 ];
             }
 
-            if ($status === 402 || $status === 429 || str_contains($bodyLower, 'insufficient_quota') || str_contains($bodyLower, 'exceeded your current quota') || str_contains($bodyLower, 'quota') || str_contains($bodyLower, 'credit') || str_contains($bodyLower, 'billing')) {
-                $err = $response->json('error.message') ?? 'Credit is 0 or quota exceeded';
+            if ($status === 402 || $status === 429 || str_contains($bodyLower, 'credit_balance_exhausted') || str_contains($bodyLower, 'insufficient_quota') || str_contains($bodyLower, 'no credits remaining') || str_contains($bodyLower, 'exceeded your current quota') || str_contains($bodyLower, 'billing') || str_contains($bodyLower, 'quota') || str_contains($bodyLower, 'credit')) {
+                $err = $response->json('error.message') ?? 'You have no credits remaining on OpenAI.';
                 return [
                     'is_expired' => true,
                     'status' => 'exhausted',
                     'code' => $status,
-                    'label' => 'Credits 0 / Quota Exceeded',
-                    'message' => 'OpenAI credit balance is 0 or quota is depleted: ' . $err,
+                    'label' => 'Credits 0 / Exhausted',
+                    'message' => $err,
                 ];
             }
 
