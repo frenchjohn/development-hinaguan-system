@@ -39,7 +39,7 @@ class AdminChatbotFallbackTest extends TestCase
     {
         $this->makeAdminSession();
 
-        // Simulate OpenRouter 401 "User not found"
+        // Simulate OpenRouter and OpenAI failure
         Http::fake([
             'https://openrouter.ai/*' => Http::response([
                 'error' => [
@@ -47,6 +47,12 @@ class AdminChatbotFallbackTest extends TestCase
                     'code' => 401,
                 ]
             ], 401),
+            'https://api.openai.com/*' => Http::response([
+                'error' => [
+                    'message' => 'Quota exhausted.',
+                    'code' => 'insufficient_quota',
+                ]
+            ], 429),
         ]);
 
         // 1. General query / "what happen"

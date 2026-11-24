@@ -713,16 +713,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (conversationCleared) return;
 
-            // Sync bookingDraft returned from backend
+            // Sync bookingDraft returned from backend as authoritative source of truth
             if (data.booking_draft) {
-                bookingDraft = Object.assign({}, bookingDraft, data.booking_draft);
+                bookingDraft = data.booking_draft;
                 saveBookingDraft();
             }
 
             if (data.booking_action === 'show_picks') {
                 showBookingPicksSummary();
                 return;
-            } else if (data.booking_action === 'cancel_booking') {
+            } else if (data.booking_action === 'cancel_booking' || data.booking_action === 'booking_cancelled') {
                 clearBookingDraft();
             }
 
@@ -3990,32 +3990,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         bookingDraft.amenities = confirmedMatches;
                     }
                     bookingDraft.amenity = bookingDraft.amenities[0];
-                    bookingDraft.tentativeAmenity = null;
-                    bookingDraft.tentativeAmenities = null;
-                    if (!bookingDraft.startDate) {
-                        bookingDraft.step = 'date_slot';
-                    } else if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
-                        bookingDraft.step = 'guest_info';
-                    }
-                    saveBookingDraft();
-                }
-            }
-        }
-
-        // Conversational Fallback: If user affirms and amenities are still empty, scan last bot proposal
-        const hasAffirmationCheck = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both|\s+it)?|book(?:\s+both|\s+it)?|both|yes\s+both|confirm(?:ed)?|let'?s\s+go|go\s+with|go|go\s+ahead|i'?ll\s+take|we'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede|can\s+u\s+set\s+it\s+up(?:\s+now)?|can\s+you\s+set\s+it\s+up(?:\s+now)?|set\s+it\s+up(?:\s+now)?|set\s+this\s+up|please\s+do|let'?s\s+do\s+(?:that|it)|make\s+the\s+reservation)\b/i.test(lower);
-        if (hasAffirmationCheck && (!bookingDraft.amenities || bookingDraft.amenities.length === 0) && messages && messages.length > 0 && cachedAmenities && Array.isArray(cachedAmenities)) {
-            const lastBotMsg = [...messages].reverse().find(m => m.isBot && m.content);
-            if (lastBotMsg) {
-                const botTextLower = lastBotMsg.content.toLowerCase();
-                const foundFromBot = cachedAmenities.filter(a => {
-                    const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
-                    return botTextLower.replace(/[-\s]/g, '').includes(cleanAm);
-                });
-                if (foundFromBot.length > 0) {
-                    bookingDraft.active = true;
-                    bookingDraft.amenities = foundFromBot;
-                    bookingDraft.amenity = foundFromBot[0];
                     bookingDraft.tentativeAmenity = null;
                     bookingDraft.tentativeAmenities = null;
                     if (!bookingDraft.startDate) {

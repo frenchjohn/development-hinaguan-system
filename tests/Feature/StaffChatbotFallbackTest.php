@@ -39,7 +39,7 @@ class StaffChatbotFallbackTest extends TestCase
     {
         $this->makeStaffSession();
 
-        // Simulate OpenRouter 401 "User not found"
+        // Simulate API failure for both OpenRouter and OpenAI
         Http::fake([
             'https://openrouter.ai/*' => Http::response([
                 'error' => [
@@ -47,6 +47,12 @@ class StaffChatbotFallbackTest extends TestCase
                     'code' => 401,
                 ]
             ], 401),
+            'https://api.openai.com/*' => Http::response([
+                'error' => [
+                    'message' => 'Quota exhausted.',
+                    'code' => 'insufficient_quota',
+                ]
+            ], 429),
         ]);
 
         // 1. Greeting
@@ -99,6 +105,7 @@ class StaffChatbotFallbackTest extends TestCase
 
         Http::fake([
             'https://openrouter.ai/*' => Http::response(['error' => 'Simulated failure'], 500),
+            'https://api.openai.com/*' => Http::response(['error' => 'Simulated failure'], 500),
         ]);
 
         $response = $this->postJson('/chatbot', [
@@ -139,6 +146,7 @@ class StaffChatbotFallbackTest extends TestCase
 
         Http::fake([
             'https://openrouter.ai/*' => Http::response(['error' => 'Simulated failure'], 500),
+            'https://api.openai.com/*' => Http::response(['error' => 'Simulated failure'], 500),
         ]);
 
         $response = $this->postJson('/chatbot', [

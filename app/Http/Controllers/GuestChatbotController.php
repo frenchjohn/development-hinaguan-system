@@ -23,6 +23,50 @@ use App\Services\OpenRouterKeyService;
 
 class GuestChatbotController extends Controller
 {
+    /**
+     * Provide a fresh, clean initial booking draft structure.
+     */
+    private function getEmptyDraft(): array
+    {
+        return [
+            'active' => false,
+            'step' => 'date_slot',
+            'tentativeDate' => null,
+            'tentativeEndDate' => null,
+            'tentativeSlot' => 'Daytime',
+            'tentativeEndSlot' => 'Daytime',
+            'tentativeStayType' => null,
+            'startDate' => null,
+            'endDate' => null,
+            'startSlot' => 'Daytime',
+            'endSlot' => 'Daytime',
+            'slot' => 'Daytime',
+            'dayCount' => 1,
+            'nightCount' => 0,
+            'daysSpan' => 1,
+            'tentativeAmenity' => null,
+            'tentativeAmenities' => null,
+            'tentativeCategory' => null,
+            'amenities' => [],
+            'amenity' => null,
+            'guest' => [
+                'name' => '',
+                'phone' => '',
+                'email' => '',
+                'guests_count' => null,
+            ],
+            'payment' => [
+                'payment_intent_id' => null,
+                'total_amount' => 0,
+                'deposit_amount' => 0,
+                'remaining_balance' => 0,
+                'method' => null,
+                'status' => 'pending',
+                'reservation_id' => null,
+            ],
+        ];
+    }
+
     public function chat(Request $request)
     {
         $request->validate([
@@ -38,11 +82,48 @@ class GuestChatbotController extends Controller
         $msgLower = strtolower($userMessage);
         $bookingDraft = $request->input('booking_draft', []);
 
-        // Detect booking actions
+        // Detect booking actions & conversational draft commands
         $bookingAction = null;
-        if (preg_match('/(?:cancel\s+booking|reset\s+booking|stop\s+booking|exit\s+booking)/i', $msgLower)) {
-            $bookingAction = 'cancel_booking';
-            $bookingDraft = null;
+
+        // 1. Full Reset / Cancel / Stop Booking / Clean Draft
+        if (preg_match('/\b(?:cancel\s*(?:my\s*)?booking|reset\s+booking|stop\s+(?:the\s+)?book(?:ing)?|exit\s+booking|ayaw\s*na\s*lang|clean\s+(?:the\s+|my\s+)?draft|clean\s+booking|clear\s+(?:the\s+|my\s+)?draft|clear\s+booking|reset\s+draft|start\s+over|delete\s+draft|remove\s+draft|erase\s+draft)\b/i', $msgLower)) {
+            $bookingDraft = $this->getEmptyDraft();
+            return response()->json([
+                'reply' => "No problem! I've cleared your booking draft and cancelled booking mode. How else may I assist you with Hinaguan Nature Park today?",
+                'booking_draft' => $bookingDraft,
+                'booking_action' => 'booking_cancelled',
+            ]);
+        } elseif (preg_match('/\b(?:clean\s+(?:selected\s+|the\s+)?date|clear\s+(?:selected\s+|the\s+|my\s+)?date|reset\s+(?:selected\s+|the\s+)?date|remove\s+(?:selected\s+|the\s+)?date|delete\s+(?:the\s+)?date|cancel\s+(?:the\s+)?date|tanggalin\s+ang\s+petsa|tangtanga\s+ang\s+petsa)\b/i', $msgLower)) {
+            $bookingDraft['startDate'] = null;
+            $bookingDraft['endDate'] = null;
+            $bookingDraft['startSlot'] = 'Daytime';
+            $bookingDraft['endSlot'] = 'Daytime';
+            $bookingDraft['slot'] = 'Daytime';
+            $bookingDraft['tentativeDate'] = null;
+            $bookingDraft['tentativeEndDate'] = null;
+            $bookingDraft['tentativeSlot'] = null;
+            $bookingDraft['tentativeEndSlot'] = null;
+            $bookingDraft['tentativeStayType'] = null;
+            $bookingDraft['step'] = 'date_slot';
+            return response()->json([
+                'reply' => "I've cleared your selected reservation date. What date would you like to visit instead?",
+                'booking_draft' => $bookingDraft,
+                'booking_action' => 'update_draft',
+            ]);
+        } elseif (preg_match('/\b(?:clean\s+(?:selected\s+|the\s+|my\s+)?amenit(?:y|ies)?|clear\s+(?:selected\s+|the\s+|my\s+)?amenit(?:y|ies)?|reset\s+(?:selected\s+|the\s+)?amenit(?:y|ies)?|remove\s+(?:selected\s+|the\s+)?amenit(?:y|ies)?|clean\s+picked\s+amenit(?:y|ies)?|clear\s+picks?|clean\s+picks?|remove\s+function\s*hall|clear\s+function\s*hall|tanggalin\s+ang\s+amenity|tangtanga\s+ang\s+amenity)\b/i', $msgLower)) {
+            $bookingDraft['amenities'] = [];
+            $bookingDraft['amenity'] = null;
+            $bookingDraft['tentativeAmenities'] = null;
+            $bookingDraft['tentativeAmenity'] = null;
+            $bookingDraft['tentativeCategory'] = null;
+            if (!empty($bookingDraft['startDate'])) {
+                $bookingDraft['step'] = 'amenity';
+            }
+            return response()->json([
+                'reply' => "I've cleared your selected amenities. Which amenity would you like to reserve instead?",
+                'booking_draft' => $bookingDraft,
+                'booking_action' => 'update_draft',
+            ]);
         } elseif (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
             $bookingAction = 'show_picks';
         }
@@ -192,10 +273,20 @@ class GuestChatbotController extends Controller
             . "       '[Date] sounds like a wonderful date to visit Hinaguan Nature Park! 🌿 Are you sure you would like to pick [Date] for your visit? Also, would you prefer a **Day Tour**, **Night Tour**, or **24-Hour Stay**? ☀️🌙 I\'ll help you find the perfect amenity for your visit! 😊'\n"
             . "       DO NOT include '[VIEW_AMENITIES_BUTTON]'!\n"
             . "     - When the guest confirms their stay / tour type (e.g. 'Night', 'Day', 'Night Tour', 'Day Tour', 'Nighttime', 'Daytime'):\n"
-            . "       Acknowledge warmly and present the standard rates table:\n"
-            . "       'Wonderful! 🌙💚 A **Night Tour on [Date]** sounds like a lovely way to relax at Hinaguan Nature Park! 🌿✨\n\nHere are our amenities and their night rates:\n\n| Amenity | Night Rate |\n| :--- | :--- |\n| Regular A-House (6 rooms) | ₱500 |\n| Aircon A-House (2 rooms) | ₱1,000 |\n| Cottage (6 units) | ₱200 |\n| Payag (6 units) | ₱300 |\n| Function Hall (1 unit) | ₱10,000 |\n\nPlease note that these are our standard rates. Actual availability still needs to be verified for [Date].'\n"
-            . "       (If Day Tour, use Day Rate: Regular A-House ₱300, Aircon A-House ₱700, Cottage ₱200, Payag ₱300, Function Hall ₱5,000)\n"
-            . "       Ask which amenity catches their eye or if they want you to check live availability!\n"
+            . "       * CRITICAL TOPIC FOCUS & AMENITY CONTINUITY RULE:\n"
+            . "         If an amenity was ALREADY discussed, proposed, or selected in the conversation (e.g., 'airconditioned ahouse', 'aircon a-house', 'a-house 2', 'payag 2', 'cottage'):\n"
+            . "         STRICTLY DO NOT DUMP THE RATES TABLE OF OTHER AMENITIES (Cottages, Payags, Function Hall)!\n"
+            . "         STRICTLY DO NOT ASK 'Which one catches your eye?' or ask what amenity they want again!\n"
+            . "         STAY 100% FOCUSED ON THE AMENITY BEING DISCUSSED! Acknowledge their date and tour type FOR THAT AMENITY:\n"
+            . "         - For Air-conditioned A-Houses (which are A-House 2 and A-House 3 at ₱1,000 night / ₱700 day with free entrance & pool access for 2):\n"
+            . "           'Wonderful! 🌙💚 A Night Tour tonight, [Date], for the **Air-conditioned A-House** (₱1,000, includes free entrance & pool access for 2) sounds lovely! Our air-conditioned units are **A-House 2** and **A-House 3**. Shall I lock in **A-House 2** for you, or do you have a preference between A-House 2 and A-House 3? Also, to prepare your digital reservation pass, may I have your **Full Name**, please? 😊'\n"
+            . "         - If the specific amenity unit is already locked in (e.g. A-House 2, Payag 2):\n"
+            . "           Warmly confirm it and immediately ask for their **Full Name**!\n"
+            . "       * ONLY IF NO AMENITY HAS BEEN DISCUSSED OR CHOSEN YET:\n"
+            . "         Acknowledge warmly and present the standard rates table:\n"
+            . "         'Wonderful! 🌙💚 A **Night Tour on [Date]** sounds like a lovely way to relax at Hinaguan Nature Park! 🌿✨\n\nHere are our amenities and their night rates:\n\n| Amenity | Night Rate |\n| :--- | :--- |\n| Regular A-House (6 rooms) | ₱500 |\n| Aircon A-House (2 rooms) | ₱1,000 |\n| Cottage (6 units) | ₱200 |\n| Payag (6 units) | ₱300 |\n| Function Hall (1 unit) | ₱10,000 |\n\nPlease note that these are our standard rates. Actual availability still needs to be verified for [Date].'\n"
+            . "         (If Day Tour, use Day Rate: Regular A-House ₱300, Aircon A-House ₱700, Cottage ₱200, Payag ₱300, Function Hall ₱5,000)\n"
+            . "         Ask which amenity catches their eye or if they want you to check live availability!\n"
             . "   * STEP 2 — AMENITY INQUIRY & AVAILABILITY (MAKE SURE BEFORE RECORDING, SUPPORT MULTIPLE AMENITIES):\n"
             . "     - The guest may mention ONE or MULTIPLE amenities in a single message (e.g., 'uhm i want ahouse 2 and payag 3', 'cottage 1 and cottage 2', 'i think its better to pick ahouse 1 right?', 'what about ahouse 1?'):\n"
             . "       1. DO NOT immediately record amenities if the guest is merely asking, wondering, or stating tentative interest!\n"
@@ -242,6 +333,11 @@ class GuestChatbotController extends Controller
             . "     Acknowledge that it's added, state the updated total and 50% downpayment, and ask if they are ready to proceed to the next step or payment!\n"
             . "   - If the guest confirms switching or removing (e.g. 'switch to cottage 2', 'change to cottage 2', 'no function hall'):\n"
             . "     Acknowledge the change warmly, state the updated total and 50% downpayment, and proceed seamlessly!\n\n"
+            . "12. CRITICAL FUNCTION HALL & GROUP SIZE GUARDRAILS:\n"
+            . "   - FUNCTION HALL IS STRICTLY FOR LARGE GATHERINGS (15 to 50+ guests at ₱5,000 day / ₱10,000 night)!\n"
+            . "   - NEVER automatically select, assign, or assume Function Hall is in the booking unless the guest EXPLICITLY requested it by name or has 15+ guests!\n"
+            . "   - If the guest is a couple, mentions a girlfriend/boyfriend/partner/wife/husband, or has 1 to 4 guests, NEVER say or assume Function Hall is selected! Instead, recommend cozy A-Houses (Regular ₱300 day / ₱500 night, Aircon ₱700 day / ₱1,000 night) or bamboo Payags/Cottages.\n"
+            . "   - Before recording any amenity into a booking, make sure the guest has explicitly agreed to or chosen it.\n\n"
             . "=== LIVE PARK & DATABASE CONTEXT ===\n"
             . $guestContext;
 
@@ -281,7 +377,7 @@ class GuestChatbotController extends Controller
         $activeModel = null;
         $fallbackReason = null;
 
-        $isManuallySelectedOpenAi = ($requestedModel === 'gpt-6-luna');
+        $isManuallySelectedOpenAi = $request->filled('model') && ($requestedModel === 'gpt-6-luna');
         $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai') || $requestedModel === 'auto');
 
         // If the user manually selected OpenAI GPT-6 Luna, but it has 0 credits:
@@ -460,6 +556,14 @@ class GuestChatbotController extends Controller
 
         // 1.5 Strict guardrail against internal monologue / thinking leakage
         $metaPattern = '/\b(?:Analyze\s+User\s+Input|Check\s+(?:Booking\s+)?Procedure|Booking\s+Procedure\s+Rules|Let\'?s\s+structure(?:\s+the\s+response)?|User\s+(?:says|said|responded|is\s+asking|jumped|asks)|Context\s+from\s+earlier|According\s+to\s+the\s+rules|the\s+rule(?:s)?\s+say|Let\'?s\s+review|Looking\s+back\s*:|I\s+need\s+to\s+follow|I\s+should\s+(?:gently\s+)?(?:remind|ask|verify|check)|This\s+seems\s+like|wasn\'?t\s+explicitly\s+confirmed|Acknowledge\s+.*selection|Check\s+availability\s*:|Mention\s+rate\s+and\s+inclusions|Then\s+proceed\s+to\s+booking|But\s+wait,?\s+the\s+rules|Step\s+\d+\s*:\s*[A-Za-z]+|need\s+handle|we\s+must|we\s+need|we\s+should|need\s+check\s+live\s+availability|Section\s+\d+\s+says|(?:The\s+)?draft\s+(?:currently\s+)?(?:has|had|said)|Could\s+mean\s+(?:add|switch)|operational\s+rules\s*:|When\s+guest\s+asks\s+about\s+availability|DO\s+NOT\s+output|Actually\s+assistant\s+said|That\s+may\s+have\s+been\s+premature|We\s+can\s+say\s+(?:yes|no)|Inquired\s+Amenity\s*:|Inquired\s+Additional|Current\s+Stage\s*:|Tentative\s*\/\s*Proposed\s+Date|Review\s+section\s+\d+|internal\s+(?:thought|reasoning|analysis)|scratchpad)\b/i';
+
+        // 1.8 If the model outputs a draft or final answer section at the end (e.g., "Draft:\n"...", "Final Response:", etc.), extract only that answer first!
+        if (preg_match('/(?:^|\n)\s*(?:Draft|Final\s+Response|Final\s+Answer|Actual\s+Response|Clean\s+Response):\s*["\']?(.+?)["\']?\s*$/is', $text, $matches)) {
+            $extracted = trim($matches[1]);
+            if (!empty($extracted) && !preg_match($metaPattern, $extracted)) {
+                $text = $extracted;
+            }
+        }
 
         $isMonologue = (bool) preg_match($metaPattern, $text)
             || (bool) preg_match('/^\s*\d+\.\s*(?:Analyze|Analysis|Check|Review|Examine|Evaluate|Determine|Assess|Plan|Understand|Formulate|Consider|Think|Task|Step|Scenario|Intent|Input)/i', $text);
@@ -642,6 +746,12 @@ class GuestChatbotController extends Controller
                 return "I can only assist with inquiries regarding Hinaguan Nature Park. How may I help you with our amenities, rates, weather, or bookings?";
             }
         }
+
+        // Check if user is asking a general question/FAQ (e.g. food/corkage, rules, swimming pool, entrance fees, commute/directions, weather, etc.)
+        // This ensures the bot answers the user's question even if a booking is active instead of repeating booking prompts!
+        $isGeneralFaq = (bool) preg_match('/(?:rule|rules|bawal|polic|corkage|outside\s+food|pagkaon|pagkain|food|baon|ilimnon|inumin|pet|pets|iro|ido|aso|kanding|iring|pusa|animal|grill|grilling|sugba|ihaw|ihawan|alcohol|hard\s+liquor|beer|alak|parking|parkanan|entrance|entrance\s+fee|rates?|how\s+much|pila|magkano|pool|swimming|ligo|kaligo|brenda|brenda\s+mage|weather|panahon|ulan|init|direction|direksyon|commute|paano\s+pumunta|unsaon\s+pag-?adto|asa\s+dapit)\b/i', $msgLower)
+            && !preg_match('/^(?:09\d{9}|\+?639\d{9})$/', preg_replace('/\s+/', '', $userMessage))
+            && !preg_match('/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/', $userMessage);
 
         // 2. Short words / greetings / typos (e.g. "what te", "hi", "hello", "hey", "kumusta")
         $hasActiveBookingContext = !empty($bookingDraft['active'])
@@ -895,6 +1005,22 @@ class GuestChatbotController extends Controller
                 }
             }
 
+            $hasKnownAmenity = !empty($bookingDraft['amenities']) || !empty($bookingDraft['amenity']) || !empty($bookingDraft['tentativeAmenity']) || !empty($bookingDraft['tentativeAmenities']) || !empty($bookingDraft['tentativeCategory']);
+            if ($hasKnownAmenity) {
+                $amStr = !empty($bookingDraft['amenities'])
+                    ? implode(' and ', array_map(fn($a) => $a['name'] ?? 'Amenity', $bookingDraft['amenities']))
+                    : (!empty($bookingDraft['tentativeAmenities'])
+                        ? implode(' and ', (array) $bookingDraft['tentativeAmenities'])
+                        : ($bookingDraft['tentativeAmenity'] ?? ($bookingDraft['tentativeCategory'] ?? 'your selected amenity')));
+                if ($isBisaya) {
+                    return "Nindot kaayo nga petsa ang **{$tFmt}** para sa imong **{$amStr}** sa Hinaguan Nature Park! 🌿 Sigurado ba ka nga gusto nimo pilion ang {$tFmt} para sa imong pagbisita? Ug gusto ba nimo ug **Day Tour**, **Night Tour**, o **24-Hour Stay**? ☀️🌙";
+                } elseif ($isTagalog) {
+                    return "Napakagandang petsa po ng **{$tFmt}** para sa inyong **{$amStr}** sa Hinaguan Nature Park! 🌿 Sigurado po ba kayong nais ninyong piliin ang {$tFmt} para sa inyong pagbisita? At nais niyo po ba ng **Day Tour**, **Night Tour**, o **24-Hour Stay**? ☀️🌙";
+                } else {
+                    return "{$tFmt} sounds like a wonderful date for your **{$amStr}** at Hinaguan Nature Park! 🌿 Are you sure you would like to pick {$tFmt} for your visit? Also, would you prefer a **Day Tour**, **Night Tour**, or **24-Hour Stay**? ☀️🌙";
+                }
+            }
+
             if ($isBisaya) {
                 return "Nindot kaayo nga petsa ang **{$tFmt}** para mobisita sa Hinaguan Nature Park! 🌿 Sigurado ba ka nga gusto nimo pilion ang {$tFmt} para sa imong pagbisita? Ug gusto ba nimo ug **Day Tour**, **Night Tour**, o **24-Hour Stay**? ☀️🌙\n\nTabangan tika sa pagpangita sa pinakanindot nga amenity para sa imong pagbisita! 😊";
             } elseif ($isTagalog) {
@@ -904,8 +1030,42 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // 5.24 Date confirmed acknowledgment when an amenity was already discussed or tentative
+        if (!empty($bookingDraft['startDate']) && empty($bookingDraft['amenities']) && (!empty($bookingDraft['tentativeAmenity']) || !empty($bookingDraft['tentativeAmenities']) || !empty($bookingDraft['tentativeCategory']))) {
+            $sdFmt = Carbon::parse($bookingDraft['startDate'])->format('F j, Y');
+            $sl = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
+            $isNight = $sl === 'Nighttime';
+            $tourName = $isNight ? 'Night Tour' : 'Day Tour';
+            $tourIcon = $isNight ? '🌙' : '☀️';
+
+            $targetAmenityStr = !empty($bookingDraft['tentativeAmenities'])
+                ? implode(' and ', (array) $bookingDraft['tentativeAmenities'])
+                : ($bookingDraft['tentativeAmenity'] ?? $bookingDraft['tentativeCategory']);
+
+            $isAircon = stripos($targetAmenityStr, 'aircon') !== false || stripos($targetAmenityStr, 'air-condition') !== false;
+            $priceStr = $isAircon ? ($isNight ? '₱1,000.00' : '₱700.00') : ($isNight ? '₱500.00' : '₱300.00');
+
+            if ($isAircon) {
+                if ($isBisaya) {
+                    return "Nindot kaayo! {$tourIcon}💚 Ang **{$tourName} sa {$sdFmt}** para sa **Air-conditioned A-House** ({$priceStr}, apil ang libreng entrance ug pool access para sa 2) perpekto kaayo! 🌿✨\n\nAng among air-conditioned units kay **A-House 2** ug **A-House 3**. Pwede nako i-lock in ang **A-House 2** para nimo (o isulti lang kung mas gusto nimo ang A-House 3). Aron maandam ang imong digital reservation pass, pwede ba nako makuha ang imong **Tibuok Ngalan (Full Name)**? 😊";
+                } elseif ($isTagalog) {
+                    return "Napakaganda po! {$tourIcon}💚 Ang **{$tourName} ngayong {$sdFmt}** para sa **Air-conditioned A-House** ({$priceStr}, may libreng entrance at pool access para sa 2) ay napakagandang desisyon! 🌿✨\n\nAng aming air-conditioned units po ay **A-House 2** at **A-House 3**. Maaari ko po bang i-lock in ang **A-House 2** para sa inyo (o sabihin lamang kung nais ninyo ang A-House 3)? Upang maihanda po ang inyong pass, maaari ko po bang makuha ang inyong **Buong Pangalan (Full Name)**? 😊";
+                } else {
+                    return "Wonderful! {$tourIcon}💚 A **{$tourName} on {$sdFmt}** for the **Air-conditioned A-House** ({$priceStr}, includes free entrance and pool access for 2) sounds lovely! 🌿✨\n\nOur air-conditioned units are **A-House 2** and **A-House 3**. Shall I lock in **A-House 2** for you, or do you have a preference between A-House 2 and A-House 3? Also, to prepare your digital reservation pass, may I have your **Full Name**, please? 😊";
+                }
+            } else {
+                if ($isBisaya) {
+                    return "Nindot kaayo! {$tourIcon}💚 Ang **{$tourName} sa {$sdFmt}** para sa **{$targetAmenityStr}** perpekto kaayo! 🌿✨ Aron maandam ang imong digital pass, pwede ba nako makuha ang imong **Tibuok Ngalan (Full Name)**? 😊";
+                } elseif ($isTagalog) {
+                    return "Napakaganda po! {$tourIcon}💚 Ang **{$tourName} ngayong {$sdFmt}** para sa **{$targetAmenityStr}** ay perpekto! 🌿✨ Upang maihanda ang inyong pass, maaari ko po bang makuha ang inyong **Buong Pangalan (Full Name)**? 😊";
+                } else {
+                    return "Wonderful! {$tourIcon}💚 A **{$tourName} on {$sdFmt}** for **{$targetAmenityStr}** sounds lovely! 🌿✨ To prepare your digital reservation pass, may I have your **Full Name**, please? 😊";
+                }
+            }
+        }
+
         // 5.25 Date confirmed acknowledgment (Schedule is locked in, show standard rates table as in Image 1!)
-        if (!empty($bookingDraft['startDate']) && empty($bookingDraft['amenities']) && empty($bookingDraft['tentativeAmenity'])) {
+        if (!empty($bookingDraft['startDate']) && empty($bookingDraft['amenities']) && empty($bookingDraft['tentativeAmenity']) && empty($bookingDraft['tentativeAmenities']) && empty($bookingDraft['tentativeCategory'])) {
             $sdFmt = Carbon::parse($bookingDraft['startDate'])->format('F j, Y');
             $sl = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
             $isNight = $sl === 'Nighttime';
@@ -1087,7 +1247,7 @@ class GuestChatbotController extends Controller
         }
 
         // 5.4 Primary Booker Details - Step 3 Sub-step 1: Full Name
-        if (!empty($bookingDraft['amenities']) && empty($bookingDraft['guest']['name'])) {
+        if (!empty($bookingDraft['amenities']) && empty($bookingDraft['guest']['name']) && empty($isGeneralFaq)) {
             $amNames = array_map(fn($a) => $a['name'] ?? 'Amenity', $bookingDraft['amenities']);
             $amNamesStr = implode(', ', $amNames);
             $sdFmt = !empty($bookingDraft['startDate']) ? Carbon::parse($bookingDraft['startDate'])->format('F j, Y') : null;
@@ -1123,7 +1283,7 @@ class GuestChatbotController extends Controller
         }
 
         // 5.42 Primary Booker Details - Step 3 Sub-step 2: Mobile Number
-        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && empty($bookingDraft['guest']['phone'])) {
+        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && empty($bookingDraft['guest']['phone']) && empty($isGeneralFaq)) {
             $name = $bookingDraft['guest']['name'];
             $sdFmt = !empty($bookingDraft['startDate']) ? Carbon::parse($bookingDraft['startDate'])->format('F j, Y') : null;
             $sl = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
@@ -1144,7 +1304,7 @@ class GuestChatbotController extends Controller
         }
 
         // 5.44 Primary Booker Details - Step 3 Sub-step 3: Email Address
-        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && !empty($bookingDraft['guest']['phone']) && empty($bookingDraft['guest']['email'])) {
+        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && !empty($bookingDraft['guest']['phone']) && empty($bookingDraft['guest']['email']) && empty($isGeneralFaq)) {
             $phone = $bookingDraft['guest']['phone'];
 
             if ($isBisaya) {
@@ -1157,7 +1317,7 @@ class GuestChatbotController extends Controller
         }
 
         // 5.46 Primary Booker Details - Step 3 Sub-step 4: Number of Guests (Pax)
-        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && !empty($bookingDraft['guest']['phone']) && !empty($bookingDraft['guest']['email']) && empty($bookingDraft['guest']['guests_count'])) {
+        if (!empty($bookingDraft['amenities']) && !empty($bookingDraft['guest']['name']) && !empty($bookingDraft['guest']['phone']) && !empty($bookingDraft['guest']['email']) && empty($bookingDraft['guest']['guests_count']) && empty($isGeneralFaq)) {
             $email = $bookingDraft['guest']['email'];
             $maxCap = array_sum(array_map(fn($a) => (int) ($a['maximum_capacity'] ?? 10), $bookingDraft['amenities'])) ?: 10;
 
@@ -1285,11 +1445,11 @@ class GuestChatbotController extends Controller
             }
 
             if ($isBisaya) {
-                return "Sayon ra kaayo mag-book! Pwede kaayo ta mag-book dinhi mismo sa chat (o gamit ang 'Book Now' sa website) 🌿\n\nKini lang ang atong gikinahanglan:\n1️⃣ Imong target nga petsa sa pagbisita ug session (Daytime: {$dayStart} – {$dayEnd} o Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Imong pilion nga amenity (Payag ₱300, Cottage ₱200, o A-House ₱300/₱500)\n3️⃣ Contact details ug ang gikinahanglan nga 50% downpayment (strictly non-refundable) aron ma-confirm ang slot.\n\nKanus-a ang imong plano nga petsa sa pagbisita? Ug daytime ba o nighttime?";
+                return "Sayon ra kaayo mag-book! Pwede kaayo ta mag-book dinhi mismo sa chat (o gamit ang 'Book Now' sa website) 🌿\n\nKini lang ang atong gikinahanglan:\n1️⃣ Imong target nga petsa sa pagbisita ug session (Daytime: {$dayStart} – {$dayEnd} o Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Imong pilion nga amenity (Payag ₱300, Cottage ₱200, o A-House ₱300/₱500)\n3️⃣ Contact details ug ang gikinahanglan nga **50% DOWNPAYMENT** (**STRICTLY NON-REFUNDABLE**) aron ma-confirm ang slot.\n\nKanus-a ang imong plano nga petsa sa pagbisita? Ug daytime ba o nighttime?";
             } elseif ($isTagalog) {
-                return "Napakadali lang pong mag-book! Pwedeng-pwede po tayong mag-book dito mismo sa chat (o gamit ang 'Book Now' sa website) 🌿\n\nIto lang po ang ating kailangan:\n1️⃣ Inyong target na petsa ng pagbisita at session (Daytime: {$dayStart} – {$dayEnd} o Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Inyong nais na amenity (Payag ₱300, Cottage ₱200, o A-House ₱300/₱500)\n3️⃣ Contact details at ang kinakailangang 50% downpayment (strictly non-refundable) upang ma-confirm ang reservation.\n\nKailan po ang inyong planong petsa ng pagbisita? At daytime po ba o nighttime?";
+                return "Napakadali lang pong mag-book! Pwedeng-pwede po tayong mag-book dito mismo sa chat (o gamit ang 'Book Now' sa website) 🌿\n\nIto lang po ang ating kailangan:\n1️⃣ Inyong target na petsa ng pagbisita at session (Daytime: {$dayStart} – {$dayEnd} o Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Inyong nais na amenity (Payag ₱300, Cottage ₱200, o A-House ₱300/₱500)\n3️⃣ Contact details at ang kinakailangang **50% DOWNPAYMENT** (**STRICTLY NON-REFUNDABLE**) upang ma-confirm ang reservation.\n\nKailan po ang inyong planong petsa ng pagbisita? At daytime po ba o nighttime?";
             } else {
-                return "Booking is super easy! You can book right here with me conversationally (or on our website) 🌿\n\nAll we need is:\n1️⃣ Your target visit date & session (Daytime: {$dayStart} – {$dayEnd} or Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Your preferred amenity (Payags ₱300, Cottages ₱200, or A-Houses ₱300/₱500)\n3️⃣ Your contact info and the required 50% downpayment (strictly non-refundable) to secure your reservation.\n\nWhat date were you planning to visit? And are you thinking of a daytime or nighttime stay?";
+                return "Booking is super easy! You can book right here with me conversationally (or on our website) 🌿\n\nAll we need is:\n1️⃣ Your target visit date & session (Daytime: {$dayStart} – {$dayEnd} or Nighttime: {$nightStart} – {$nightEnd})\n2️⃣ Your preferred amenity (Payags ₱300, Cottages ₱200, or A-Houses ₱300/₱500)\n3️⃣ Your contact info and the required **50% DOWNPAYMENT** (**STRICTLY NON-REFUNDABLE**) to secure your reservation.\n\nWhat date were you planning to visit? And are you thinking of a daytime or nighttime stay?";
             }
         }
 
@@ -1346,13 +1506,15 @@ class GuestChatbotController extends Controller
             || !empty($bookingDraft['guest']['name'])
             || !empty($bookingDraft['guest']['email']);
 
-        $isSuggestion = (bool) preg_match('/(?:suggest|recommend|rekomenda|bagay|swak|best\s+amenit|maganda(?:ng)?|nindot|what\s+(?:should|can)\s+i\s+(?:book|choose|pick|avail|get)|anong|ano\s+po|unsa|which\s+(?:amenit|cottage|payag|hut|house)|pili\s+ng\s+amenit|pilig\s+amenit)/i', $msgLower);
+        $isSuggestion = (bool) preg_match('/(?:suggest|recommend|rekomenda|bagay|swak|best\s+amenit|maganda(?:ng)?\s+(?:amenit|cottage|payag|ahouse|a-house)|nindot\s+(?:nga\s+)?(?:amenit|cottage|payag|ahouse|a-house)|what\s+(?:should|can)\s+i\s+(?:book|choose|pick|avail|get)|anong\s+(?:magandang|masarap|bagay|swak)|unsa\s+(?:ang\s+)?(?:nindot|bagay|maayo|swak)|which\s+(?:amenit|cottage|payag|hut|house)|pili\s+ng\s+amenit|pilig\s+amenit)/i', $msgLower)
+            && !preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pagsulod|asa\s+dapit|commute|spring\s*view|solana|jasaan)\b/i', $msgLower);
 
         // Group size recommendation: ONLY trigger if explicitly asking for suggestion/recommendation AND NOT in the middle of active booking!
         $isExplicitGroupSuggestion = $isSuggestion || (bool) preg_match('/(?:recommend|suggest|what\s+is\s+best\s+for|bagay\s+sa|swak\s+sa|swak\s+para\s+sa|which\s+amenity\s+for)\s+.*(?:\d+|couple)/i', $msgLower);
 
-        if (!$hasActiveBookingContext && $isExplicitGroupSuggestion) {
-            $isCouple = (bool) preg_match('/\b(?:couple|mag-?asawa|magkasintahan)\b/i', $userMessage);
+        $isCouple = (bool) preg_match('/\b(?:couple|mag-?asawa|magkasintahan|girlfriend|boyfriend|gf|bf|wife|husband|partner|asawa|uyab|pares)\b/i', $userMessage);
+
+        if ((!$hasActiveBookingContext || $isCouple) && $isExplicitGroupSuggestion) {
 
             // Group size recommendation (e.g. "for 10 pax", "group of 10 people", or "couple")
             if ($isCouple || preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $m) ||
@@ -1361,11 +1523,11 @@ class GuestChatbotController extends Controller
 
             if ($pax >= 1 && $pax <= 2) {
                 if ($isBisaya) {
-                    return "Para sa 1 hangtod 2 ka tawo, ang among A-Houses (₱300 daytime / ₱500 nighttime) ang bagay kaayo kay apil na ang libreng entrance ug pool access!";
+                    return "Para sa inyong duha sa imong uyab/partner, ang among mga A-Houses (Regular sa ₱300 daytime / ₱500 nighttime, o Air-conditioned sa ₱700 daytime / ₱1,000 nighttime) ang labing bagay kay cozy ug apil na ang libreng entrance ug swimming pool access para sa duha! Pwede sab mo mag-relax sa katutubong Payag (₱300) o open-air Cottage (₱200).";
                 } elseif ($isTagalog) {
-                    return "Para po sa 1 hanggang 2 tao, swak ang aming A-Houses (₱300 daytime / ₱500 nighttime) dahil may kasama na itong libreng entrance at pool access!";
+                    return "Para po sa inyong dalawa ng girlfriend/partner mo, bagay na bagay ang aming A-Houses (Regular sa ₱300 daytime / ₱500 nighttime, o Air-conditioned sa ₱700 daytime / ₱1,000 nighttime) dahil napaka-cozy at may kasama nang libreng entrance at swimming pool access para sa inyong dalawa! Pwede rin kayo mag-relax sa katutubong Payag (₱300) o open-air Cottage (₱200).";
                 } else {
-                    return "For 1 to 2 guests, our cozy A-Houses (₱300 daytime / ₱500 nighttime) are ideal and include free entrance and pool access, or you can relax in an open-air Cottage (₱200) or Payag (₱300).";
+                    return "For you and your girlfriend, our cozy A-Houses are ideal! We offer Regular A-Houses (₱300 daytime / ₱500 nighttime) and Air-conditioned A-Houses (₱700 daytime / ₱1,000 nighttime)—both include free entrance and swimming pool access for 2 guests! You can also unwind in an open-air Cottage (₱200) or bamboo Payag (₱300).";
                 }
             } elseif ($pax <= 10) {
                 $weatherTip = $isRainy ? " (Both are covered, perfect for today's weather!)" : " (Cottage 1-6 features open-air dining tables, while Payags offer authentic bamboo relaxation!)";
@@ -1438,7 +1600,8 @@ class GuestChatbotController extends Controller
         }
 
         // 12. Park Rules, Outside Food, Corkage, Pets, Grilling, Alcohol, Parking
-        $isRulesInquiry = (bool) preg_match('/(?:rule|rules|bawal|polic|corkage|outside\s+food|pagkaon|pagkain|food|drink|inom|alcohol|beer|liquor|pet|pets|dog|iro|aso|cat|grill|grilling|ihaw|sugba|barbecue|bbq|park(?:ing)?|smoking|sigarilyo|vape|swimwear|attire)/i', $msgLower);
+        $isRulesInquiry = (bool) preg_match('/(?:rule|rules|bawal|polic|corkage|outside\s+food|pagkaon|pagkain|food|drink|inom|alcohol|beer|liquor|pet|pets|dog|iro|aso|cat|grill|grilling|ihaw|sugba|barbecue|bbq|parking|parkanan|smoking|sigarilyo|vape|swimwear|attire)/i', $msgLower)
+            && !preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pag\s+adto|asa\s+dapit|commute|sakyan|sakay|byahe|biyahe)\b/i', $msgLower);
         if ($isRulesInquiry) {
             if (preg_match('/(?:corkage|outside\s+food|pagkaon|pagkain|food|dala\s+(?:ug\s+)?pagkaon|baon|grill|ihaw|sugba)/i', $msgLower)) {
                 if ($isBisaya) {
@@ -1834,6 +1997,10 @@ class GuestChatbotController extends Controller
             $isNight = ($draft['startSlot'] ?? ($draft['tentativeSlot'] ?? 'Daytime')) === 'Nighttime';
             $proposedItems = [];
             foreach ($replyActions['wanted'] as $am) {
+                // Function Hall should NEVER be proactively extracted as a proposed/tentative amenity unless explicitly requested or pax >= 15
+                if (stripos($am->amenities_name, 'Function Hall') !== false) {
+                    continue;
+                }
                 $price = $isNight ? (float) ($am->nighttime_price ?? 0) : (float) ($am->daytime_price ?? 0);
                 $proposedItems[] = [
                     'id' => (string) $am->id,
@@ -1846,14 +2013,19 @@ class GuestChatbotController extends Controller
                 ];
             }
 
-            if ($replyActions['is_keep_only'] || $replyActions['is_switch'] || !empty($replyActions['removed'])) {
-                $draft['amenities'] = $proposedItems;
-                $draft['amenity'] = $proposedItems[0];
-                $draft['tentativeAmenities'] = null;
-                $draft['tentativeAmenity'] = null;
-                $draft['active'] = true;
-            } elseif (empty($draft['amenities'])) {
-                $draft['tentativeAmenities'] = array_map(fn($a) => $a->amenities_name, $replyActions['wanted']);
+            $isCatalogOrRates = (count($replyActions['wanted']) >= 3)
+                || (bool) preg_match('/(?:rate|price|table|here are our|rates:)/i', $reply);
+
+            if (!$isCatalogOrRates && ($replyActions['is_keep_only'] || $replyActions['is_switch'] || !empty($replyActions['removed']))) {
+                if (!empty($proposedItems)) {
+                    $draft['amenities'] = $proposedItems;
+                    $draft['amenity'] = $proposedItems[0];
+                    $draft['tentativeAmenities'] = null;
+                    $draft['tentativeAmenity'] = null;
+                    $draft['active'] = true;
+                }
+            } elseif (!$isCatalogOrRates && empty($draft['amenities']) && !empty($proposedItems)) {
+                $draft['tentativeAmenities'] = array_map(fn($a) => $a['name'], $proposedItems);
                 $draft['tentativeAmenity'] = implode(', ', $draft['tentativeAmenities']);
                 $draft['active'] = true;
             }
@@ -1981,28 +2153,6 @@ class GuestChatbotController extends Controller
                         $draft['tentativeAmenities'] = null;
                     }
                 }
-            } elseif (empty($draft['amenities']) && !empty($replyActions['wanted'])) {
-                $isNight = ($draft['startSlot'] ?? ($draft['tentativeSlot'] ?? 'Daytime')) === 'Nighttime';
-                $amenityItems = [];
-                foreach ($replyActions['wanted'] as $am) {
-                    $price = $isNight ? (float) ($am->nighttime_price ?? 0) : (float) ($am->daytime_price ?? 0);
-                    $amenityItems[] = [
-                        'id' => (string) $am->id,
-                        'name' => $am->amenities_name,
-                        'price' => $price,
-                        'daytime_price' => (float) ($am->daytime_price ?? 0),
-                        'nighttime_price' => (float) ($am->nighttime_price ?? 0),
-                        'minimum_capacity' => (int) ($am->minimum_capacity ?? 1),
-                        'maximum_capacity' => (int) ($am->maximum_capacity ?? 10),
-                    ];
-                }
-                if (!empty($amenityItems)) {
-                    $draft['active'] = true;
-                    $draft['amenities'] = $amenityItems;
-                    $draft['amenity'] = $amenityItems[0];
-                    $draft['tentativeAmenity'] = null;
-                    $draft['tentativeAmenities'] = null;
-                }
             }
 
             // B. Dates: if startDate not yet locked in draft
@@ -2109,6 +2259,21 @@ class GuestChatbotController extends Controller
             return Amenity::with('benefits')->where('status', true)
                 ->where('amenities_name', 'LIKE', '%Function Hall%')
                 ->first();
+        }
+        if (preg_match('/\b(?:air-?conditioned|aircon)\b/i', $snippet) && (preg_match('/\b(?:house|room|unit)\b/i', $snippet) || !preg_match('/\b(?:cottage|payag)\b/i', $snippet))) {
+            return Amenity::with('benefits')->where('status', true)
+                ->whereHas('benefits', fn($b) => $b->where('is_aircon', true))
+                ->orderBy('amenities_name', 'asc')
+                ->first() ?: Amenity::where('amenities_name', 'A-House 2')->first();
+        }
+        if (preg_match('/\b(?:regular|standard|non-?aircon)\s*(?:a-?house)?\b/i', $snippet)) {
+            return Amenity::where('amenities_name', 'A-House 1')->first();
+        }
+        if (preg_match('/\bpayag\b/i', $snippet)) {
+            return Amenity::where('amenities_name', 'Payag 1')->first();
+        }
+        if (preg_match('/\bcottage\b/i', $snippet)) {
+            return Amenity::where('amenities_name', 'Cottage 1')->first();
         }
         return null;
     }
@@ -2280,6 +2445,73 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // 4. Air-conditioned A-House mentions without unit number
+        // e.g. "airconditioned ahouse", "aircon a-house", "the airconditioned ahouse", "air-conditioned ahouse"
+        if (empty($allFound)) {
+            if (preg_match('/\b(?:air-?conditioned|aircon)\s*(?:a-?houses?|rooms?|units?)?\b/i', $message, $acMatch, PREG_OFFSET_CAPTURE)
+                || preg_match('/\b(?:a-?houses?)\s+(?:nga\s+)?(?:naay\s+)?(?:air-?conditioned|aircon)\b/i', $message, $acMatch, PREG_OFFSET_CAPTURE)) {
+                $acModel = Amenity::with('benefits')->where('status', true)
+                    ->whereHas('benefits', fn($b) => $b->where('is_aircon', true))
+                    ->orderBy('amenities_name', 'asc')
+                    ->first();
+                if (!$acModel) {
+                    $acModel = Amenity::with('benefits')->where('status', true)->where('amenities_name', 'A-House 2')->first();
+                }
+                if ($acModel && !in_array($acModel->id, $foundIds)) {
+                    $foundIds[] = $acModel->id;
+                    $allFound[] = [
+                        'model' => $acModel,
+                        'name' => $acModel->amenities_name,
+                        'offset' => $acMatch[0][1],
+                        'text' => $acMatch[0][0],
+                        'category_label' => 'Air-conditioned A-House',
+                    ];
+                }
+            }
+        }
+
+        // 5. Regular A-House mentions without unit number (e.g. "regular a-house", "regular ahouse", "non-aircon ahouse")
+        if (empty($allFound)) {
+            if (preg_match('/\b(?:regular|standard|non-?aircon)\s+(?:a-?houses?|rooms?|units?)\b/i', $message, $regMatch, PREG_OFFSET_CAPTURE)) {
+                $regModel = Amenity::with('benefits')->where('status', true)->where('amenities_name', 'A-House 1')->first();
+                if ($regModel && !in_array($regModel->id, $foundIds)) {
+                    $foundIds[] = $regModel->id;
+                    $allFound[] = [
+                        'model' => $regModel,
+                        'name' => $regModel->amenities_name,
+                        'offset' => $regMatch[0][1],
+                        'text' => $regMatch[0][0],
+                        'category_label' => 'Regular A-House',
+                    ];
+                }
+            }
+        }
+
+        // 6. Generic category selection when user is picking/booking: "the ahouse", "the cottage", "the payag"
+        if (empty($allFound)) {
+            if (preg_match('/\b(?:book|reserve|take|choose|pilion|kuhaon|okay\s+with|prefer|pick)\s+(?:the\s+|a\s+|an\s+)?(cottage|payag|a-?house)\b/i', $message, $genMatch, PREG_OFFSET_CAPTURE)) {
+                $genCat = strtolower($genMatch[1][0]);
+                $genTarget = match (true) {
+                    str_contains($genCat, 'house') => 'A-House 1',
+                    str_contains($genCat, 'payag') => 'Payag 1',
+                    str_contains($genCat, 'cottage') => 'Cottage 1',
+                    default => '',
+                };
+                if (!empty($genTarget)) {
+                    $genModel = Amenity::with('benefits')->where('status', true)->where('amenities_name', $genTarget)->first();
+                    if ($genModel && !in_array($genModel->id, $foundIds)) {
+                        $foundIds[] = $genModel->id;
+                        $allFound[] = [
+                            'model' => $genModel,
+                            'name' => $genModel->amenities_name,
+                            'offset' => $genMatch[0][1],
+                            'text' => $genMatch[0][0],
+                        ];
+                    }
+                }
+            }
+        }
+
         $wanted = [];
         $removed = [];
         $isSwap = false;
@@ -2412,7 +2644,7 @@ class GuestChatbotController extends Controller
         $monthPattern = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
 
         if (empty($dateFound)) {
-            if (preg_match('/\btomorrow\b/i', $msgLower)) {
+            if (preg_match('/\b(?:tomorrow|ugma|bukas)\b/i', $msgLower)) {
                 $dateFound = $now->copy()->addDay()->toDateString();
             } elseif (preg_match('/\b(?:today|tonight|karon|ngayong\s+araw)\b/i', $msgLower)) {
                 $dateFound = $now->toDateString();
@@ -2526,9 +2758,11 @@ class GuestChatbotController extends Controller
             }
         } elseif ($dateFound) {
             // Check if user is being tentative / asking ("what about", "how about", "?", etc.)
-            $isExplicitConfirm = ($isAffirmingNextYear && ($slotFound || !empty($draft['tentativeSlot']) || $hasAffirmation))
-                || ((bool) preg_match('/(?:confirm(?:ed)?|lock\s+in|definitely|let\'?s\s+go\s+with|i\s+choose|book\s+for|reserve\s+for)\s+.*(?:nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|\d{4}-\d{2}-\d{2}|tomorrow|today|next\s+year)/i', $msgLower)
-                    && !preg_match('/(?:what\s+about|how\s+about|what\s+if|pwede\s+ba|pwede\s+kaha|is\s+it\s+good|availab|\?)/i', $msgLower));
+            $isExplicitInquiry = (bool) preg_match('/(?:what\s+about|how\s+about|what\s+if|pwede\s+ba|pwede\s+kaha|is\s+it\s+good|availab|\?)/i', $msgLower);
+            $isExplicitConfirm = (!$isExplicitInquiry && ($hasAffirmation || !empty($draft['amenities']) || !empty($draft['amenity']) || ($draft['step'] ?? '') === 'date_slot'))
+                || ($isAffirmingNextYear && ($slotFound || !empty($draft['tentativeSlot']) || $hasAffirmation))
+                || ((bool) preg_match('/(?:confirm(?:ed)?|lock\s+in|definitely|let\'?s\s+go\s+with|i\s+choose|book|reserve|pa-?book|gusto\s+(?:ko|kami)\s+mag-?book)\b/i', $msgLower) && !$isExplicitInquiry)
+                || ($hasAmenityMention && !$isExplicitInquiry);
 
             if ($isExplicitConfirm) {
                 $draft['active'] = true;
@@ -2539,8 +2773,25 @@ class GuestChatbotController extends Controller
                 $draft['slot'] = $draft['startSlot'];
                 $draft['tentativeDate'] = null;
                 $draft['tentativeSlot'] = null;
+
+                // If slot is Nighttime, ensure amenity prices reflect nighttime rate
+                $isNight = $draft['startSlot'] === 'Nighttime';
+                if (!empty($draft['amenities'])) {
+                    foreach ($draft['amenities'] as &$amItem) {
+                        if ($isNight && !empty($amItem['nighttime_price'])) {
+                            $amItem['price'] = (float) $amItem['nighttime_price'];
+                        } elseif (!$isNight && !empty($amItem['daytime_price'])) {
+                            $amItem['price'] = (float) $amItem['daytime_price'];
+                        }
+                    }
+                    unset($amItem);
+                    $draft['amenity'] = $draft['amenities'][0];
+                }
+
                 if (empty($draft['amenities']) && empty($draft['amenity'])) {
                     $draft['step'] = 'amenity';
+                } else {
+                    $draft['step'] = 'guest_info';
                 }
             } else {
                 // Tentative proposal / inquiry: DO NOT record into startDate yet!
@@ -2650,7 +2901,7 @@ class GuestChatbotController extends Controller
                 $isExplicitSwitch = $userAmenityActions['is_switch'] || $userAmenityActions['is_keep_only'] || (!empty($userAmenityActions['removed']) && !empty($userAmenityActions['wanted']));
                 $isExplicitInquiry = (bool) preg_match('/\b(?:think|better|right\??|what\s+about|how\s+about|is\s+it\s+good|availab|pwede\s+ba|pwede\s+kaha|magkano|how\s+much|pila|unsa|ano|\?|siguro|tingin\s+mo|nindot\s+ba|maybe)\b/i', $msgLower)
                     && !$isExplicitAdd && !$isExplicitSwitch;
-                $isExplicitConfirm = (bool) preg_match('/\b(?:yes|sure|reserve|book|i\'?ll\s+take|i\s+will\s+take|let\'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|lock\s+in)\b/i', $msgLower);
+                $isExplicitConfirm = (bool) preg_match('/\b(?:yes|sure|reserve|book|i\'?ll\s+take|i\s+will\s+take|let\'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|lock\s+in|okay\s+with|ok\s+with|fine\s+with|prefer|good\s+with|i\'?m\s+good|im\s+good|i\'?m\s+ok|im\s+ok|i\'?m\s+okay|im\s+okay)\b/i', $msgLower);
                 $isAnsweringAmenityPrompt = ($draft['step'] ?? '') === 'amenity' || !empty($draft['startDate']) || !empty($draft['tentativeDate']);
 
                 $isTentativeAmenity = $isExplicitInquiry || (!$isExplicitConfirm && !$isAnsweringAmenityPrompt && !$isExplicitAdd && !$isExplicitSwitch);
@@ -2692,17 +2943,18 @@ class GuestChatbotController extends Controller
                         $draft['step'] = 'guest_info';
                     }
                 }
-            } elseif (!empty($draft['tentativeAmenities']) || !empty($draft['tentativeAmenity'])) {
+            } elseif (!empty($draft['tentativeAmenities']) || !empty($draft['tentativeAmenity']) || !empty($draft['tentativeCategory'])) {
                 $isAgreeToView = (bool) preg_match('/(?:show|view|pakita|patingin)/i', $msgLower);
                 $isAddConfirm = (bool) preg_match('/\b(?:add(?:\s+it)?|yes\s+add|dugang|dagdag|both|together)\b/i', $msgLower) && !$isAgreeToView;
                 $isSwitchConfirm = (bool) preg_match('/\b(?:switch(?:\s+to\s+it)?|change(?:\s+to\s+it)?|palit|replace|instead)\b/i', $msgLower) && !$isAgreeToView;
                 $isSlotSelection = (bool) $slotFound && empty($dateFound);
-                $isDateSelection = !empty($dateFound) || !empty($draft['startDate']);
+                $isDateSelection = !empty($dateFound);
                 $hasPhoneInMessage = (bool) preg_match('/(?:(?:\+?63\s*|0)?(9\d{2}[\s\-]?\d{3}[\s\-]?\d{4}|9\d{9}))/i', $userMessage);
                 $hasEmailInMessage = (bool) preg_match('/\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/', $userMessage);
-                $hasAffirmation = (bool) preg_match('/\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that\'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both|\s+it)?|book(?:\s+both|\s+it)?|both|yes\s+both|confirm(?:ed)?|let\'?s\s+go|go\s+with|go|go\s+ahead|i\'?ll\s+take|we\'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede|can\s+u\s+set\s+it\s+up(?:\s+now)?|can\s+you\s+set\s+it\s+up(?:\s+now)?|set\s+it\s+up(?:\s+now)?|set\s+this\s+up|please\s+do|let\'?s\s+do\s+(?:that|it)|make\s+the\s+reservation)\b/i', $msgLower);
+                $hasAffirmation = (bool) preg_match('/\b(?:yes+|yes\s+yes|yes+\s+yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that\'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|sige\s+sige|cge|cge\s+cge|ge|g|oo|oo\s+oo|opo|proceed|reserve(?:\s+both|\s+it)?|book(?:\s+both|\s+it)?|both|yes\s+both|confirm(?:ed)?|let\'?s\s+go|go\s+with|go|go\s+ahead|i\'?ll\s+take|we\'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede|can\s+u\s+set\s+it\s+up(?:\s+now)?|can\s+you\s+set\s+it\s+up(?:\s+now)?|set\s+it\s+up(?:\s+now)?|set\s+this\s+up|please\s+do|let\'?s\s+do\s+(?:that|it)|make\s+the\s+reservation)\b/i', $msgLower);
+                $isAskingSuggestion = (bool) preg_match('/(?:suggest|recommend|rekomenda|bagay|swak|what\s+(?:should|can)\s+i\s+(?:book|choose|pick)|unsa\s+(?:ang\s+)?(?:nindot|bagay)|which\s+(?:amenit|cottage|payag|hut|house))/i', $msgLower);
 
-                $isGeneralConfirm = ($hasAffirmation || $isSlotSelection || $isDateSelection || $hasPhoneInMessage || $hasEmailInMessage) && !$isAgreeToView;
+                $isGeneralConfirm = ($hasAffirmation || $isSlotSelection || $isDateSelection || $hasPhoneInMessage || $hasEmailInMessage) && !$isAgreeToView && !$isAskingSuggestion;
 
                 if ($isAddConfirm || $isSwitchConfirm || $isGeneralConfirm) {
                     if ($slotFound) {
@@ -2712,7 +2964,7 @@ class GuestChatbotController extends Controller
                     }
                     $tentativeList = !empty($draft['tentativeAmenities']) && is_array($draft['tentativeAmenities'])
                         ? $draft['tentativeAmenities']
-                        : array_map('trim', explode(',', $draft['tentativeAmenity'] ?? ''));
+                        : array_map('trim', explode(',', $draft['tentativeAmenity'] ?: ($draft['tentativeCategory'] ?? '')));
 
                     $resolvedItems = [];
                     $isNight = ($draft['startSlot'] ?? 'Daytime') === 'Nighttime';
@@ -2721,6 +2973,9 @@ class GuestChatbotController extends Controller
                         $amenityModel = Amenity::where('status', true)
                             ->where('amenities_name', 'LIKE', "%{$tName}%")
                             ->first();
+                        if (!$amenityModel) {
+                            $amenityModel = $this->findSingleAmenityFromSnippet($tName);
+                        }
                         if ($amenityModel) {
                             $price = $isNight ? (float) ($amenityModel->nighttime_price ?? 0) : (float) ($amenityModel->daytime_price ?? 0);
                             $resolvedItems[] = [
@@ -2809,9 +3064,9 @@ class GuestChatbotController extends Controller
 
         $msgWithoutPhone = preg_replace('/(?:\+?63|0)?9\d{2}[\s\-\.]?\d{3}[\s\-\.]?\d{4}|(?:\+?63|0)?9\d{9}/', ' ', $userMessage);
         $msgWithoutPhone = preg_replace('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', ' ', $msgWithoutPhone);
-        if (preg_match('/\b(?:it\'?s|its|we\s*are|kami|mi|kaming|just|only|around)?\s*(\d{1,3})\s*(?:guests?|pax|people|persons|katao|ka\s*tao|ka\s*tawo)?\b/i', $msgWithoutPhone, $paxMatch)) {
+        if (preg_match('/\b(?:it\'?s|its|we\s*are|kami|mi|kaming|just|only|around)?\s*(\d{1,3})\s*(?:guests?|pax|people|persons|katao|ka\s*tao|ka\s*tawo|kabuok)?\b/i', $msgWithoutPhone, $paxMatch)) {
             $paxVal = (int) $paxMatch[1];
-            $hasExplicitPaxWord = (bool) preg_match('/\b(?:guests?|pax|people|persons|katao|ka\s*tao|ka\s*tawo|it\'?s|its|we\s*are|kami|mi)\b/i', $userMessage);
+            $hasExplicitPaxWord = (bool) preg_match('/\b(?:guests?|pax|people|persons|katao|ka\s*tao|ka\s*tawo|kabuok|it\'?s|its|we\s*are|kami|mi)\b/i', $userMessage);
             // Accept standalone or prefixed number if email was already known, or if an explicit pax/headcount word was provided
             if ($paxVal >= 1 && $paxVal <= 200 && ($hasExplicitPaxWord || ($hadEmailBefore && !$emailExtractedInThisTurn) || !empty($draft['guest']['email']))) {
                 $draft['guest']['guests_count'] = $paxVal;
@@ -2851,7 +3106,7 @@ class GuestChatbotController extends Controller
             $cleanedCandidate = preg_replace('/^(?:it\'?s|its)\s+/i', '', $trimmedMsg);
             $cleanWords = preg_split('/\s+/', preg_replace('/[^\p{L}\s\.\'-]/u', '', $cleanedCandidate));
             $cleanWords = array_values(array_filter($cleanWords, fn($w) => strlen(trim($w)) > 0));
-            $nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'a-house', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'we', 'are', 'said', 'continue', 'my', 'booking'];
+            $nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'a-house', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'ugma', 'bukas', 'puhon', 'karon', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'we', 'are', 'said', 'continue', 'my', 'booking'];
             $containsNonName = (bool) preg_match('/\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that\'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve|book|both|thats\s+all)\b/i', $cleanedCandidate);
             if (!$containsNonName) {
                 foreach ($cleanWords as $w) {
@@ -2890,6 +3145,27 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // 4.6 Function Hall Sanity Guardrail: Function Hall is strictly for 15+ pax.
+        // If the user is a couple, girlfriend/boyfriend, or specifies <= 4 pax, purge Function Hall!
+        $isCoupleOrSmallGroup = (bool) preg_match('/\b(?:couple|mag-?asawa|magkasintahan|girlfriend|boyfriend|gf|bf|wife|husband|partner|asawa|uyab|pares)\b/i', $userMessage)
+            || (preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $paxM) && (int)$paxM[1] <= 4)
+            || (isset($draft['guest']['guests_count']) && (int)$draft['guest']['guests_count'] <= 4);
+
+        if ($isCoupleOrSmallGroup) {
+            if (!empty($draft['amenities'])) {
+                $draft['amenities'] = array_values(array_filter($draft['amenities'], function($a) {
+                    return stripos($a['name'] ?? '', 'Function Hall') === false;
+                }));
+                $draft['amenity'] = $draft['amenities'][0] ?? null;
+            }
+            if (!empty($draft['tentativeAmenities'])) {
+                $draft['tentativeAmenities'] = array_values(array_filter($draft['tentativeAmenities'], function($name) {
+                    return stripos($name, 'Function Hall') === false;
+                }));
+                $draft['tentativeAmenity'] = !empty($draft['tentativeAmenities']) ? implode(', ', $draft['tentativeAmenities']) : null;
+            }
+        }
+
         return $draft;
     }
 
@@ -2917,6 +3193,25 @@ class GuestChatbotController extends Controller
         $currentTimeStr = $now->format('F j, Y - g:i A');
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
+
+        $isCoupleOrSmallGroup = (bool) preg_match('/\b(?:couple|mag-?asawa|magkasintahan|girlfriend|boyfriend|gf|bf|wife|husband|partner|asawa|uyab|pares)\b/i', $message)
+            || (preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $message, $paxM) && (int)$paxM[1] <= 4)
+            || (!empty($bookingDraft['guest']['guests_count']) && (int)$bookingDraft['guest']['guests_count'] <= 4);
+
+        if ($isCoupleOrSmallGroup) {
+            if (!empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])) {
+                $bookingDraft['amenities'] = array_values(array_filter($bookingDraft['amenities'], function($a) {
+                    return stripos($a['name'] ?? '', 'Function Hall') === false;
+                }));
+                $bookingDraft['amenity'] = $bookingDraft['amenities'][0] ?? null;
+            }
+            if (!empty($bookingDraft['tentativeAmenities']) && is_array($bookingDraft['tentativeAmenities'])) {
+                $bookingDraft['tentativeAmenities'] = array_values(array_filter($bookingDraft['tentativeAmenities'], function($name) {
+                    return stripos($name, 'Function Hall') === false;
+                }));
+                $bookingDraft['tentativeAmenity'] = !empty($bookingDraft['tentativeAmenities']) ? implode(', ', $bookingDraft['tentativeAmenities']) : null;
+            }
+        }
 
         $draftAmenities = !empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])
             ? $bookingDraft['amenities']
@@ -3041,10 +3336,18 @@ class GuestChatbotController extends Controller
             $tentativeAm = $bookingDraft['tentativeAmenity'] ?? null;
             $tentativeAms = $bookingDraft['tentativeAmenities'] ?? [];
             $tentativeAmsList = !empty($tentativeAms) && is_array($tentativeAms) ? implode(', ', $tentativeAms) : $tentativeAm;
+            $tentativeCategory = $bookingDraft['tentativeCategory'] ?? null;
+            $topicAmenity = $tentativeAmsList ?: $tentativeCategory;
             $context .= "\n[ACTIVE USER BOOKING DRAFT IN PROGRESS (STORED IN LOCALSTORAGE)]:\n"
-                . "- Confirmed Schedule: {$sched}\n"
-                . ($tentativeAmsList ? "- Inquired / Proposed Amenities: {$tentativeAmsList} (Guest is considering {$tentativeAmsList}. Ask if they want you to lock these in and proceed with their reservation details, or if they want to adjust/browse other amenities. DO NOT output [VIEW_AMENITIES_BUTTON] until requested!)\n"
-                                     : "- Current Stage: Schedule is confirmed. Ask what amenity they have in mind (cozy A-Houses, bamboo Payags, open-air Cottages, Function Hall). DO NOT output [VIEW_AMENITIES_BUTTON] yet!\n");
+                . "- Confirmed Schedule: {$sched}\n";
+            if ($topicAmenity) {
+                $context .= "- Inquired / Proposed Amenity (ACTIVE TOPIC OF DISCUSSION): {$topicAmenity}\n"
+                    . "  * CRITICAL MANDATORY INSTRUCTION FOR BREN: You and the guest are ALREADY talking about {$topicAmenity}!\n"
+                    . "  * STRICTLY DO NOT dump the table of other amenities (Cottages, Payags, Function Hall) and DO NOT ask 'Which one catches your eye?' or ask what amenity they want again!\n"
+                    . "  * Confirm {$topicAmenity} for their schedule {$sched}! If this is the air-conditioned A-House (units: A-House 2 and A-House 3, ₱1,000 night / ₱700 day), clarify preference between A-House 2 and A-House 3, and ask for their Full Name to proceed with their reservation pass!\n";
+            } else {
+                $context .= "- Current Stage: Schedule is confirmed. Ask what amenity they have in mind (cozy A-Houses, bamboo Payags, open-air Cottages, Function Hall). DO NOT output [VIEW_AMENITIES_BUTTON] yet!\n";
+            }
         } elseif (!empty($bookingDraft['pastDateClarification'])) {
             $clar = $bookingDraft['pastDateClarification'];
             if (!empty($clar['recordedDateExpired'])) {

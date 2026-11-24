@@ -19,8 +19,9 @@ class ChatbotDatabaseStorageTest extends TestCase
 
         // Fake OpenRouter API
         Http::fake(function (\Illuminate\Http\Client\Request $request) {
-            $body = json_decode($request->body(), true);
-            $userMsg = end($body['messages'])['content'] ?? '';
+            $body = json_decode($request->body(), true) ?: [];
+            $messages = is_array($body['messages'] ?? null) ? $body['messages'] : [];
+            $userMsg = !empty($messages) ? (end($messages)['content'] ?? '') : '';
 
             if (str_contains($userMsg, 'near checkout')) {
                 return Http::response([

@@ -217,7 +217,7 @@ class StaffChatbotController extends Controller
         $activeModel = null;
         $fallbackReason = null;
 
-        $isManuallySelectedOpenAi = ($requestedModel === 'gpt-6-luna');
+        $isManuallySelectedOpenAi = $request->filled('model') && ($requestedModel === 'gpt-6-luna');
         $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai') || $requestedModel === 'auto');
 
         // If staff manually selected OpenAI GPT-6 Luna, but it has 0 credits:

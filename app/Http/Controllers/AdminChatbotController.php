@@ -194,7 +194,7 @@ class AdminChatbotController extends Controller
         $activeModel = null;
         $fallbackReason = null;
 
-        $isManuallySelectedOpenAi = ($requestedModel === 'gpt-6-luna');
+        $isManuallySelectedOpenAi = $request->filled('model') && ($requestedModel === 'gpt-6-luna');
         $shouldTryOpenAi = ($requestedModel === 'gpt-6-luna' || str_contains($requestedModel, 'gpt-6') || str_contains($requestedModel, 'openai') || $requestedModel === 'auto');
 
         // If the admin manually selected OpenAI GPT-6 Luna, but it has 0 credits:
@@ -1305,8 +1305,8 @@ class AdminChatbotController extends Controller
 
         // 4. Staff Roster & Accounts ("staff", "employees", "workers", "admin accounts")
         if (preg_match('/staff|employee|worker|trabahante|tauhan|roster|accounts?/i', $msgLower)) {
-            $activeStaff = StaffAccount::where('status', 'active')->get();
-            $bannedStaff = StaffAccount::where('status', 'banned')->count();
+            $activeStaff = StaffAccount::where('ban_status', false)->get();
+            $bannedStaff = StaffAccount::where('ban_status', true)->count();
             $adminCount = AdminAccount::count();
 
             $staffNames = $activeStaff->pluck('name')->implode(', ') ?: 'None registered';
