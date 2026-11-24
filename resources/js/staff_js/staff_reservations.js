@@ -4447,9 +4447,9 @@ window.AppPage['staff_reservations'] = function () {
                                     <div class="text-[11px] text-amber-900/90 dark:text-amber-200 space-y-0.5">
                                         <div>
                                             ${activeResched.request_type === 'refund'
-                                                ? `Guest requested a 50% refund of <strong>₱${Number(activeResched.refund_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> via <strong>${escapeHtml(activeResched.ewallet_provider || 'GCash')} (${escapeHtml(activeResched.ewallet_account_number || '')})</strong>.`
-                                                : `Guest submitted requested new date: <strong>${escapeHtml(activeResched.requested_date_formatted || activeResched.requested_date || '')}</strong>.`
-                                            }
+                    ? `Guest requested a 50% refund of <strong>₱${Number(activeResched.refund_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> via <strong>${escapeHtml(activeResched.ewallet_provider || 'GCash')} (${escapeHtml(activeResched.ewallet_account_number || '')})</strong>.`
+                    : `Guest submitted requested new date: <strong>${escapeHtml(activeResched.requested_date_formatted || activeResched.requested_date || '')}</strong>.`
+                }
                                         </div>
                                         <div class="text-amber-800 dark:text-amber-300 font-semibold pt-0.5 flex items-center gap-1">
                                             <i class="bi bi-shield-lock"></i>
@@ -4552,9 +4552,9 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
 
                         ${rawGuests.filter(g => !g.is_primary_guest).map(g => {
-            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
-            const gEmail = g.customer?.email || 'No email';
-            return `
+                    const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
+                    const gEmail = g.customer?.email || 'No email';
+                    return `
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs mt-2">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center text-xs font-bold shrink-0">
@@ -4571,7 +4571,7 @@ window.AppPage['staff_reservations'] = function () {
                                     </div>
                                 </div>
                             `;
-        }).join('')}
+                }).join('')}
                     </div>
 
                     ${rawAmenities.length > 0 ? `
@@ -8244,7 +8244,7 @@ window.AppPage['staff_reservations'] = function () {
         if (idInput) idInput.value = req.id;
         if (bookerEl) bookerEl.textContent = req.booker_name || 'Guest';
         if (resIdEl) resIdEl.textContent = `#${formatReservationId(req.reservation_id)}`;
-        if (amountEl) amountEl.textContent = req.refund_amount_formatted || `₱${Number(req.refund_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        if (amountEl) amountEl.textContent = req.refund_amount_formatted || `₱${Number(req.refund_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
         if (accountNameEl) accountNameEl.textContent = req.ewallet_account_name || '—';
         if (providerAndNumberEl) providerAndNumberEl.textContent = `${req.ewallet_provider || 'GCash'} · ${req.ewallet_account_number || '—'}`;
         if (copyBtn) copyBtn.dataset.copyText = req.ewallet_account_number || '';

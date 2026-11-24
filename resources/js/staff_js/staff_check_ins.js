@@ -51,6 +51,163 @@ if (!window.__staffCheckInsGlobalClickBound) {
             e.target.closest('.guest-companion-pill')?.remove();
             return;
         }
+
+        // Global delegated handler for Filter & Sort Toggle button
+        const toggleBtn = e.target.closest('#resvFilterToggle');
+        if (toggleBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const panel = document.getElementById('resvFilterPanel');
+            const chevron = document.getElementById('resvFilterChevron');
+            const sortMenu = document.getElementById('resvSortDropdownMenu');
+            const sortChevron = document.getElementById('resvSortDropdownChevron');
+            const sortPill = document.getElementById('resvQuickSortPill');
+            if (sortMenu) sortMenu.classList.add('hidden');
+            if (sortChevron) sortChevron.classList.remove('rotate-180');
+            if (sortPill) sortPill.setAttribute('aria-expanded', 'false');
+
+            if (!panel) return;
+            const isHidden = panel.hasAttribute('hidden') || panel.classList.contains('guest-toolbar--collapsed') || panel.style.display === 'none';
+            if (isHidden) {
+                panel.removeAttribute('hidden');
+                panel.hidden = false;
+                panel.classList.remove('guest-toolbar--collapsed');
+                panel.style.display = 'block';
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                if (chevron) chevron.classList.add('rotate-180');
+            } else {
+                panel.setAttribute('hidden', '');
+                panel.hidden = true;
+                panel.classList.add('guest-toolbar--collapsed');
+                panel.style.display = 'none';
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+            return;
+        }
+
+        // Global delegated handler for Filter Drawer Close (Done) button
+        const closeBtn = e.target.closest('#resvFilterCloseBtn');
+        if (closeBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const panel = document.getElementById('resvFilterPanel');
+            const toggle = document.getElementById('resvFilterToggle');
+            const chevron = document.getElementById('resvFilterChevron');
+            if (panel) {
+                panel.setAttribute('hidden', '');
+                panel.hidden = true;
+                panel.classList.add('guest-toolbar--collapsed');
+                panel.style.display = 'none';
+            }
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            if (chevron) chevron.classList.remove('rotate-180');
+            return;
+        }
+
+        // Global delegated handler for Sort Dropdown Pill button
+        const sortPillBtn = e.target.closest('#resvQuickSortPill');
+        if (sortPillBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const sortMenu = document.getElementById('resvSortDropdownMenu');
+            const sortChevron = document.getElementById('resvSortDropdownChevron');
+            if (!sortMenu) return;
+            const isHidden = sortMenu.classList.contains('hidden');
+            if (isHidden) {
+                sortMenu.classList.remove('hidden');
+                sortPillBtn.setAttribute('aria-expanded', 'true');
+                if (sortChevron) sortChevron.classList.add('rotate-180');
+            } else {
+                sortMenu.classList.add('hidden');
+                sortPillBtn.setAttribute('aria-expanded', 'false');
+                if (sortChevron) sortChevron.classList.remove('rotate-180');
+            }
+            return;
+        }
+
+        // Global delegated handler for Sort Dropdown Options
+        const sortOptionBtn = e.target.closest('.resv-sort-option');
+        if (sortOptionBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const chosenSort = sortOptionBtn.getAttribute('data-sort-val');
+            const sortSelect = document.getElementById('resvSortSelect');
+            const sortMenu = document.getElementById('resvSortDropdownMenu');
+            const sortChevron = document.getElementById('resvSortDropdownChevron');
+            const sortPill = document.getElementById('resvQuickSortPill');
+            if (chosenSort && sortSelect) {
+                sortSelect.value = chosenSort;
+                sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (sortMenu) sortMenu.classList.add('hidden');
+            if (sortChevron) sortChevron.classList.remove('rotate-180');
+            if (sortPill) sortPill.setAttribute('aria-expanded', 'false');
+            return;
+        }
+
+        // Global click-outside to close sort dropdown
+        const sortContainer = document.getElementById('resvSortDropdownContainer');
+        if (sortContainer && !sortContainer.contains(e.target)) {
+            const sortMenu = document.getElementById('resvSortDropdownMenu');
+            const sortChevron = document.getElementById('resvSortDropdownChevron');
+            const sortPill = document.getElementById('resvQuickSortPill');
+            if (sortMenu && !sortMenu.classList.contains('hidden')) {
+                sortMenu.classList.add('hidden');
+                if (sortChevron) sortChevron.classList.remove('rotate-180');
+                if (sortPill) sortPill.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        // Global delegated handler for Quick Amenity Filter pills
+        const amenityPill = e.target.closest('.resv-amenity-filter');
+        if (amenityPill) {
+            e.preventDefault();
+            e.stopPropagation();
+            const filterVal = amenityPill.getAttribute('data-amenity-filter') || 'all';
+            document.querySelectorAll('.resv-amenity-filter').forEach((c) => {
+                const isMatch = c === amenityPill;
+                c.classList.toggle('active', isMatch);
+                c.classList.toggle('bg-white', isMatch);
+                c.classList.toggle('dark:bg-[#1e2220]', isMatch);
+                c.classList.toggle('shadow-xs', isMatch);
+                c.classList.toggle('font-bold', isMatch);
+                c.classList.toggle('text-hp-text', isMatch);
+                c.classList.toggle('font-semibold', !isMatch);
+                c.classList.toggle('text-hp-text-muted', !isMatch);
+            });
+            const resvAmenitySelect = document.getElementById('resvAmenityFilter');
+            if (resvAmenitySelect) {
+                resvAmenitySelect.value = filterVal;
+                resvAmenitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return;
+        }
+
+        // Global delegated handler for Quick Status Filter pills
+        const statusPill = e.target.closest('.resv-quick-filter');
+        if (statusPill) {
+            e.preventDefault();
+            e.stopPropagation();
+            const filterVal = statusPill.getAttribute('data-status-filter') || 'all';
+            document.querySelectorAll('.resv-quick-filter').forEach((c) => {
+                const isMatch = c === statusPill;
+                c.classList.toggle('active', isMatch);
+                c.classList.toggle('bg-white', isMatch);
+                c.classList.toggle('dark:bg-[#1e2220]', isMatch);
+                c.classList.toggle('shadow-xs', isMatch);
+                c.classList.toggle('font-bold', isMatch);
+                c.classList.toggle('text-hp-text', isMatch);
+                c.classList.toggle('font-semibold', !isMatch);
+                c.classList.toggle('text-hp-text-muted', !isMatch);
+            });
+            const resvStatusSelect = document.getElementById('resvStatusFilter');
+            if (resvStatusSelect) {
+                resvStatusSelect.value = filterVal;
+                resvStatusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return;
+        }
     });
 
     window.addEventListener('beforeunload', () => {
@@ -293,11 +450,14 @@ window.AppPage['staff_check_ins'] = function () {
                 if (state.tone === 'due') {
                     tr.classList.add('row-checkout-due');
                     tr.classList.remove('row-checkout-near');
+                    tr.setAttribute('data-checkout-status', 'due');
                 } else if (state.tone === 'warn' || state.tone === 'near') {
                     tr.classList.add('row-checkout-near');
                     tr.classList.remove('row-checkout-due');
+                    tr.setAttribute('data-checkout-status', 'near');
                 } else {
                     tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                    tr.setAttribute('data-checkout-status', 'normal');
                 }
             }
         });
@@ -9551,6 +9711,7 @@ window.AppPage['staff_check_ins'] = function () {
         closeSortDropdown();
         if (resvFilterPanel) {
             resvFilterPanel.hidden = false;
+            resvFilterPanel.removeAttribute('hidden');
             resvFilterPanel.classList.remove('guest-toolbar--collapsed');
         }
         if (resvFilterToggle) {
@@ -9564,6 +9725,7 @@ window.AppPage['staff_check_ins'] = function () {
     const closeFilterPanel = () => {
         if (resvFilterPanel) {
             resvFilterPanel.hidden = true;
+            resvFilterPanel.setAttribute('hidden', '');
             resvFilterPanel.classList.add('guest-toolbar--collapsed');
         }
         if (resvFilterToggle) {
@@ -9654,7 +9816,9 @@ window.AppPage['staff_check_ins'] = function () {
         }
     }, { signal: pageSignal });
 
-    resvFilterToggle?.addEventListener('click', () => {
+    resvFilterToggle?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         closeSortDropdown();
         const isExpanded = resvFilterToggle.getAttribute('aria-expanded') === 'true';
         if (isExpanded) {
@@ -9754,8 +9918,7 @@ window.AppPage['staff_check_ins'] = function () {
 
             // Also synchronize nested row visibility
             const resId = row.getAttribute('data-reservation-id');
-            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`)
-                || (row.nextElementSibling && row.nextElementSibling.classList.contains('reservation-nested-row') ? row.nextElementSibling : null);
+            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`);
             if (nestedRow) {
                 if (!show) {
                     nestedRow.style.display = 'none';
@@ -9813,12 +9976,13 @@ window.AppPage['staff_check_ins'] = function () {
             }
         });
 
-        // Re-append sorted rows keeping their respective nested row attached right below
+        // Re-append sorted rows keeping their respective nested row attached right below.
+        // Use only the data-parent-reservation-id selector (not nextElementSibling) to
+        // avoid attaching wrong nested rows after the sort has reordered siblings.
         resvRows.forEach((row) => {
             tbody.appendChild(row);
             const resId = row.getAttribute('data-reservation-id');
-            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`)
-                || (row.nextElementSibling && row.nextElementSibling.classList.contains('reservation-nested-row') ? row.nextElementSibling : null);
+            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`);
             if (nestedRow) {
                 tbody.appendChild(nestedRow);
             }
@@ -9842,7 +10006,9 @@ window.AppPage['staff_check_ins'] = function () {
     });
 
     resvAmenityFilters.forEach((chip) => {
-        chip.addEventListener('click', () => {
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const filterVal = chip.getAttribute('data-amenity-filter') || 'all';
             resvAmenityFilters.forEach((c) => {
                 const isMatch = c === chip;
@@ -9878,8 +10044,26 @@ window.AppPage['staff_check_ins'] = function () {
         applyResvFilters();
     });
 
+    resvStatusFilter?.addEventListener('change', () => {
+        const val = resvStatusFilter.value || 'all';
+        resvQuickFilters.forEach((c) => {
+            const isMatch = c.getAttribute('data-status-filter') === val;
+            c.classList.toggle('active', isMatch);
+            c.classList.toggle('bg-white', isMatch);
+            c.classList.toggle('dark:bg-[#1e2220]', isMatch);
+            c.classList.toggle('shadow-xs', isMatch);
+            c.classList.toggle('font-bold', isMatch);
+            c.classList.toggle('text-hp-text', isMatch);
+            c.classList.toggle('font-semibold', !isMatch);
+            c.classList.toggle('text-hp-text-muted', !isMatch);
+        });
+        applyResvFilters();
+    });
+
     resvQuickFilters.forEach((chip) => {
-        chip.addEventListener('click', () => {
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const filterVal = chip.getAttribute('data-status-filter') || 'all';
             resvQuickFilters.forEach((c) => {
                 c.classList.toggle('active', c === chip);
@@ -11657,4 +11841,14 @@ window.AppPage['staff_check_ins'] = function () {
     showPendingToast();
 };
 
-document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_check_ins']());
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof window.AppPage['staff_check_ins'] === 'function') {
+            window.AppPage['staff_check_ins']();
+        }
+    });
+} else {
+    if (typeof window.AppPage['staff_check_ins'] === 'function') {
+        window.AppPage['staff_check_ins']();
+    }
+}

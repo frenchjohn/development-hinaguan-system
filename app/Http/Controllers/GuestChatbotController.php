@@ -168,6 +168,9 @@ class GuestChatbotController extends Controller
             . "   * STEP 1 — DATE & STAY TYPE (VALIDATE AGAINST TODAY'S DATE: {$todayReadable}):\n"
             . "     - CRITICAL DATE GUARDRAIL (STRICTLY NO PAST DATES):\n"
             . "       Today's date is {$todayReadable}. Hinaguan Nature Park strictly DOES NOT accept bookings for past dates!\n"
+            . "       * PREVIOUSLY RECORDED DATE IN THE PAST (CRITICAL):\n"
+            . "         If the guest returns or continues a conversation where their previously selected/recorded date has ALREADY PASSED (e.g. they chose November 23 earlier, but today is November 24 onwards):\n"
+            . "         STRICTLY DEMAND THAT CONTINUING WITH THIS DATE IS IMPOSSIBLE! Under NO circumstances may you confirm, continue, or check availability for that expired date. State clearly, warmly, and firmly that their recorded date has already passed and reservations for past dates are impossible. Ask what upcoming date (from today {$todayReadable} onwards) they would like to visit!\n"
             . "       * If the guest proposes or mentions a date whose month/day has already passed this year (e.g. 'sept 25' or 'august 10' when today is November {$currentYear}):\n"
             . "         NEVER accept it for {$currentYear} or say it sounds like a wonderful date!\n"
             . "         Instead, warmly clarify if they meant NEXT YEAR ({$nextYear}):\n"
@@ -553,6 +556,23 @@ class GuestChatbotController extends Controller
         $msgLower = mb_strtolower(trim($userMessage));
         $now = now();
         $todayStr = $now->toDateString();
+
+        // 0. Guard against previously recorded dates that have expired
+        if (!empty($bookingDraft['pastDateClarification']['recordedDateExpired'])) {
+            $pastDate = $bookingDraft['pastDateClarification']['pastDate'] ?? 'that date';
+            try {
+                $pastDateReadable = Carbon::parse($pastDate)->format('F j, Y');
+            } catch (\Exception $e) {
+                $pastDateReadable = $pastDate;
+            }
+            if (preg_match('/\b(?:pila|tagpila|asa|nindot|unsa|diay|kinsa|kanus-a|kabuok|ka\s+tawo|unsaon|adto|anhi|swak|lahi|pagkaon|sugba|sapa)\b/i', $userMessage)) {
+                return "Ang imong naunang napili nga petsa ({$pastDateReadable}) milabay na diay! Dili na kita makapadayon sa booking alang sa nilabay nga petsa kay gidili kini. Unsang umaabot nga petsa (sugod karon {$todayStr} o unahan) ang imong gustong i-reserba sa Hinaguan Nature Park?";
+            } elseif (preg_match('/\b(?:magkano|meron|saan|ano|anong|ba|po|opo|pwede|kami|tayo|sino|kailan|tao|paano|pumunta)\b/i', $userMessage)) {
+                return "Ang inyong naunang napiling petsa ({$pastDateReadable}) ay lumipas na po! Hindi na po natin maipagpapatuloy ang booking para sa nakaraang petsa dahil hindi po ito posible. Anong darating na petsa po (mula ngayong {$todayStr} pataas) ang nais ninyong i-book sa Hinaguan Nature Park?";
+            } else {
+                return "Your previously selected date ({$pastDateReadable}) has already passed! It is strictly not possible to reserve or continue a booking for a past date. What upcoming date (from today onwards) would you like to visit Hinaguan Nature Park instead?";
+            }
+        }
 
         // Detect language
         $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tawo|unsaon|adto|anhi|swak|lahi|pagkaon|sugba|sapa)\b/i', $userMessage)
@@ -1822,6 +1842,38 @@ class GuestChatbotController extends Controller
         $draft = is_array($draft) ? $draft : [];
         $msgLower = mb_strtolower(trim($userMessage));
         $now = now();
+        $todayStr = $now->toDateString();
+
+        // 0. Detect expired past recorded dates in incoming draft
+        $expiredRecordedDate = null;
+        if (!empty($draft['startDate']) && $draft['startDate'] < $todayStr) {
+            $expiredRecordedDate = $draft['startDate'];
+        } elseif (!empty($draft['date']) && $draft['date'] < $todayStr) {
+            $expiredRecordedDate = $draft['date'];
+        } elseif (!empty($draft['tentativeDate']) && $draft['tentativeDate'] < $todayStr) {
+            $expiredRecordedDate = $draft['tentativeDate'];
+        } elseif (!empty($draft['recordedPastDate']) && $draft['recordedPastDate'] < $todayStr) {
+            $expiredRecordedDate = $draft['recordedPastDate'];
+        }
+
+        if ($expiredRecordedDate) {
+            $draft['active'] = true;
+            $draft['startDate'] = null;
+            $draft['endDate'] = null;
+            $draft['date'] = null;
+            $draft['tentativeDate'] = null;
+            $draft['amenities'] = [];
+            $draft['amenity'] = null;
+            $draft['tentativeAmenities'] = null;
+            $draft['tentativeAmenity'] = null;
+            $draft['step'] = 'date_slot';
+            $draft['pastDateClarification'] = [
+                'expiredPast' => true,
+                'pastDate' => $expiredRecordedDate,
+                'recordedDateExpired' => true,
+            ];
+            unset($draft['recordedPastDate']);
+        }
 
         // 1. Detect booking intent to activate draft
         if (preg_match('/(?:book\s+via\s+chat|\/book|i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|magpa-?reserve\s+ko|mag-?book\s+ko)/i', $msgLower)) {
@@ -2006,6 +2058,14 @@ class GuestChatbotController extends Controller
                 'minimum_capacity' => (int) ($am->minimum_capacity ?? 1),
                 'maximum_capacity' => (int) ($am->maximum_capacity ?? 10),
             ];
+        }
+
+        if (!empty($draft['pastDateClarification']['recordedDateExpired'])) {
+            $draft['amenities'] = [];
+            $draft['amenity'] = null;
+            $draft['tentativeAmenities'] = null;
+            $draft['tentativeAmenity'] = null;
+            $newAmenityItems = [];
         }
 
         if (!empty($newAmenityItems)) {
@@ -2255,6 +2315,7 @@ class GuestChatbotController extends Controller
         $context = '';
         $now = now();
         $todayStr = $now->toDateString();
+        $todayReadable = $now->format('F j, Y');
         $currentTimeStr = $now->format('F j, Y - g:i A');
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
@@ -2263,12 +2324,15 @@ class GuestChatbotController extends Controller
             ? $bookingDraft['amenities']
             : (!empty($bookingDraft['amenity']) ? [$bookingDraft['amenity']] : []);
 
-        if (!empty($draftAmenities)) {
+        $startDateVal = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? null);
+        $hasValidFutureSchedule = !empty($startDateVal) && $startDateVal >= $todayStr;
+
+        if (!empty($draftAmenities) && $hasValidFutureSchedule) {
             $amNames = array_map(fn ($a) => ($a['name'] ?? 'Amenity') . " (₱" . number_format((float) ($a['price'] ?? 0), 2) . ")", $draftAmenities);
             $total = array_sum(array_map(fn ($a) => (float) ($a['price'] ?? 0), $draftAmenities));
             $dp = round($total * 0.5, 2);
             $bal = round($total - $dp, 2);
-            $startDate = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? $todayStr);
+            $startDate = $startDateVal;
             $endDate = $bookingDraft['endDate'] ?? $startDate;
             $startSlot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
             $endSlot = $bookingDraft['endSlot'] ?? $startSlot;
@@ -2313,7 +2377,7 @@ class GuestChatbotController extends Controller
                 . "- Total: ₱" . number_format($total, 2) . " | 50% Downpayment Required: ₱" . number_format($dp, 2) . " | Balance Due: ₱" . number_format($bal, 2) . "\n"
                 . $stageContext
                 . "- Note: If the user asks 'show me what amenity i just avail before it book', confirm these exact details to them!\n";
-        } elseif (!empty($bookingDraft['startDate'])) {
+        } elseif (!empty($bookingDraft['startDate']) && $bookingDraft['startDate'] >= $todayStr) {
             $startDate = $bookingDraft['startDate'];
             $endDate = $bookingDraft['endDate'] ?? $startDate;
             $startSlot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
@@ -2326,7 +2390,21 @@ class GuestChatbotController extends Controller
                                : "- Current Stage: Schedule is confirmed. Ask what amenity they have in mind (cozy A-Houses, bamboo Payags, open-air Cottages, Function Hall). DO NOT output [VIEW_AMENITIES_BUTTON] yet!\n");
         } elseif (!empty($bookingDraft['pastDateClarification'])) {
             $clar = $bookingDraft['pastDateClarification'];
-            if (!empty($clar['expiredPast'])) {
+            if (!empty($clar['recordedDateExpired'])) {
+                $pDate = $clar['pastDate'] ?? 'the previously selected date';
+                try {
+                    $pDateFmt = Carbon::parse($pDate)->format('F j, Y');
+                } catch (\Exception $e) {
+                    $pDateFmt = $pDate;
+                }
+                $context .= "\n[CRITICAL ALERT — PREVIOUSLY RECORDED BOOKING DATE HAS PASSED (STRICTLY FORBIDDEN)]:\n"
+                    . "- The guest's previously recorded visit date was {$pDateFmt} ({$pDate}), but today's actual date is {$todayReadable}!\n"
+                    . "- THIS RECORDED DATE HAS ALREADY PASSED. RESERVING OR CONTINUING A BOOKING FOR A PAST DATE IS STRICTLY IMPOSSIBLE.\n"
+                    . "- MANDATORY INSTRUCTION: You MUST NOT confirm, continue, or check availability for {$pDateFmt}. Under NO circumstances may you say {$pDateFmt} is available or continue the reservation for it!\n"
+                    . "- State clearly, warmly, and firmly that their previously chosen date ({$pDateFmt}) has already passed and reservations for past dates are strictly not possible.\n"
+                    . "- DEMAND / ASK them what upcoming date (from today {$todayReadable} onwards) they would like to visit Hinaguan Nature Park!\n"
+                    . "- STRICTLY DO NOT output [VIEW_AMENITIES_BUTTON] and DO NOT output [PROCEED_PAYMENT_BUTTON]!\n";
+            } elseif (!empty($clar['expiredPast'])) {
                 $context .= "\n[PAST DATE INQUIRY REJECTED]:\n"
                     . "- The guest mentioned a past date (" . ($clar['pastDate'] ?? 'past date') . ") which has ALREADY PASSED!\n"
                     . "- ACTION: Hinaguan Nature Park strictly does NOT accept past bookings. Inform the guest warmly that the date has passed and ask them what upcoming date from today onwards they would like to visit.\n";

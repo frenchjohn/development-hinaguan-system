@@ -289,6 +289,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         parsed.guest.guests_count = null;
                     }
                 }
+
+                // If previously recorded date has passed, preserve it for backend refusal and reset active schedule
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                if (parsed.startDate && parsed.startDate < todayStr) {
+                    parsed.recordedPastDate = parsed.startDate;
+                    parsed.startDate = null;
+                    parsed.endDate = null;
+                    parsed.tentativeDate = null;
+                    parsed.amenities = [];
+                    parsed.amenity = null;
+                    parsed.tentativeAmenities = null;
+                    parsed.tentativeAmenity = null;
+                    parsed.step = 'date_slot';
+                } else if (parsed.tentativeDate && parsed.tentativeDate < todayStr) {
+                    parsed.tentativeDate = null;
+                }
+
                 return parsed;
             }
         } catch (e) {
@@ -643,6 +661,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Central dispatcher: Sends user message and bookingDraft to Bren AI
     const sendMessagePayloadToBot = async (userMessage) => {
+        // Ensure expired past dates in bookingDraft are preserved as recordedPastDate and removed from active schedule
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        if (bookingDraft.startDate && bookingDraft.startDate < todayStr) {
+            bookingDraft.recordedPastDate = bookingDraft.startDate;
+            bookingDraft.startDate = null;
+            bookingDraft.endDate = null;
+            bookingDraft.tentativeDate = null;
+            bookingDraft.amenities = [];
+            bookingDraft.amenity = null;
+            bookingDraft.tentativeAmenities = null;
+            bookingDraft.tentativeAmenity = null;
+            bookingDraft.step = 'date_slot';
+            saveBookingDraft();
+        }
+
         const modelSelectEl = document.getElementById('chatbotModel');
         const currentModel = modelSelectEl ? modelSelectEl.value : 'gpt-6-luna';
 
@@ -1150,7 +1184,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const todayStr = getOffsetDateString(0);
         let selectedStartDate = bookingDraft.startDate || todayStr;
+        if (selectedStartDate < todayStr) selectedStartDate = todayStr;
         let selectedEndDate = bookingDraft.endDate || selectedStartDate;
+        if (selectedEndDate < todayStr) selectedEndDate = selectedStartDate;
         let selectedStartSlot = bookingDraft.startSlot || 'Daytime';
         let selectedEndSlot = bookingDraft.endSlot || 'Daytime';
 

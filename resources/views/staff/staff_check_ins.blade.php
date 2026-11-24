@@ -1057,7 +1057,7 @@
 											->filter()
 											->unique();
 										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
-										$isVisitOnly = empty($rowAmenityNames);
+										$isVisitOnly = $reservation->reservationAmenities->isEmpty();
 
 										$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
 										$checkoutDue = false;
