@@ -1007,7 +1007,7 @@ class StaffChatbotController extends Controller
                 $cap = ($minCap === $maxCap) ? "{$minCap} pax" : "{$minCap} to {$maxCap} pax";
 
                 $context .= "- {$am->amenities_name} (Capacity: {$cap}):\n"
-                    . "  * Day Rate: ₱" . number_format((float) $am->daytime_price, 2) . " | Night Rate: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead}\n"
+                    . "  * Day Rate: ₱" . number_format((float) $am->daytime_price, 2) . " | Night Rate: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead} (Collected on arrival at check-in; not part of online downpayment)\n"
                     . "  * Inclusions: Free Entrance: {$freeEnt} | Free Pool: {$freePool} | Aircon: {$aircon}\n";
             }
         }

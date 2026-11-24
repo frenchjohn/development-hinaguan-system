@@ -1001,7 +1001,7 @@ class AdminChatbotController extends Controller
                 $maxCap = !empty($am->maximum_capacity) ? (int) $am->maximum_capacity : $minCap;
                 $cap = ($minCap === $maxCap) ? "{$minCap} pax" : "{$minCap} to {$maxCap} pax";
 
-                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$cap}): Day: ₱" . number_format((float) $am->daytime_price, 2) . " | Night: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead} | Free Ent: {$freeEnt} | Free Pool: {$freePool} | Aircon: {$aircon}\n";
+                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$cap}): Day: ₱" . number_format((float) $am->daytime_price, 2) . " | Night: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead} (Collected on arrival at check-in; not part of online downpayment) | Free Ent: {$freeEnt} | Free Pool: {$freePool} | Aircon: {$aircon}\n";
             }
         }
 

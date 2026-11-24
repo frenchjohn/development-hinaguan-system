@@ -749,7 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     Number(bookingDraft.guest?.guests_count) > 0
                 );
 
-                if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && hasAllGuestInfo && msgEl) {
+                if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && !bookingDraft.amenityConflict && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0 && hasAllGuestInfo && msgEl) {
                     if (!msgEl.querySelector('.cb-btn-proceed-downpayment')) {
                         const total = calculateDraftTotal();
                         const deposit = Math.max(roundToTwo(total * 0.5), total > 0 ? 20.00 : 0);
@@ -968,6 +968,65 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ─────────────────────────────────────────────────────────────
+    // Conversational Word & Phrase Validator (Checks Bisaya, Tagalog, English)
+    // ─────────────────────────────────────────────────────────────
+    const isConversationalWordOrPhrase = (text) => {
+        if (!text || typeof text !== 'string') return true;
+        const clean = text.trim();
+        if (!clean) return true;
+        // Punctuation indicating a conversational sentence or statement
+        if (/[\?!;:\/\\=\+\*~<>\d_]/.test(clean)) return true;
+
+        const nonNameWords = new Set([
+            // Bisaya conversational particles, pronouns, time words, questions, verbs
+            'ganina', 'karong', 'karon', 'gabii', 'buntag', 'hapon', 'ugma', 'gahapon', 'adlaw',
+            'naunsa', 'unsa', 'ngano', 'kanus-a', 'kanusa', 'asa', 'pila', 'tagpila', 'kinsa', 'unsaon',
+            'oi', 'oy', 'ay', 'ka', 'ko', 'mi', 'kami', 'mo', 'kamo', 'sila', 'nako', 'nimo', 'niya',
+            'nato', 'ninyo', 'nila', 'man', 'ba', 'diay', 'gani', 'bitaw', 'lagi', 'pod', 'pud',
+            'pa', 'na', 'sa', 'ug', 'og', 'ang', 'mga', 'sauna', 'unya', 'puhon', 'adto', 'anhi',
+            'ari', 'dili', 'di', 'wala', 'wa', 'naa', 'may', 'ambot', 'libog', 'naglibog', 'sulti',
+            'ingon', 'buhat', 'tan-aw', 'kita', 'sab', 'sad', 'kaayo', 'gamay', 'daghan', 'dako',
+            'nindot', 'bata', 'bayad', 'kwarta', 'sakay', 'kaon', 'inum', 'tulog', 'lakaw', 'abot',
+            'hulat', 'kadali', 'yawa', 'atay', 'buang', 'kol', 'boss', 'bai', 'bay', 'pre', 'dong',
+            'day', 'te', 'kuya', 'ate', 'palihug', 'salamat', 'pasayloa', 'tabang', 'kaha', 'siguro',
+            'puy-anan', 'suba', 'sapa', 'init', 'tugnaw', 'ulan', 'uwan',
+
+            // Tagalog conversational particles, pronouns, time words, questions, verbs
+            'kanina', 'ngayon', 'mamaya', 'bukas', 'kahapon', 'ano', 'bakit', 'kailan', 'saan',
+            'paano', 'magkano', 'sino', 'nasaan', 'ako', 'ikaw', 'ka', 'kami', 'tayo', 'kayo',
+            'sila', 'ko', 'mo', 'niya', 'namin', 'natin', 'ninyo', 'nila', 'din', 'rin', 'daw',
+            'raw', 'nga', 'pala', 'naman', 'ba', 'po', 'opo', 'ho', 'oho', 'lang', 'lamang',
+            'pa', 'na', 'at', 'ang', 'mga', 'ay', 'sa', 'hindi', 'di', 'wala', 'meron', 'may',
+            'ayaw', 'gusto', 'ewan', 'sabi', 'punta', 'gawin', 'tingin', 'kuha', 'bayad', 'pera',
+            'hintay', 'sandali', 'tulong', 'bata', 'matanda', 'malaki', 'maliit', 'maganda', 'masaya',
+            'mainit', 'malamig', 'sulit', 'pagkain', 'sakyan', 'bawat',
+
+            // English conversational particles, pronouns, time words, questions, verbs
+            'what', 'why', 'how', 'when', 'where', 'who', 'which', 'is', 'are', 'was', 'were',
+            'am', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'can',
+            'could', 'would', 'should', 'shall', 'might', 'must', 'earlier',
+            'tonight', 'today', 'tomorrow', 'yesterday', 'now', 'later', 'happened', 'happen',
+            'you', 'your', 'yours', 'me', 'my', 'mine', 'we', 'our', 'ours', 'us', 'they',
+            'their', 'theirs', 'them', 'he', 'him', 'his', 'she', 'her', 'hers', 'it', 'its',
+            'this', 'that', 'these', 'those', 'there', 'here', 'some', 'any', 'all', 'both',
+            'each', 'every', 'other', 'another', 'such', 'no', 'nor', 'not', 'only', 'own',
+            'same', 'so', 'than', 'too', 'very', 'just', 'wait', 'moment', 'hello', 'hi',
+            'hey', 'thanks', 'thank', 'please', 'sorry', 'welcome', 'good', 'bad', 'nice',
+            'okay', 'ok', 'yes', 'sure', 'yep', 'yeah', 'book', 'booking', 'reserve',
+            'reservation', 'cancel', 'change', 'reschedule', 'view', 'show', 'price', 'cost',
+            'rate', 'amenity', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall',
+            'room', 'slot', 'day', 'night', 'daytime', 'nighttime', 'pax', 'guest', 'guests',
+            'person', 'persons', 'people', 'again', 'already', 'still', 'stop', 'clean', 'clear',
+            'confirm', 'proceed', 'downpayment', 'payment', 'balance', 'total', 'heads', 'adult',
+            'child', 'children', 'pool', 'swimming', 'gate', 'schedule', 'fee', 'fees'
+        ]);
+
+        const tokens = clean.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean);
+        if (tokens.length === 0) return true;
+        return tokens.some(t => nonNameWords.has(t));
+    };
+
+    // ─────────────────────────────────────────────────────────────
     // Conversational Guest Info Parser (NLP)
     // ─────────────────────────────────────────────────────────────
     const parseGuestInfoFromText = (text) => {
@@ -1022,33 +1081,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Name extraction
+        // Name extraction (Strictly only when asked or explicitly introduced, never from random words or phrases)
         let name = null;
-        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im|it'?s|its)\s+([A-Za-z\s\.\-']{2,40})/i);
-        if (nameMatch) {
-            name = nameMatch[1].trim();
-        } else if (((bookingDraft.amenities && bookingDraft.amenities.length > 0) || bookingDraft.step === 'guest_info') && (!bookingDraft.guest || !bookingDraft.guest.name) && !phone && !email) {
-            const isAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve|book|both|thats\s+all)\b/i.test(text);
-            if (!isAffirmation) {
-                let clean = text.trim().replace(/^(?:it'?s|its)\s+/i, '').replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ');
-                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'it', 'we', 'are', 'said', 'continue', 'my', 'booking'];
-                const words = clean.split(' ').map(w => w.toLowerCase());
-                const hasReserved = words.some(w => nonNameWords.includes(w) || w.startsWith('yes'));
-                if (!hasReserved && /^[A-Za-z\s\.\-']{2,40}$/.test(clean) && words.length >= 1 && words.length <= 4) {
-                    name = clean;
+        const trimmed = text.replace(/^(?:it'?s|its)\s+/i, '').trim();
+
+        // 1. Explicit introduction pattern
+        const explicitNameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)|call\s+me)\s+([A-Za-z\s\.\'-]{2,50})/i)
+            || text.match(/(?:ako\s*(?:po)?\s*(?:diay)?\s+si)\s+([A-Za-z\s\.\'-]{2,50})/i)
+            || text.match(/(?:ngalan\s*nako\s*(?:kay|si)|akong\s*ngalan\s*(?:kay|si))\s+([A-Za-z\s\.\'-]{2,50})/i)
+            || text.match(/(?:pangalan\s*ko\s*(?:ay|si)|ang\s*pangalan\s*ko\s*(?:ay|si))\s+([A-Za-z\s\.\'-]{2,50})/i);
+
+        if (explicitNameMatch) {
+            let cand = explicitNameMatch[1].trim();
+            cand = cand.split(/[\.,;\?!]|(?:\b(?:and|ug|at|my|number|phone|email)\b)/i)[0].trim();
+            const words = cand.split(/\s+/).filter(Boolean);
+            if (words.length >= 1 && words.length <= 4 && cand.length >= 2 && cand.length <= 50) {
+                if (!isConversationalWordOrPhrase(cand)) {
+                    name = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                 }
             }
-        } else if (phone || email) {
-            let remaining = text;
-            if (phoneMatch) remaining = remaining.replace(phoneMatch[0], '');
-            if (emailMatch) remaining = remaining.replace(emailMatch[0], '');
-            if (paxMatch) remaining = remaining.replace(paxMatch[0], '');
-            remaining = remaining.replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ').trim();
-            const nonNamePhrases = ['thats all', 'that is all', 'all good', 'thats good', 'that is good', 'only me', 'just me', 'lang', 'po', 'ko', 'na', 'its', 'continue my booking', 'i said we are'];
-            const lowerRemaining = remaining.toLowerCase();
-            const isNonName = nonNamePhrases.some(p => lowerRemaining.includes(p)) || ['thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'its', 'it', 'we', 'are', 'said', 'continue', 'booking'].includes(lowerRemaining);
-            if (!isNonName && /^[A-Za-z\s\.\-']{2,40}$/.test(remaining) && remaining.split(' ').length <= 5) {
-                name = remaining;
+        } else if (bookingDraft.step === 'guest_info' && bookingDraft.guest_field === 'name' && (!bookingDraft.guest || !bookingDraft.guest.name) && !phone && !email) {
+            // 2. Only if the assistant actively asked for the Full Name
+            const words = trimmed.split(/\s+/).filter(Boolean);
+            const hasDigits = /\d/.test(trimmed);
+            const hasAmenity = /\b(?:payag|cottage|ahouse|house|function|hall)\b/i.test(trimmed);
+            const hasDate = /\b(?:today|tomorrow|tonight|ugma|bukas|karon|nov|dec|jan|feb)\b/i.test(trimmed);
+            const isCancelOrStop = /\b(?:stop|cancel|clean|clear|reset|wait|no)\b/i.test(trimmed);
+
+            if (!hasDigits && !hasAmenity && !hasDate && !isCancelOrStop && words.length >= 1 && words.length <= 4 && trimmed.length >= 2 && trimmed.length <= 50) {
+                if (!isConversationalWordOrPhrase(trimmed)) {
+                    name = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                }
             }
         }
 
@@ -4051,7 +4114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bookingDraft.guest?.guests_count &&
             Number(bookingDraft.guest?.guests_count) > 0
         );
-        if ((bookingDraft.step === 'payment' || bookingDraft.step === 'review') && canProceedPayment && /^(?:proceed|pay|bayad|sige|proceed\s+to\s+payment|downpayment)\b/i.test(rawMessage.trim())) {
+        if ((bookingDraft.step === 'payment' || bookingDraft.step === 'review') && canProceedPayment && !bookingDraft.amenityConflict && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0 && /^(?:proceed|pay|bayad|sige|proceed\s+to\s+payment|downpayment)\b/i.test(rawMessage.trim())) {
             initiateXenditPayment();
             return;
         }

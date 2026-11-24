@@ -6,6 +6,7 @@ use App\Models\Amenity;
 use App\Models\AmenityBenefit;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
+use App\Models\ReservationAmenity;
 use App\Models\StaffAccount;
 use App\Models\AdminAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -650,5 +651,375 @@ class ChatbotConversationalRobustnessTest extends TestCase
         $this->assertFalse($draftStop['active']);
         $this->assertNull($draftStop['startDate']);
         $this->assertEmpty($draftStop['amenities']);
+    }
+
+    /**
+     * Test asking for non-existent amenities clarifies we don't have it and asks "did you mean [closest]?"
+     */
+    public function test_non_existent_amenity_clarification_for_bamboo_hut_and_tent(): void
+    {
+        // 1. Asking for "bamboo hut" (closer to Payag)
+        $respBamboo = $this->postJson('/guest-chatbot', [
+            'message' => 'i want bamboo hut amenity',
+            'booking_draft' => [
+                'active' => false,
+                'amenities' => [],
+            ],
+        ]);
+        $respBamboo->assertOk();
+        $replyBamboo = $respBamboo->json('reply');
+        $draftBamboo = $respBamboo->json('booking_draft');
+
+        // Must say we don't have that amenity
+        $this->assertTrue(
+            str_contains(strtolower($replyBamboo), "don't have") ||
+            str_contains(strtolower($replyBamboo), "dont have") ||
+            str_contains(strtolower($replyBamboo), "wala"),
+            'Must state park does not have bamboo hut'
+        );
+
+        // Must ask if they meant Payag
+        $this->assertTrue(
+            str_contains(strtolower($replyBamboo), 'did you mean') ||
+            str_contains(strtolower($replyBamboo), 'you mean') ||
+            str_contains(strtolower($replyBamboo), 'payag'),
+            'Must ask if they meant Payag'
+        );
+
+        // Must NOT auto-lock Payag or any amenity into amenities
+        $this->assertEmpty($draftBamboo['amenities'] ?? []);
+        $this->assertEmpty($draftBamboo['tentativeAmenities'] ?? []);
+
+        // 2. Asking for "tent" or "jacuzzi" (completely non-existent)
+        $respTent = $this->postJson('/guest-chatbot', [
+            'message' => 'we want tent for camping',
+            'booking_draft' => [
+                'active' => false,
+                'amenities' => [],
+            ],
+        ]);
+        $respTent->assertOk();
+        $replyTent = $respTent->json('reply');
+        $draftTent = $respTent->json('booking_draft');
+
+        $this->assertTrue(
+            str_contains(strtolower($replyTent), "don't have") ||
+            str_contains(strtolower($replyTent), "dont have") ||
+            str_contains(strtolower($replyTent), "wala"),
+            'Must state park does not have tent'
+        );
+        $this->assertEmpty($draftTent['amenities'] ?? []);
+    }
+
+    /**
+     * Test occupied amenity is actively detected and prevented before collecting guest details or proceeding to payment.
+     */
+    public function test_occupied_amenity_prevented_before_collecting_details_or_payment(): void
+    {
+        // 1. Seed existing active reservation for A-House 3 (id '6') on 2026-11-28 Daytime
+        $res = Reservation::create([
+            'booker_name' => 'Existing Customer',
+            'phone' => '09123456789',
+            'email' => 'existing@example.com',
+            'reservation_date' => '2026-11-28',
+            'end_date' => '2026-11-28',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'status' => 'Pending',
+            'number_of_guests' => 2,
+            'total_amount' => 700.00,
+            'amount_paid' => 350.00,
+            'remaining_balance' => 350.00,
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => '6', // A-House 3
+            'start_date' => '2026-11-28',
+            'end_date' => '2026-11-28',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'pricing_type' => 'Daytime',
+            'day_slots_count' => 1,
+            'night_slots_count' => 0,
+            'price_at_booking' => 700.00,
+            'status' => 'Pending',
+        ]);
+
+        // Turn 1: Guest attempts to book A-House 3 for the occupied date and slot
+        $resp = $this->postJson('/guest-chatbot', [
+            'message' => 'I want to book A-House 3 on Nov 28, 2026 Daytime',
+            'booking_draft' => [
+                'active' => true,
+                'amenities' => [],
+            ],
+        ]);
+        $resp->assertOk();
+        $reply = $resp->json('reply');
+        $draft = $resp->json('booking_draft');
+
+        // Assert warning about A-House 3 being already booked
+        $this->assertTrue(
+            str_contains(strtolower($reply), 'already booked') ||
+            str_contains(strtolower($reply), 'occupied') ||
+            str_contains(strtolower($reply), 'reserved') ||
+            str_contains(strtolower($reply), 'naka-book'),
+            'Must warn guest that A-House 3 is already booked'
+        );
+
+        // Assert available alternative is suggested (A-House 2)
+        $this->assertTrue(
+            str_contains($reply, 'A-House 2'),
+            'Must suggest available sibling alternative A-House 2'
+        );
+
+        // Assert it does NOT ask for full name or advance to payment
+        $this->assertFalse(str_contains(strtolower($reply), 'may i have your full name'));
+        $this->assertFalse(str_contains($reply, '[PROCEED_PAYMENT_BUTTON]'));
+
+        // Assert occupied amenity is NOT locked in draft amenities
+        $this->assertEmpty($draft['amenities'] ?? []);
+        $this->assertNotNull($draft['amenityConflict'] ?? null);
+        $this->assertEquals('A-House 3', $draft['amenityConflict']['occupied_name']);
+        $this->assertEquals('amenity', $draft['step']);
+
+        // Turn 2: Guest chooses the available alternative A-House 2
+        $resp2 = $this->postJson('/guest-chatbot', [
+            'message' => "ok let's go with A-House 2",
+            'booking_draft' => $draft,
+        ]);
+        $resp2->assertOk();
+        $reply2 = $resp2->json('reply');
+        $draft2 = $resp2->json('booking_draft');
+
+        // Assert A-House 2 is now locked in cleanly and conflict is cleared
+        $this->assertNotEmpty($draft2['amenities']);
+        $this->assertEquals('A-House 2', $draft2['amenities'][0]['name']);
+        $this->assertNull($draft2['amenityConflict'] ?? null);
+
+        // Assert it now advances to Step 3 (asking for Full Name)
+        $this->assertTrue(
+            str_contains(strtolower($reply2), 'full name') ||
+            str_contains(strtolower($reply2), 'ngalan'),
+            'Must ask for Full Name once available amenity is confirmed'
+        );
+        $this->assertEquals('guest_info', $draft2['step']);
+    }
+
+    /**
+     * Test Scenario 15: Conversational Bisaya phrases are never recorded as guest name
+     * Verifies that user phrases like "ganina karong gabii naunsa ka oi" are strictly
+     * filtered out and cannot be set as guest name. Name is only accepted when explicitly
+     * introduced or provided in response to asking for Full Name.
+     */
+    public function test_conversational_bisaya_phrase_never_recorded_as_guest_name(): void
+    {
+        $payag3 = Amenity::where('amenities_name', 'Payag 3')->first();
+        if (!$payag3) {
+            $payag3 = Amenity::create([
+                'id' => '99',
+                'amenities_name' => 'Payag 3',
+                'category' => 'Payags',
+                'daytime_price' => 300.00,
+                'nighttime_price' => 300.00,
+                'minimum_capacity' => 1,
+                'maximum_capacity' => 10,
+                'status' => true,
+            ]);
+        }
+
+        $draft = [
+            'active' => true,
+            'amenities' => [
+                [
+                    'id' => (string) $payag3->id,
+                    'name' => 'Payag 3',
+                    'price' => 300.00,
+                ],
+            ],
+            'amenity' => [
+                'id' => (string) $payag3->id,
+                'name' => 'Payag 3',
+                'price' => 300.00,
+            ],
+            'startDate' => '2026-11-24',
+            'endDate' => '2026-11-24',
+            'startSlot' => 'Nighttime',
+            'endSlot' => 'Nighttime',
+            'slot' => 'Nighttime',
+            'step' => 'guest_info',
+            'guest_field' => 'name',
+            'guest' => [
+                'name' => null,
+                'phone' => null,
+                'email' => null,
+                'guests_count' => null,
+            ],
+        ];
+
+        // Turn 1: User says a conversational Bisaya phrase while in the name collection step
+        $resp = $this->postJson('/guest-chatbot', [
+            'message' => 'ganina karong gabii naunsa ka oi',
+            'booking_draft' => $draft,
+        ]);
+        $resp->assertOk();
+        $reply = $resp->json('reply');
+        $updatedDraft = $resp->json('booking_draft');
+
+        // Assert the Bisaya sentence is NOT recorded as name
+        $this->assertNull($updatedDraft['guest']['name'] ?? null, 'Conversational Bisaya phrase must not be saved as guest name');
+        $this->assertStringNotContainsStringIgnoringCase('Salamat, Ganina', $reply);
+        $this->assertStringNotContainsStringIgnoringCase('Ganina Karong Gabii', $reply);
+        $this->assertEquals('name', $updatedDraft['guest_field'] ?? null);
+
+        // Turn 2: Even if an old client sent a pre-set conversational name, the server sanitizes it
+        $draftWithBadName = $updatedDraft;
+        $draftWithBadName['guest']['name'] = 'Ganina Karong Gabii Naunsa Ka Oi';
+        $resp2 = $this->postJson('/guest-chatbot', [
+            'message' => 'unsa man diay to oi',
+            'booking_draft' => $draftWithBadName,
+        ]);
+        $resp2->assertOk();
+        $updatedDraft2 = $resp2->json('booking_draft');
+        $this->assertNull($updatedDraft2['guest']['name'] ?? null, 'Pre-existing conversational name in draft must be purged');
+
+        // Turn 3: User explicitly introduces themselves in Bisaya
+        $resp3 = $this->postJson('/guest-chatbot', [
+            'message' => 'ngalan nako kay Danny Pangilinan',
+            'booking_draft' => $updatedDraft2,
+        ]);
+        $resp3->assertOk();
+        $reply3 = $resp3->json('reply');
+        $updatedDraft3 = $resp3->json('booking_draft');
+
+        // Assert Danny Pangilinan is cleanly recorded
+        $this->assertEquals('Danny Pangilinan', $updatedDraft3['guest']['name']);
+        $this->assertEquals('phone', $updatedDraft3['guest_field'] ?? null);
+        $this->assertTrue(
+            str_contains(strtolower($reply3), 'danny') ||
+            str_contains(strtolower($reply3), 'phone') ||
+            str_contains(strtolower($reply3), 'contact'),
+            'Must acknowledge Danny Pangilinan and request phone number'
+        );
+    }
+
+    /**
+     * Test Scenario 16: Extra head fees are NOT added to online reservation total or 50% downpayment
+     * Extra head fees (e.g. ₱100/head) are strictly handled upon arrival at check-in.
+     * The online total remains strictly the amenity rental rate (₱1,000 for A-House 2)
+     * and the 50% downpayment remains strictly ₱500 (never ₱1,100 / ₱550).
+     */
+    public function test_extra_head_fee_is_not_added_to_online_downpayment_or_total_and_handled_on_arrival(): void
+    {
+        $ahouse2 = Amenity::where('amenities_name', 'A-House 2')->first();
+        if (!$ahouse2) {
+            $ahouse2 = Amenity::create([
+                'id' => '5',
+                'amenities_name' => 'A-House 2',
+                'category' => 'A-Houses',
+                'daytime_price' => 700.00,
+                'nighttime_price' => 1000.00,
+                'minimum_capacity' => 1,
+                'maximum_capacity' => 2,
+                'additional_per_head' => 100.00,
+                'status' => true,
+            ]);
+        }
+
+        $draft = [
+            'active' => true,
+            'amenities' => [
+                [
+                    'id' => (string) $ahouse2->id,
+                    'name' => 'A-House 2',
+                    'price' => 1000.00,
+                    'daytime_price' => 700.00,
+                    'nighttime_price' => 1000.00,
+                    'minimum_capacity' => 1,
+                    'maximum_capacity' => 2,
+                ],
+            ],
+            'amenity' => [
+                'id' => (string) $ahouse2->id,
+                'name' => 'A-House 2',
+                'price' => 1000.00,
+            ],
+            'startDate' => '2026-11-24',
+            'endDate' => '2026-11-24',
+            'startSlot' => 'Nighttime',
+            'endSlot' => 'Nighttime',
+            'slot' => 'Nighttime',
+            'step' => 'guest_info',
+            'guest_field' => 'name',
+            'guest' => [
+                'name' => null,
+                'phone' => null,
+                'email' => null,
+                'guests_count' => null,
+            ],
+        ];
+
+        // Turn 1: User asks about extra head fee / bringing 3 persons to A-House 2
+        $resp = $this->postJson('/guest-chatbot', [
+            'message' => 'pila bayad sa extra head kung 3 mi sa ahouse 2?',
+            'booking_draft' => $draft,
+        ]);
+        $resp->assertOk();
+        $reply = $resp->json('reply');
+        $updatedDraft = $resp->json('booking_draft');
+
+        // Assert reply states extra head fee is ₱100
+        $this->assertTrue(
+            str_contains($reply, '100') || str_contains($reply, '₱100'),
+            'Must mention ₱100 extra head fee'
+        );
+
+        // Assert it explicitly states extra head fee is NOT added to online downpayment or total
+        $this->assertTrue(
+            str_contains(strtolower($reply), 'dili iapil') ||
+            str_contains(strtolower($reply), 'hindi kasama') ||
+            str_contains(strtolower($reply), 'not added') ||
+            str_contains(strtolower($reply), 'check-in') ||
+            str_contains(strtolower($reply), 'arrival'),
+            'Must clarify that extra head fee is NOT added to downpayment and handled on arrival'
+        );
+
+        // Assert it does NOT say ₱1,100 total or ₱550 downpayment
+        $this->assertStringNotContainsString('₱1,100', $reply);
+        $this->assertStringNotContainsString('1,100', $reply);
+        $this->assertStringNotContainsString('₱550', $reply);
+        $this->assertStringNotContainsString('550', $reply);
+
+        // Turn 2: User completes booking details with 3 guests (exceeding standard capacity of 2)
+        $completeDraft = $draft;
+        $completeDraft['guest'] = [
+            'name' => 'Toneri Otsu',
+            'phone' => '09930457138',
+            'email' => 'toneri@example.com',
+            'guests_count' => 3,
+        ];
+        $completeDraft['step'] = 'payment';
+
+        $resp2 = $this->postJson('/guest-chatbot', [
+            'message' => 'summary please',
+            'booking_draft' => $completeDraft,
+        ]);
+        $resp2->assertOk();
+        $reply2 = $resp2->json('reply');
+
+        // Total must be strictly ₱1,000.00 (amenity price only), Downpayment strictly ₱500.00
+        $this->assertStringContainsString('₱1,000.00', $reply2);
+        $this->assertStringContainsString('₱500.00', $reply2);
+        $this->assertStringNotContainsString('₱1,100.00', $reply2);
+        $this->assertStringNotContainsString('₱550.00', $reply2);
+
+        // Must include arrival notice for the extra head
+        $this->assertTrue(
+            str_contains(strtolower($reply2), 'extra head') ||
+            str_contains(strtolower($reply2), 'extra guest') ||
+            str_contains(strtolower($reply2), 'sobra'),
+            'Summary must include notice about extra head handled on arrival'
+        );
     }
 }
