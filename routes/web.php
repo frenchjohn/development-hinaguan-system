@@ -8337,6 +8337,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $resDateStr = $formatLocalDate ? $formatLocalDate($reservation, 'reservation_date') : substr((string) ($reservation->reservation_date ?? ''), 0, 10);
             if ($resDateStr) {
                 try {
+                    $todayDate = now(config('app.timezone', 'Asia/Manila'))->toDateString();
+                    if ($resDateStr < $todayDate) {
+                        return response()->json([
+                            'message' => 'Cannot check in: this reservation date has already passed.',
+                        ], 422);
+                    }
+
                     $scheduledStart = \Carbon\Carbon::parse("{$resDateStr} {$startTimeFormatted}", config('app.timezone', 'Asia/Manila'));
                     $earliestCheckIn = $scheduledStart->copy()->subHour();
                     if (now(config('app.timezone', 'Asia/Manila'))->lessThan($earliestCheckIn)) {
@@ -11206,6 +11213,29 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $oldStatus = $reservation->status;
         $newStatus = $validated['status'];
+
+        if ($newStatus === 'No Show') {
+            $resDateStr = $formatLocalDate($reservation, 'reservation_date');
+            $todayStr = now()->toDateString();
+
+            if ($resDateStr && $resDateStr > $todayStr) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot mark this reservation as No-Show because its scheduled reservation date (' . \Illuminate\Support\Carbon::parse($resDateStr)->format('M d, Y') . ') has not passed yet.',
+                ], 422);
+            }
+
+            if ($resDateStr && $resDateStr === $todayStr) {
+                $checkoutAt = $computeReservationCheckoutAt($reservation);
+                if ($checkoutAt && now()->lt($checkoutAt)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot mark this reservation as No-Show because today\'s scheduled stay has not concluded yet (checkout: ' . $checkoutAt->format('g:i A') . ').',
+                    ], 422);
+                }
+            }
+        }
+
         $reservation->status = $newStatus;
         $reservation->save();
 

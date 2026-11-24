@@ -988,10 +988,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Headcount
         let count = null;
-        const paxMatch = text.match(/\b(\d+)\s*(?:pax|people|persons|guests|heads|ka\s+tawo|tao)\b/i);
+        const paxMatch = text.match(/\b(?:it'?s|its|we\s*are|kami|mi|kaming|just|only|around)?\s*(\d{1,3})\s*(?:guests?|pax|people|persons|heads|ka\s*tawo|tao)\b/i)
+            || text.match(/\b(?:we\s*are|it'?s|its|kami\s*kay|kaming)\s*(\d{1,3})\b/i);
         if (paxMatch) {
             count = parseInt(paxMatch[1], 10);
-        } else if (bookingDraft.step === 'guest_info' && bookingDraft.guest?.email && !emailMatch && !bookingDraft.guest?.guests_count) {
+        } else if ((bookingDraft.step === 'guest_info' || (bookingDraft.amenities && bookingDraft.amenities.length > 0)) && bookingDraft.guest?.email && !emailMatch && !bookingDraft.guest?.guests_count) {
             let candidateText = text;
             if (phoneMatch) candidateText = candidateText.replace(phoneMatch[0], '');
             if (emailMatch) candidateText = candidateText.replace(emailMatch[0], '');
@@ -1023,14 +1024,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Name extraction
         let name = null;
-        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im|it'?s)\s+([A-Za-z\s\.\-']{2,40})/i);
+        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im)\s+([A-Za-z\s\.\-']{2,40})/i);
         if (nameMatch) {
             name = nameMatch[1].trim();
         } else if (((bookingDraft.amenities && bookingDraft.amenities.length > 0) || bookingDraft.step === 'guest_info') && (!bookingDraft.guest || !bookingDraft.guest.name) && !phone && !email) {
             const isAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve|book|both|thats\s+all)\b/i.test(text);
             if (!isAffirmation) {
                 const clean = text.trim().replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ');
-                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done'];
+                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'its', 'it', 'we', 'are', 'said', 'continue', 'my', 'booking'];
                 const words = clean.split(' ').map(w => w.toLowerCase());
                 const hasReserved = words.some(w => nonNameWords.includes(w) || w.startsWith('yes'));
                 if (!hasReserved && /^[A-Za-z\s\.\-']{2,40}$/.test(clean) && words.length >= 1 && words.length <= 4) {
@@ -1043,9 +1044,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (emailMatch) remaining = remaining.replace(emailMatch[0], '');
             if (paxMatch) remaining = remaining.replace(paxMatch[0], '');
             remaining = remaining.replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ').trim();
-            const nonNamePhrases = ['thats all', 'that is all', 'all good', 'thats good', 'that is good', 'only me', 'just me', 'lang', 'po', 'ko', 'na'];
+            const nonNamePhrases = ['thats all', 'that is all', 'all good', 'thats good', 'that is good', 'only me', 'just me', 'lang', 'po', 'ko', 'na', 'its', 'continue my booking', 'i said we are'];
             const lowerRemaining = remaining.toLowerCase();
-            const isNonName = nonNamePhrases.some(p => lowerRemaining.includes(p)) || ['thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done'].includes(lowerRemaining);
+            const isNonName = nonNamePhrases.some(p => lowerRemaining.includes(p)) || ['thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'its', 'it', 'we', 'are', 'said', 'continue', 'booking'].includes(lowerRemaining);
             if (!isNonName && /^[A-Za-z\s\.\-']{2,40}$/.test(remaining) && remaining.split(' ').length <= 5) {
                 name = remaining;
             }

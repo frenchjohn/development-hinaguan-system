@@ -3548,6 +3548,22 @@ window.AppPage['staff_reservations'] = function () {
         const earliestCheckIn = new Date(scheduledStart.getTime() - (60 * 60 * 1000));
         const now = new Date();
 
+        const localYear = now.getFullYear();
+        const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const localDay = String(now.getDate()).padStart(2, '0');
+        const localTodayStr = `${localYear}-${localMonth}-${localDay}`;
+
+        if (dateStr < localTodayStr) {
+            return {
+                canCheckIn: false,
+                isPast: true,
+                earliestCheckIn,
+                scheduledStart,
+                formattedEarliest: '',
+                message: 'This reservation date has already passed. Check-in cannot be confirmed.',
+            };
+        }
+
         if (now < earliestCheckIn) {
             const formattedDate = earliestCheckIn.toLocaleDateString('en-US', {
                 month: 'short',
@@ -3563,6 +3579,7 @@ window.AppPage['staff_reservations'] = function () {
 
             return {
                 canCheckIn: false,
+                isPast: false,
                 earliestCheckIn,
                 scheduledStart,
                 formattedEarliest,
@@ -3572,6 +3589,7 @@ window.AppPage['staff_reservations'] = function () {
 
         return {
             canCheckIn: true,
+            isPast: false,
             earliestCheckIn,
             scheduledStart,
             formattedEarliest: '',
@@ -4219,11 +4237,52 @@ window.AppPage['staff_reservations'] = function () {
 
         const expectedCheckout = formatExpectedCheckout(reservation);
 
-        const todayStr = new Date().toISOString().split('T')[0];
-        const resDateStr = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '';
+        const now = new Date();
+        const localYear = now.getFullYear();
+        const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const localDay = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${localYear}-${localMonth}-${localDay}`;
+
+        let resDateStr = '';
+        const rawResDate = reservation.reservation_date || (reservation.reservation_amenities?.[0]?.start_date);
+        if (rawResDate) {
+            const s = String(rawResDate).trim();
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                resDateStr = s.substring(0, 10);
+            } else {
+                const dt = new Date(s);
+                if (!isNaN(dt.getTime())) {
+                    const y = dt.getFullYear();
+                    const m = String(dt.getMonth() + 1).padStart(2, '0');
+                    const d = String(dt.getDate()).padStart(2, '0');
+                    resDateStr = `${y}-${m}-${d}`;
+                }
+            }
+        }
+
         const statusLower = String(reservation.status || '').toLowerCase();
         const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
         const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
+
+        // No-Show is enabled ONLY if the scheduled reservation date is in the past (< todayStr),
+        // or if today, after expected checkout time has passed
+        let isPastReservationDate = Boolean(resDateStr && resDateStr < todayStr);
+        if (resDateStr && resDateStr === todayStr) {
+            if (reservation.checkout_at) {
+                const coDate = new Date(reservation.checkout_at);
+                if (!isNaN(coDate.getTime()) && now >= coDate) {
+                    isPastReservationDate = true;
+                }
+            } else {
+                const slot = String(reservation.start_slot || '').toLowerCase();
+                if (!slot.includes('night')) {
+                    const endOfDaytime = new Date(localYear, now.getMonth(), now.getDate(), 17, 0, 0);
+                    if (now >= endOfDaytime) {
+                        isPastReservationDate = true;
+                    }
+                }
+            }
+        }
 
         const scheduleCheck = getReservationScheduleCheck(reservation);
 
@@ -4614,7 +4673,9 @@ window.AppPage['staff_reservations'] = function () {
                             <i class="bi bi-x-circle text-xs"></i>
                             <span>Cancel</span>
                         </button>
-                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm active:scale-[0.98]" id="reservationNoShowBtn" title="Mark this guest as No-Show">
+                        <button type="button" class="${isPastReservationDate
+                            ? 'cursor-pointer rounded-xl border-0 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white shadow-sm active:scale-[0.98]'
+                            : 'cursor-not-allowed rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 shadow-none opacity-60'} px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5" id="reservationNoShowBtn" ${isPastReservationDate ? '' : 'disabled'} title="${isPastReservationDate ? 'Mark this guest as No-Show' : 'No-Show is disabled until the scheduled reservation date has passed'}">
                             <i class="bi bi-person-x text-xs"></i>
                             <span>No-Show</span>
                         </button>
@@ -4693,19 +4754,35 @@ window.AppPage['staff_reservations'] = function () {
                 `;
             } else if (isPendingOrConfirmed) {
                 if (!scheduleCheck.canCheckIn) {
-                    rightActionsHtml = `
-                        <div class="flex items-center gap-2.5 ml-auto shrink-0 flex-wrap justify-end" id="reservationModalFooterRight">
-                            <div class="text-[11px] text-amber-700 dark:text-amber-300 font-medium hidden sm:inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-lg">
-                                <i class="bi bi-clock-history text-xs"></i>
-                                <span>Check-in opens: ${escapeHtml(scheduleCheck.formattedEarliest)}</span>
+                    if (scheduleCheck.isPast) {
+                        rightActionsHtml = `
+                            <div class="flex items-center gap-2.5 ml-auto shrink-0 flex-wrap justify-end" id="reservationModalFooterRight">
+                                <div class="text-[11px] text-rose-700 dark:text-rose-300 font-medium hidden sm:inline-flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-2.5 py-1 rounded-lg">
+                                    <i class="bi bi-exclamation-triangle text-xs"></i>
+                                    <span>Reservation date has passed</span>
+                                </div>
+                                <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                                <button type="button" disabled class="cursor-not-allowed opacity-60 rounded-xl border border-gray-300/80 bg-gray-200 dark:bg-white/10 dark:border-white/15 dark:text-gray-400 px-7 py-2.5 text-xs font-bold text-gray-500 shadow-none inline-flex items-center gap-2 select-none" id="reservationModalConfirmBtn" title="${escapeHtml(scheduleCheck.message)}">
+                                    <i class="bi bi-slash-circle text-sm"></i>
+                                    <span>Confirm</span>
+                                </button>
                             </div>
-                            <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
-                            <button type="button" disabled class="cursor-not-allowed opacity-60 rounded-xl border border-gray-300/80 bg-gray-200 dark:bg-white/10 dark:border-white/15 dark:text-gray-400 px-6 py-2.5 text-xs font-bold text-gray-500 shadow-none inline-flex items-center gap-2 select-none" id="reservationModalConfirmBtn" title="${escapeHtml(scheduleCheck.message)}">
-                                <i class="bi bi-clock-history text-sm"></i>
-                                <span>Not Scheduled Yet</span>
-                            </button>
-                        </div>
-                    `;
+                        `;
+                    } else {
+                        rightActionsHtml = `
+                            <div class="flex items-center gap-2.5 ml-auto shrink-0 flex-wrap justify-end" id="reservationModalFooterRight">
+                                <div class="text-[11px] text-amber-700 dark:text-amber-300 font-medium hidden sm:inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-lg">
+                                    <i class="bi bi-clock-history text-xs"></i>
+                                    <span>Check-in opens: ${escapeHtml(scheduleCheck.formattedEarliest)}</span>
+                                </div>
+                                <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                                <button type="button" disabled class="cursor-not-allowed opacity-60 rounded-xl border border-gray-300/80 bg-gray-200 dark:bg-white/10 dark:border-white/15 dark:text-gray-400 px-6 py-2.5 text-xs font-bold text-gray-500 shadow-none inline-flex items-center gap-2 select-none" id="reservationModalConfirmBtn" title="${escapeHtml(scheduleCheck.message)}">
+                                    <i class="bi bi-clock-history text-sm"></i>
+                                    <span>Not Scheduled Yet</span>
+                                </button>
+                            </div>
+                        `;
+                    }
                 } else {
                     rightActionsHtml = `
                         <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
@@ -4777,6 +4854,12 @@ window.AppPage['staff_reservations'] = function () {
                 noShowBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    if (!isPastReservationDate) {
+                        if (typeof showToast === 'function') {
+                            showToast('Cannot mark as No-Show. This reservation date has not passed yet.', 'warning');
+                        }
+                        return;
+                    }
                     const resDisplay = `#${formatReservationId(reservation.id)} - ${reservation.booker_name || 'Guest'}`;
                     showConfirmModal(
                         'Mark as No-Show?',
