@@ -263,7 +263,14 @@ class GuestChatbotController extends Controller
             . "       * PREVIOUSLY RECORDED DATE IN THE PAST (CRITICAL):\n"
             . "         If the guest returns or continues a conversation where their previously selected/recorded date has ALREADY PASSED (e.g. they chose November 23 earlier, but today is November 24 onwards):\n"
             . "         STRICTLY DEMAND THAT CONTINUING WITH THIS DATE IS IMPOSSIBLE! Under NO circumstances may you confirm, continue, or check availability for that expired date. State clearly, warmly, and firmly that their recorded date has already passed and reservations for past dates are impossible. Ask what upcoming date (from today {$todayReadable} onwards) they would like to visit!\n"
-            . "       * If the guest proposes or mentions a date whose month/day has already passed this year (e.g. 'sept 25' or 'august 10' when today is November {$currentYear}):\n"
+            . "       * SAME-DAY OVERNIGHT / NIGHT TOUR STAYS (CRITICAL):
+         - Hinaguan Nature Park offers Night Tours / Overnight Stays from 6:00 PM in the evening until 8:00 AM the next morning.
+         - If a guest is booking a Night Tour or Overnight for 'today', 'tonight', 'karon', or the current date ({$todayReadable}):
+           The schedule is strictly Nighttime (6:00 PM – 8:00 AM). It is NOT Daytime.
+           Even in the late afternoon or evening of today (e.g. 5:00 PM, 6:00 PM, 7:00 PM, etc.), tonight's Night Tour is ACTIVE and open to book for tonight! NEVER claim that the schedule is finished or has ended ('nahuman na')!
+           Once the date ({$todayReadable}) and session slot ('Nighttime' / Night Tour / Overnight) have been agreed upon, KEEP THEM PERMANENTLY LOCKED IN!
+           When the guest subsequently selects an amenity or unit number (e.g. 'kanang 4 nalang', 'Cottage 4', 'A-House 2'), KEEP the confirmed date and Nighttime slot intact and seamlessly proceed to ask for their Full Name! NEVER ask for the date or session again once already confirmed!
+       * If the guest proposes or mentions a date whose month/day has already passed this year (e.g. 'sept 25' or 'august 10' when today is November {$currentYear}):\n"
             . "         NEVER accept it for {$currentYear} or say it sounds like a wonderful date!\n"
             . "         Instead, warmly clarify if they meant NEXT YEAR ({$nextYear}):\n"
             . "         'September 25th for this year ({$currentYear}) has already passed! Did you mean September 25, {$nextYear} (next year), or were you thinking of another upcoming date? Also, will that be for Daytime (8:00 AM – 5:00 PM) or Nighttime (6:00 PM – 8:00 AM)?'\n"
@@ -1127,6 +1134,19 @@ class GuestChatbotController extends Controller
                     return "Napakagandang petsa po ng **{$tFmt}** para sa inyong **{$amStr}** sa Hinaguan Nature Park! 🌿 Sigurado po ba kayong nais ninyong piliin ang {$tFmt} para sa inyong pagbisita? At nais niyo po ba ng **Day Tour**, **Night Tour**, o **24-Hour Stay**? ☀️🌙";
                 } else {
                     return "{$tFmt} sounds like a wonderful date for your **{$amStr}** at Hinaguan Nature Park! 🌿 Are you sure you would like to pick {$tFmt} for your visit? Also, would you prefer a **Day Tour**, **Night Tour**, or **24-Hour Stay**? ☀️🌙";
+                }
+            }
+
+            $isNightQuery = ($bookingDraft['startSlot'] ?? ($bookingDraft['tentativeSlot'] ?? '')) === 'Nighttime'
+                || (bool) preg_match('/\b(?:night|nighttime|overnight|gabii|gabi)\b/i', $msgLower);
+
+            if ($isNightQuery) {
+                if ($isBisaya) {
+                    return "Sige po 😊 Ang overnight ninyo karong gabii, {$tFmt}, sa Night Tour ba? Kumpirma lang, ug tabangan tamo pagpili og available nga amenity.";
+                } elseif ($isTagalog) {
+                    return "Sige po 😊 Ang overnight ninyo ngayong gabi, {$tFmt}, sa Night Tour po ba? Pakikumpirma lamang po, at tutulungan ko kayong pumili ng available na amenity.";
+                } else {
+                    return "Sure thing! 😊 Your overnight stay tonight, {$tFmt}, is for a Night Tour, right? Just confirm, and I'll help you pick an available amenity.";
                 }
             }
 
@@ -2189,12 +2209,25 @@ class GuestChatbotController extends Controller
             }
 
             if ($startDate && $startDate >= $todayStr) {
-                $draft['tentativeDate'] = $startDate;
-                $draft['tentativeEndDate'] = $endDate ?: $startDate;
-                if (preg_match('/24-?hour|overnight/i', $reply)) {
-                    $draft['tentativeSlot'] = 'Daytime';
-                    $draft['tentativeEndSlot'] = 'Daytime';
-                    $draft['tentativeStayType'] = '24_hours';
+                if (empty($draft['tentativeDate'])) {
+                    $draft['tentativeDate'] = $startDate;
+                    $draft['tentativeEndDate'] = $endDate ?: $startDate;
+                }
+
+                $hasPreExistingNightSlot = ($draft['tentativeSlot'] ?? ($draft['startSlot'] ?? '')) === 'Nighttime';
+                $isOfferingOptions = (bool) preg_match('/(?:prefer|choose|pili|gusto|option).*?(?:day.*night|night.*day|24-?hour)/i', $reply)
+                    || (preg_match('/day\s*tour/i', $reply) && preg_match('/night\s*tour/i', $reply));
+
+                if (!$hasPreExistingNightSlot && !$isOfferingOptions) {
+                    if (preg_match('/24-?hour|24\s*hours|24\s*oras/i', $reply)) {
+                        $draft['tentativeSlot'] = 'Daytime';
+                        $draft['tentativeEndSlot'] = 'Daytime';
+                        $draft['tentativeStayType'] = '24_hours';
+                    } elseif (preg_match('/\b(?:night|nighttime|overnight|gabii|gabi)\b/i', $reply)) {
+                        $draft['tentativeSlot'] = 'Nighttime';
+                        $draft['tentativeEndSlot'] = 'Nighttime';
+                        $draft['tentativeStayType'] = 'night';
+                    }
                 }
                 $draft['active'] = true;
             }
@@ -2279,7 +2312,8 @@ class GuestChatbotController extends Controller
             if (empty($draft['startDate'])) {
                 $foundStartDate = null;
                 $foundEndDate = null;
-                $is24Hours = (bool) preg_match('/24-?hour|overnight/i', $asstText);
+                $is24Hours = (bool) preg_match('/24-?hour|24\s*hours|24\s*oras/i', $asstText);
+                $isNightOrOvernight = (bool) preg_match('/\b(?:night|nighttime|overnight|gabii|gabi)\b/i', $asstText);
 
                 if (preg_match('/arriving\s+today/i', $asstText) || preg_match('/\btoday,\s*[A-Za-z]+\s+\d+/i', $asstText)) {
                     $foundStartDate = $todayStr;
@@ -2319,14 +2353,13 @@ class GuestChatbotController extends Controller
                         $draft['startSlot'] = 'Daytime';
                         $draft['endSlot'] = 'Daytime';
                         $draft['stayType'] = '24_hours';
+                    } elseif ($isNightOrOvernight) {
+                        $draft['startSlot'] = 'Nighttime';
+                        $draft['endSlot'] = 'Nighttime';
+                        $draft['stayType'] = 'night';
                     } else {
-                        if (preg_match('/\b(?:night|nighttime|overnight)\b/i', $asstText)) {
-                            $draft['startSlot'] = 'Nighttime';
-                            $draft['endSlot'] = 'Nighttime';
-                        } else {
-                            $draft['startSlot'] = 'Daytime';
-                            $draft['endSlot'] = 'Daytime';
-                        }
+                        $draft['startSlot'] = 'Daytime';
+                        $draft['endSlot'] = 'Daytime';
                     }
                     $draft['slot'] = $draft['startSlot'];
                     $draft['tentativeDate'] = null;
@@ -2886,7 +2919,7 @@ class GuestChatbotController extends Controller
      *   is_keep_only: bool
      * }
      */
-    private function extractAmenityActionsFromMessage(string $message): array
+    private function extractAmenityActionsFromMessage(string $message, ?array $draft = null, array $history = []): array
     {
         if ($this->detectNonExistentAmenity($message) !== null) {
             return [
@@ -3083,6 +3116,67 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // 7. Shorthand unit picking when a category is in active context
+        // e.g. "sge kanang 4 nalang", "kanang 4", "number 4", "4 nalang"
+        if (empty($allFound)) {
+            $unitNum = null;
+            if (preg_match('/\b(?:kanang\s+|number\s+|unit\s+|ang\s+)?([1-8])\s*(?:nalang|lang|nalng)?\b/i', $message, $numM)) {
+                $unitNum = (int) $numM[1];
+            } elseif (preg_match('/\b(?:kanang\s+)?(usa|duha|tulo|upat|kwatro|lima|unom|pito|walo)\s*(?:nalang|lang|nalng)?\b/i', $message, $wNumM)) {
+                $wordMap = ['usa' => 1, 'duha' => 2, 'tulo' => 3, 'upat' => 4, 'kwatro' => 4, 'lima' => 5, 'unom' => 6, 'pito' => 7, 'walo' => 8];
+                $unitNum = $wordMap[strtolower($wNumM[1])] ?? null;
+            }
+
+            if ($unitNum !== null && $unitNum >= 1 && $unitNum <= 8) {
+                // Find active category from draft or recent history
+                $activeCategory = null;
+                if (!empty($draft['tentativeCategory'])) {
+                    $activeCategory = $draft['tentativeCategory'];
+                } elseif (!empty($draft['tentativeAmenity'])) {
+                    $activeCategory = match (true) {
+                        stripos($draft['tentativeAmenity'], 'cottage') !== false => 'Cottage',
+                        stripos($draft['tentativeAmenity'], 'payag') !== false => 'Payag',
+                        stripos($draft['tentativeAmenity'], 'a-house') !== false || stripos($draft['tentativeAmenity'], 'ahouse') !== false => 'A-House',
+                        default => null,
+                    };
+                }
+
+                if (!$activeCategory && !empty($history)) {
+                    // Check recent assistant turn
+                    foreach (array_reverse($history) as $turn) {
+                        $role = $turn['role'] ?? '';
+                        $content = $turn['content'] ?? ($turn['text'] ?? '');
+                        if ($role === 'assistant' && !empty($content)) {
+                            if (preg_match('/\b(?:cottage|cottages)\b/i', $content)) {
+                                $activeCategory = 'Cottage';
+                                break;
+                            } elseif (preg_match('/\b(?:payag|payags)\b/i', $content)) {
+                                $activeCategory = 'Payag';
+                                break;
+                            } elseif (preg_match('/\b(?:a-?house|a-?houses|cabin)\b/i', $content)) {
+                                $activeCategory = 'A-House';
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if ($activeCategory) {
+                    $candName = "{$activeCategory} {$unitNum}";
+                    $mModel = Amenity::with('benefits')->where('status', true)->where('amenities_name', $candName)->first();
+                    if ($mModel && !in_array($mModel->id, $foundIds)) {
+                        $foundIds[] = $mModel->id;
+                        $allFound[] = [
+                            'model' => $mModel,
+                            'name' => $mModel->amenities_name,
+                            'offset' => 0,
+                            'text' => $candName,
+                        ];
+                    }
+                }
+            }
+        }
+
         $wanted = [];
         $removed = [];
         $isSwap = false;
@@ -3138,9 +3232,9 @@ class GuestChatbotController extends Controller
     /**
      * Extract all wanted amenities mentioned in a message (excluding negated/removed amenities).
      */
-    private function extractAllAmenitiesFromMessage(string $message): array
+    private function extractAllAmenitiesFromMessage(string $message, ?array $draft = null, array $history = []): array
     {
-        return $this->extractAmenityActionsFromMessage($message)['wanted'];
+        return $this->extractAmenityActionsFromMessage($message, $draft, $history)['wanted'];
     }
 
     /**
@@ -3217,7 +3311,7 @@ class GuestChatbotController extends Controller
         if (empty($dateFound)) {
             if (preg_match('/\b(?:tomorrow|ugma|bukas)\b/i', $msgLower)) {
                 $dateFound = $now->copy()->addDay()->toDateString();
-            } elseif (preg_match('/\b(?:today|tonight|karon|ngayong\s+araw)\b/i', $msgLower)) {
+            } elseif (preg_match('/\b(?:today|tonight|karon|ron|dha\s+ron|diha\s+ron|ngayong\s+araw|karong\s+adlawa|karong\s+gabii|unyang\s+gabii)\b/i', $msgLower)) {
                 $dateFound = $now->toDateString();
             } elseif (preg_match('/\byesterday\b/i', $msgLower)) {
                 $isPastDate = true;
@@ -3294,7 +3388,7 @@ class GuestChatbotController extends Controller
         }
 
         // 3. Pre-extract amenities from current user message to assist conversational cross-confirmation
-        $matchedAmenities = $this->extractAllAmenitiesFromMessage($userMessage);
+        $matchedAmenities = $this->extractAllAmenitiesFromMessage($userMessage, $draft, $history);
         $hasAmenityMention = !empty($matchedAmenities);
 
         // Check date confirmation vs tentative inquiry
@@ -3313,7 +3407,7 @@ class GuestChatbotController extends Controller
             $draft['active'] = true;
             $draft['startDate'] = $draft['tentativeDate'];
             $draft['endDate'] = $draft['tentativeEndDate'] ?? $draft['startDate'];
-            $draft['startSlot'] = $slotFound ?: ($draft['tentativeSlot'] ?? 'Daytime');
+            $draft['startSlot'] = $slotFound ?: ($draft['tentativeSlot'] ?? ($draft['startSlot'] ?? 'Daytime'));
             $draft['endSlot'] = $draft['tentativeEndSlot'] ?? $draft['startSlot'];
             $draft['slot'] = $draft['startSlot'];
             if (!empty($draft['tentativeStayType'])) {
@@ -3369,6 +3463,11 @@ class GuestChatbotController extends Controller
                 $draft['active'] = true;
                 $draft['tentativeDate'] = $dateFound;
                 $draft['tentativeSlot'] = $slotFound ?: ($draft['tentativeSlot'] ?? 'Daytime');
+                if ($slotFound) {
+                    $draft['startSlot'] = $slotFound;
+                    $draft['endSlot'] = $slotFound;
+                    $draft['slot'] = $slotFound;
+                }
                 if (empty($draft['startDate'])) {
                     $draft['step'] = 'date_slot';
                 }
@@ -3379,10 +3478,18 @@ class GuestChatbotController extends Controller
             $draft['slot'] = $slotFound;
         } elseif ($slotFound && !empty($draft['tentativeDate'])) {
             $draft['tentativeSlot'] = $slotFound;
+            $draft['startSlot'] = $slotFound;
+            $draft['endSlot'] = $slotFound;
+            $draft['slot'] = $slotFound;
+        } elseif ($slotFound) {
+            $draft['startSlot'] = $slotFound;
+            $draft['endSlot'] = $slotFound;
+            $draft['slot'] = $slotFound;
+            $draft['tentativeSlot'] = $slotFound;
         }
 
         // 3. Amenity handling (Make sure before recording, support multiple amenities, removals, additions, switches!)
-        $userAmenityActions = $this->extractAmenityActionsFromMessage($userMessage);
+        $userAmenityActions = $this->extractAmenityActionsFromMessage($userMessage, $draft, $history);
 
         // 3.0 If user explicitly requested a 1-to-1 swap (e.g. "change payag 6 into payag 4", "replace payag 6 with payag 4")
         if ($userAmenityActions['is_swap'] && $userAmenityActions['swap_from'] && $userAmenityActions['swap_to']) {
@@ -3904,7 +4011,7 @@ class GuestChatbotController extends Controller
             $pax = $hasPax ? (int) $bookingDraft['guest']['guests_count'] : null;
             $tentativeAm = $bookingDraft['tentativeAmenity'] ?? null;
 
-            $msgActions = $this->extractAmenityActionsFromMessage($message);
+            $msgActions = $this->extractAmenityActionsFromMessage($message, $bookingDraft);
             $stageContext = '';
             if ($msgActions['is_swap'] && $msgActions['swap_from'] && $msgActions['swap_to']) {
                 $swapFrom = $msgActions['swap_from'];

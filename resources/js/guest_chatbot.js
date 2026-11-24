@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let endDate = null;
 
         // Relative dates
-        if (/\b(?:today|karon|karong\s+adlawa|ngayon)\b/i.test(text)) {
+        if (/\b(?:today|tonight|karon|ron|dha\s+ron|diha\s+ron|ngayong\s+araw|karong\s+adlawa|karong\s+gabii|unyang\s+gabii|ngayon)\b/i.test(text)) {
             const d = new Date(referenceDate);
             startDate = toIso(d);
             endDate = startDate;
@@ -3941,7 +3941,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (!isSwapAction && /(?:cottage|payag|a-?house|cabin|function\s*hall|hall)\s*\d*/i.test(lower)) {
+        if (!isSwapAction && (/(?:cottage|payag|a-?house|cabin|function\s*hall|hall)\s*\d*/i.test(lower) || /\b(?:kanang\s+|number\s+|unit\s+|ang\s+)?([1-8])\s*(?:nalang|lang|nalng)?\b/i.test(lower))) {
             const isTentativeAm = /\b(?:think|better|right\??|what\s+about|how\s+about|is\s+it\s+good|availab|pwede\s+ba|pwede\s+kaha|magkano|how\s+much|pila|unsa|ano|\?|siguro|tingin\s+mo|nindot\s+ba|can\s+u\s+add|add\s+more|like)\b/i.test(lower)
                 || (!isExplicitSwitch && !isExplicitAdd && !/\b(?:yes|sure|reserve|book|i'?ll\s+take|i\s+will\s+take|let'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|add\s+(?:cottage|payag|a-?house|it)|switch\s+to)\b/i.test(lower));
 
@@ -3974,6 +3974,35 @@ document.addEventListener('DOMContentLoaded', () => {
                             foundMatches.push(match);
                         }
                     });
+                }
+
+                // Shorthand unit picking when a category is in active context (e.g. "kanang 4 nalang")
+                if (foundMatches.length === 0) {
+                    const unitMatch = lower.match(/\b(?:kanang\s+|number\s+|unit\s+|ang\s+)?([1-8])\s*(?:nalang|lang|nalng)?\b/i);
+                    if (unitMatch) {
+                        const unitNum = unitMatch[1];
+                        let activeCat = bookingDraft.tentativeCategory || '';
+                        if (!activeCat && bookingDraft.tentativeAmenity) {
+                            if (/cottage/i.test(bookingDraft.tentativeAmenity)) activeCat = 'cottage';
+                            else if (/payag/i.test(bookingDraft.tentativeAmenity)) activeCat = 'payag';
+                            else if (/a-?house/i.test(bookingDraft.tentativeAmenity)) activeCat = 'ahouse';
+                        }
+                        if (!activeCat && chatMessages) {
+                            const lastBotBubble = chatMessages.querySelector('.bot-message:last-of-type, [data-role="assistant"]:last-of-type');
+                            const botText = lastBotBubble?.textContent || '';
+                            if (/cottage/i.test(botText)) activeCat = 'cottage';
+                            else if (/payag/i.test(botText)) activeCat = 'payag';
+                            else if (/a-?house/i.test(botText)) activeCat = 'ahouse';
+                        }
+                        if (activeCat) {
+                            const target = (activeCat.includes('house') ? 'ahouse' : activeCat) + unitNum;
+                            const match = cachedAmenities.find(a => a.name.toLowerCase().replace(/[-\s]/g, '') === target);
+                            if (match && !seenIds.has(String(match.id))) {
+                                seenIds.add(String(match.id));
+                                foundMatches.push(match);
+                            }
+                        }
+                    }
                 }
 
                 // Filter out any match that is negated in rawMessage

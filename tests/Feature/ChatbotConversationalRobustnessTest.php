@@ -115,6 +115,17 @@ class ChatbotConversationalRobustnessTest extends TestCase
             'free_pool' => true,
         ]);
 
+        Amenity::create([
+            'id' => '7',
+            'amenities_name' => 'Cottage 4',
+            'category' => 'Cottages',
+            'daytime_price' => 200.00,
+            'nighttime_price' => 200.00,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => 10,
+            'status' => true,
+        ]);
+
         // Fake LLMs to simulate fallback or consistent local intelligence
         Http::fake([
             'https://openrouter.ai/*' => Http::response(['error' => 'Simulated offline'], 500),
@@ -1021,5 +1032,81 @@ class ChatbotConversationalRobustnessTest extends TestCase
             str_contains(strtolower($reply2), 'sobra'),
             'Summary must include notice about extra head handled on arrival'
         );
+    }
+
+    /**
+     * Test overnight tonight stays locked as Nighttime and subsequent unit selection does not forget date or claim daytime ended.
+     */
+    public function test_overnight_tonight_remains_nighttime_and_unit_picking_does_not_forget_date_or_session(): void
+    {
+        $todayStr = now()->toDateString();
+
+        // Turn 1: User says "overnight ko dha ron"
+        $resp1 = $this->postJson('/guest-chatbot', [
+            'message' => 'overnight ko dha ron',
+            'booking_draft' => [
+                'active' => false,
+                'amenities' => [],
+            ],
+            'history' => [],
+        ]);
+        $resp1->assertOk();
+        $draft1 = $resp1->json('booking_draft');
+        $reply1 = $resp1->json('reply');
+
+        // Slot must be Nighttime (NOT Daytime)
+        $slot1 = $draft1['startSlot'] ?? ($draft1['tentativeSlot'] ?? '');
+        $this->assertEquals('Nighttime', $slot1, 'Overnight must map to Nighttime');
+
+        // Turn 2: User confirms "oo"
+        $history1 = [
+            ['role' => 'user', 'content' => 'overnight ko dha ron'],
+            ['role' => 'assistant', 'content' => 'Sige po 😊 Ang overnight ninyo karong gabii, ' . now()->format('F j, Y') . ', sa Night Tour ba? Kumpirma lang, ug tabangan tamo pagpili og available nga amenity.'],
+        ];
+
+        $resp2 = $this->postJson('/guest-chatbot', [
+            'message' => 'oo',
+            'booking_draft' => $draft1,
+            'history' => $history1,
+        ]);
+        $resp2->assertOk();
+        $draft2 = $resp2->json('booking_draft');
+
+        $this->assertEquals($todayStr, $draft2['startDate']);
+        $this->assertEquals('Nighttime', $draft2['startSlot']);
+
+        // Turn 3 & 4: User asks about cottages, then selects "sge kanang 4 nalang"
+        $history2 = array_merge($history1, [
+            ['role' => 'user', 'content' => 'oo'],
+            ['role' => 'assistant', 'content' => 'Sige po—Night Tour karong gabii, ' . now()->format('F j, Y') . ' 🌙 Unsang amenity imong gusto? Ang rates sa gabii kay regular A-House P500, aircon A-House P1,000, Cottage P200, Payag P300, ug Function Hall P10,000...'],
+            ['role' => 'user', 'content' => 'unsay chada anang 6 kabuok'],
+            ['role' => 'assistant', 'content' => 'Ang Cottage 1-6 pareho og klase—open-air, naay lamesa ug mga lingkuranan, kasya og 1-10 ka tawo, ug P200 matag usa. Wala koy detalye nga nagpalahi kung asa ang pinakanindot, pero available ang tanan; naa kay ganahang numero?'],
+        ]);
+
+        $resp4 = $this->postJson('/guest-chatbot', [
+            'message' => 'sge kanang 4 nalang',
+            'booking_draft' => $draft2,
+            'history' => $history2,
+        ]);
+        $resp4->assertOk();
+        $draft4 = $resp4->json('booking_draft');
+        $reply4 = $resp4->json('reply');
+
+        // Date and session must NOT be forgotten!
+        $this->assertEquals($todayStr, $draft4['startDate'], 'Must keep confirmed date');
+        $this->assertEquals('Nighttime', $draft4['startSlot'], 'Must keep confirmed Nighttime slot');
+
+        // Cottage 4 must be captured
+        $this->assertNotEmpty($draft4['amenities'], 'Must lock in Cottage 4');
+        $this->assertEquals('Cottage 4', $draft4['amenities'][0]['name']);
+
+        // Step should be guest_info asking for name
+        $this->assertEquals('guest_info', $draft4['step']);
+        $this->assertEquals('name', $draft4['guest_field']);
+
+        // Reply must NOT say daytime ended or ask for date again!
+        $this->assertStringNotContainsString('nahuman na', strtolower($reply4));
+        $this->assertStringNotContainsString('daytime schedule', strtolower($reply4));
+        $this->assertStringNotContainsString('unsang umaabot nga petsa', strtolower($reply4));
     }
 }
