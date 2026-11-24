@@ -1024,14 +1024,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Name extraction
         let name = null;
-        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im)\s+([A-Za-z\s\.\-']{2,40})/i);
+        const nameMatch = text.match(/(?:my\s+name\s+is|name\s*(?:is|:)?|ako\s+si|i\s+am|im|it'?s|its)\s+([A-Za-z\s\.\-']{2,40})/i);
         if (nameMatch) {
             name = nameMatch[1].trim();
         } else if (((bookingDraft.amenities && bookingDraft.amenities.length > 0) || bookingDraft.step === 'guest_info') && (!bookingDraft.guest || !bookingDraft.guest.name) && !phone && !email) {
             const isAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve|book|both|thats\s+all)\b/i.test(text);
             if (!isAffirmation) {
-                const clean = text.trim().replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ');
-                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'its', 'it', 'we', 'are', 'said', 'continue', 'my', 'booking'];
+                let clean = text.trim().replace(/^(?:it'?s|its)\s+/i, '').replace(/[,\/\-\|]/g, ' ').replace(/\s+/g, ' ');
+                const nonNameWords = ['hi', 'hello', 'hey', 'book', 'yes', 'no', 'sure', 'ok', 'okay', 'payag', 'cottage', 'ahouse', 'house', 'function', 'hall', 'daytime', 'nighttime', 'morning', 'night', 'today', 'tomorrow', 'view', 'show', 'cancel', 'proceed', 'reserve', 'reservation', 'pax', 'guest', 'guests', 'person', 'persons', 'people', 'thats', 'that', 'all', 'good', 'lang', 'po', 'ko', 'only', 'na', 'done', 'it', 'we', 'are', 'said', 'continue', 'my', 'booking'];
                 const words = clean.split(' ').map(w => w.toLowerCase());
                 const hasReserved = words.some(w => nonNameWords.includes(w) || w.startsWith('yes'));
                 if (!hasReserved && /^[A-Za-z\s\.\-']{2,40}$/.test(clean) && words.length >= 1 && words.length <= 4) {
@@ -3800,18 +3800,91 @@ document.addEventListener('DOMContentLoaded', () => {
         // Secretly extract Amenity if named (e.g. "Payag 2", "A-House 1", "Cottage 3")
         const lower = rawMessage.toLowerCase();
         const hasExistingAmenities = bookingDraft.amenities && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0;
+
+        // Detect amenity removal / negation (e.g. "remove function hall", "no function hall", "without function hall")
+        let removedAnyAmenity = false;
+        if (cachedAmenities && Array.isArray(cachedAmenities) && hasExistingAmenities) {
+            const removedIds = new Set();
+            cachedAmenities.forEach(a => {
+                const namePattern = a.name.replace(/[-]/g, '\\s*[-]?\\s*');
+                const negRegex = new RegExp('(?:no|not|remove|drop|cancel|delete|exclude|without|don\'?t\\s+want|instead\\s+of|ayaw|dili|wag|tangtanga|tanggalin)\\s+(?:the\\s+)?' + namePattern, 'i');
+                if (negRegex.test(rawMessage)) {
+                    removedIds.add(String(a.id));
+                }
+            });
+            if (removedIds.size > 0) {
+                removedAnyAmenity = true;
+                bookingDraft.amenities = bookingDraft.amenities.filter(am => !removedIds.has(String(am.id)));
+                if (bookingDraft.tentativeAmenities && Array.isArray(bookingDraft.tentativeAmenities)) {
+                    bookingDraft.tentativeAmenities = bookingDraft.tentativeAmenities.filter(name => {
+                        const m = cachedAmenities.find(ca => ca.name === name);
+                        return !m || !removedIds.has(String(m.id));
+                    });
+                    bookingDraft.tentativeAmenity = bookingDraft.tentativeAmenities.join(', ');
+                }
+                bookingDraft.amenity = bookingDraft.amenities.length > 0 ? bookingDraft.amenities[0] : null;
+                saveBookingDraft();
+            }
+        }
+
         const isExplicitAdd = /\b(?:add\s+(?:more|another|additional)?|dugang|dagdag|plus|also)\b/i.test(lower)
             && !/\b(?:can\s+u|pwede\s+ba|pwede\s+kaha|is\s+it|\?)\b/i.test(lower);
-        const isExplicitSwitch = /\b(?:switch\s+(?:to)?|change\s+to|palit|replace|instead)\b/i.test(lower)
+        const isExplicitSwitch = (/\b(?:switch\s+(?:to)?|change\s+to|palit|replace|instead)\b/i.test(lower) || /\b(?:keep\s+only|just\s+keep)\b/i.test(lower) || removedAnyAmenity)
             && !/\b(?:can\s+u|pwede\s+ba|pwede\s+kaha|is\s+it|\?)\b/i.test(lower);
 
-        if (/(?:cottage|payag|a-?house|cabin|function\s*hall|hall)\s*\d*/i.test(lower)) {
+        // Detect explicit swap pattern: "change [the] A into/to B", "replace A with B", etc.
+        const swapRegex = /\b(?:change|replace|switch|swap|palita|palitan)\s+(?:the\s+|ang\s+)?(.+?)\s+(?:into|with|to|ug|ng)\s+(.+?)(?:pls|please|\.|\!|\?|$)/i;
+        const swapMatch = rawMessage.match(swapRegex);
+        let isSwapAction = false;
+        if (swapMatch && cachedAmenities && Array.isArray(cachedAmenities)) {
+            const findAmenity = (snippet) => {
+                const m = snippet.match(/\b(payag|a-?house|cottage)\s*(\d+)\b/i);
+                if (m) {
+                    const cat = m[1].toLowerCase().replace(/[-\s]/g, '');
+                    const target = (cat.includes('house') ? 'ahouse' : cat) + m[2];
+                    return cachedAmenities.find(a => a.name.toLowerCase().replace(/[-\s]/g, '') === target);
+                }
+                if (/function\s*hall/i.test(snippet)) {
+                    return cachedAmenities.find(a => /function\s*hall/i.test(a.name));
+                }
+                return null;
+            };
+
+            const fromAm = findAmenity(swapMatch[1]);
+            const toAm = findAmenity(swapMatch[2]);
+            if (fromAm && toAm) {
+                isSwapAction = true;
+                bookingDraft.active = true;
+                const fromId = String(fromAm.id);
+                if (bookingDraft.amenities && bookingDraft.amenities.length > 0) {
+                    let swapped = false;
+                    for (let i = 0; i < bookingDraft.amenities.length; i++) {
+                        if (String(bookingDraft.amenities[i].id) === fromId || bookingDraft.amenities[i].name.toLowerCase().includes(fromAm.name.toLowerCase())) {
+                            bookingDraft.amenities[i] = toAm;
+                            swapped = true;
+                            break;
+                        }
+                    }
+                    if (!swapped) {
+                        bookingDraft.amenities.push(toAm);
+                    }
+                } else {
+                    bookingDraft.amenities = [toAm];
+                }
+                bookingDraft.amenity = bookingDraft.amenities[0];
+                bookingDraft.tentativeAmenity = null;
+                bookingDraft.tentativeAmenities = null;
+                saveBookingDraft();
+            }
+        }
+
+        if (!isSwapAction && /(?:cottage|payag|a-?house|cabin|function\s*hall|hall)\s*\d*/i.test(lower)) {
             const isTentativeAm = /\b(?:think|better|right\??|what\s+about|how\s+about|is\s+it\s+good|availab|pwede\s+ba|pwede\s+kaha|magkano|how\s+much|pila|unsa|ano|\?|siguro|tingin\s+mo|nindot\s+ba|can\s+u\s+add|add\s+more|like)\b/i.test(lower)
-                || !/\b(?:yes|sure|reserve|book|i'?ll\s+take|i\s+will\s+take|let'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|add\s+(?:cottage|payag|a-?house|it)|switch\s+to)\b/i.test(lower);
+                || (!isExplicitSwitch && !isExplicitAdd && !/\b(?:yes|sure|reserve|book|i'?ll\s+take|i\s+will\s+take|let'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|add\s+(?:cottage|payag|a-?house|it)|switch\s+to)\b/i.test(lower));
 
             if (cachedAmenities && Array.isArray(cachedAmenities)) {
                 const cleanLower = lower.replace(/[-\s]/g, '');
-                const foundMatches = [];
+                let foundMatches = [];
                 const seenIds = new Set();
 
                 // Direct clean name match
@@ -3839,6 +3912,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
+
+                // Filter out any match that is negated in rawMessage
+                foundMatches = foundMatches.filter(a => {
+                    const namePattern = a.name.replace(/[-]/g, '\\s*[-]?\\s*');
+                    const negRegex = new RegExp('(?:no|not|remove|drop|cancel|delete|exclude|without|don\'?t\\s+want|instead\\s+of|ayaw|dili|wag|tangtanga|tanggalin)\\s+(?:the\\s+)?' + namePattern, 'i');
+                    return !negRegex.test(rawMessage);
+                });
 
                 if (foundMatches.length > 0) {
                     if (isTentativeAm && !isExplicitAdd && !isExplicitSwitch) {
@@ -3870,20 +3950,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         bookingDraft.amenity = foundMatches[0];
                         bookingDraft.tentativeAmenity = null;
                         bookingDraft.tentativeAmenities = null;
-                        if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
+                        if (!bookingDraft.startDate) {
+                            bookingDraft.step = 'date_slot';
+                        } else if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
                             bookingDraft.step = 'guest_info';
                         }
                         saveBookingDraft();
                     }
                 }
             }
-        } else if ((bookingDraft.tentativeAmenities?.length || bookingDraft.tentativeAmenity) && bookingDraft.startDate) {
+        } else if (bookingDraft.tentativeAmenities?.length || bookingDraft.tentativeAmenity) {
             const isAgreeToView = /(?:show|view|pakita|patingin)/i.test(lower);
             const isAddConfirm = /\b(?:add(?:\s+it)?|yes\s+add|dugang|dagdag|both|together)\b/i.test(lower) && !isAgreeToView;
             const isSwitchConfirm = /\b(?:switch(?:\s+to\s+it)?|change(?:\s+to\s+it)?|palit|replace|instead)\b/i.test(lower) && !isAgreeToView;
             const hasPhoneInMsg = /(?:(?:\+?63\s*9|09)\d{2}[\s\-]?\d{3}[\s\-]?\d{4}|\b(?:09|639)\d{9}\b)/.test(rawMessage);
             const hasEmailInMsg = /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/.test(rawMessage);
-            const hasAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both)?|book(?:\s+both)?|both|yes\s+both|confirm(?:ed)?|let'?s\s+go|go\s+with|go|i'?ll\s+take|we'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede)\b/i.test(lower);
+            const hasAffirmation = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both|\s+it)?|book(?:\s+both|\s+it)?|both|yes\s+both|confirm(?:ed)?|let'?s\s+go|go\s+with|go|go\s+ahead|i'?ll\s+take|we'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede|can\s+u\s+set\s+it\s+up(?:\s+now)?|can\s+you\s+set\s+it\s+up(?:\s+now)?|set\s+it\s+up(?:\s+now)?|set\s+this\s+up|please\s+do|let'?s\s+do\s+(?:that|it)|make\s+the\s+reservation)\b/i.test(lower);
             const isGeneralConfirm = (hasAffirmation || hasPhoneInMsg || hasEmailInMsg) && !isAgreeToView;
 
             if ((isAddConfirm || isSwitchConfirm || isGeneralConfirm) && cachedAmenities && Array.isArray(cachedAmenities)) {
@@ -3910,7 +3992,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     bookingDraft.amenity = bookingDraft.amenities[0];
                     bookingDraft.tentativeAmenity = null;
                     bookingDraft.tentativeAmenities = null;
-                    if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
+                    if (!bookingDraft.startDate) {
+                        bookingDraft.step = 'date_slot';
+                    } else if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
+                        bookingDraft.step = 'guest_info';
+                    }
+                    saveBookingDraft();
+                }
+            }
+        }
+
+        // Conversational Fallback: If user affirms and amenities are still empty, scan last bot proposal
+        const hasAffirmationCheck = /\b(?:yes+|yep|yeah|yea|yup|yeap|sure|surely|ok(?:ay)?|k|okie|alright|all\s+right|good|that'?s\s+good|sounds?\s+good|looks?\s+good|all\s+good|great|nice|perfect|sige|cge|ge|g|oo|opo|proceed|reserve(?:\s+both|\s+it)?|book(?:\s+both|\s+it)?|both|yes\s+both|confirm(?:ed)?|let'?s\s+go|go\s+with|go|go\s+ahead|i'?ll\s+take|we'?ll\s+take|kunin\s+ko|kuhaon|pilion|lock\s+in|locked\s*in|correct|right|exactly|pwede|can\s+u\s+set\s+it\s+up(?:\s+now)?|can\s+you\s+set\s+it\s+up(?:\s+now)?|set\s+it\s+up(?:\s+now)?|set\s+this\s+up|please\s+do|let'?s\s+do\s+(?:that|it)|make\s+the\s+reservation)\b/i.test(lower);
+        if (hasAffirmationCheck && (!bookingDraft.amenities || bookingDraft.amenities.length === 0) && messages && messages.length > 0 && cachedAmenities && Array.isArray(cachedAmenities)) {
+            const lastBotMsg = [...messages].reverse().find(m => m.isBot && m.content);
+            if (lastBotMsg) {
+                const botTextLower = lastBotMsg.content.toLowerCase();
+                const foundFromBot = cachedAmenities.filter(a => {
+                    const cleanAm = a.name.toLowerCase().replace(/[-\s]/g, '');
+                    return botTextLower.replace(/[-\s]/g, '').includes(cleanAm);
+                });
+                if (foundFromBot.length > 0) {
+                    bookingDraft.active = true;
+                    bookingDraft.amenities = foundFromBot;
+                    bookingDraft.amenity = foundFromBot[0];
+                    bookingDraft.tentativeAmenity = null;
+                    bookingDraft.tentativeAmenities = null;
+                    if (!bookingDraft.startDate) {
+                        bookingDraft.step = 'date_slot';
+                    } else if (!bookingDraft.guest?.name || !bookingDraft.guest?.phone || !bookingDraft.guest?.email || !bookingDraft.guest?.guests_count) {
                         bookingDraft.step = 'guest_info';
                     }
                     saveBookingDraft();
@@ -3949,7 +4059,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 Number(bookingDraft.guest?.guests_count) > 0
             );
 
-            if (hasAllGuestInfo && bookingDraft.amenities && bookingDraft.amenities.length > 0) {
+            if (!bookingDraft.startDate) {
+                bookingDraft.step = 'date_slot';
+            } else if (hasAllGuestInfo && bookingDraft.amenities && bookingDraft.amenities.length > 0) {
                 bookingDraft.step = 'payment';
             } else if (bookingDraft.amenities && bookingDraft.amenities.length > 0) {
                 bookingDraft.step = 'guest_info';
