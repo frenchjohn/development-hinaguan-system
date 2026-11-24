@@ -1109,4 +1109,144 @@ class ChatbotConversationalRobustnessTest extends TestCase
         $this->assertStringNotContainsString('daytime schedule', strtolower($reply4));
         $this->assertStringNotContainsString('unsang umaabot nga petsa', strtolower($reply4));
     }
+
+    /**
+     * Test that downpayment button never appears prematurely during question/negotiation turns,
+     * shorthand unit selection like "kanang 5 lang" locks in the amenity cleanly without stopping,
+     * and downpayment button appears strictly at the final summary after all 4 details are collected.
+     */
+    public function test_downpayment_button_appears_only_at_last_process_and_shorthand_unit_replies_reliably(): void
+    {
+        Amenity::firstOrCreate(
+            ['amenities_name' => 'A-House 5'],
+            [
+                'id' => '10',
+                'category' => 'A-Houses',
+                'daytime_price' => 300.00,
+                'nighttime_price' => 500.00,
+                'minimum_capacity' => 1,
+                'maximum_capacity' => 2,
+                'status' => true,
+            ]
+        );
+
+        $tomorrow = now()->addDay()->format('Y-m-d');
+
+        // Turn 1: Discussing regular A-House for Night Tour tomorrow with available unit questions
+        $history1 = [
+            ['role' => 'user', 'content' => "pila ang regular a-house ugma sa gabii?"],
+            ['role' => 'assistant', 'content' => "Sige, ang regular, dili aircon nga A-House kay P500 para sa Night Tour, ug apil ang libre nga entrance ug pool access para sa 2 ka tawo. Available ang A-House 1, 4, 5, 6, 7, ug 8 karong Nobyembre 25; sigurado ka nga Night Tour ugma imong pilion?"],
+        ];
+
+        // Intermediate question turn MUST NOT have payment button and must not jump to payment step
+        $this->assertStringNotContainsString('[PROCEED_PAYMENT_BUTTON]', $history1[1]['content']);
+
+        // Turn 2: Guest replies with shorthand unit "kanang 5 lang"
+        $resp2 = $this->postJson('/guest-chatbot', [
+            'message' => 'kanang 5 lang',
+            'booking_draft' => [
+                'active' => true,
+                'startDate' => $tomorrow,
+                'endDate' => $tomorrow,
+                'startSlot' => 'Nighttime',
+                'endSlot' => 'Nighttime',
+                'slot' => 'Nighttime',
+                'tentativeCategory' => 'Regular A-House',
+                'tentativeAmenity' => 'Regular A-House',
+                'amenities' => [],
+            ],
+            'history' => $history1,
+        ]);
+
+        $resp2->assertOk();
+        $draft2 = $resp2->json('booking_draft');
+        $reply2 = $resp2->json('reply');
+
+        // Shorthand unit 5 must lock in A-House 5
+        $this->assertNotEmpty($draft2['amenities'], 'Must lock in A-House 5');
+        $this->assertEquals('A-House 5', $draft2['amenities'][0]['name']);
+        $this->assertNull($draft2['tentativeCategory']);
+        $this->assertNull($draft2['tentativeAmenity']);
+
+        // Step must be guest_info asking for Full Name (NOT payment!)
+        $this->assertEquals('guest_info', $draft2['step']);
+        $this->assertEquals('name', $draft2['guest_field']);
+
+        // Intermediate response must NEVER contain [PROCEED_PAYMENT_BUTTON]
+        $this->assertStringNotContainsString('[PROCEED_PAYMENT_BUTTON]', $reply2);
+
+        // Turn 3: Guest provides Full Name
+        $resp3 = $this->postJson('/guest-chatbot', [
+            'message' => 'Juan Dela Cruz',
+            'booking_draft' => $draft2,
+            'history' => array_merge($history1, [
+                ['role' => 'user', 'content' => 'kanang 5 lang'],
+                ['role' => 'assistant', 'content' => $reply2],
+            ]),
+        ]);
+        $resp3->assertOk();
+        $draft3 = $resp3->json('booking_draft');
+        $reply3 = $resp3->json('reply');
+
+        $this->assertEquals('Juan Dela Cruz', $draft3['guest']['name']);
+        $this->assertEquals('guest_info', $draft3['step']);
+        $this->assertEquals('phone', $draft3['guest_field']);
+        $this->assertStringNotContainsString('[PROCEED_PAYMENT_BUTTON]', $reply3);
+
+        // Turn 4: Guest provides Phone
+        $resp4 = $this->postJson('/guest-chatbot', [
+            'message' => '09171234567',
+            'booking_draft' => $draft3,
+            'history' => array_merge($history1, [
+                ['role' => 'user', 'content' => 'Juan Dela Cruz'],
+                ['role' => 'assistant', 'content' => $reply3],
+            ]),
+        ]);
+        $resp4->assertOk();
+        $draft4 = $resp4->json('booking_draft');
+        $reply4 = $resp4->json('reply');
+
+        $this->assertEquals('09171234567', $draft4['guest']['phone']);
+        $this->assertEquals('guest_info', $draft4['step']);
+        $this->assertEquals('email', $draft4['guest_field']);
+        $this->assertStringNotContainsString('[PROCEED_PAYMENT_BUTTON]', $reply4);
+
+        // Turn 5: Guest provides Email
+        $resp5 = $this->postJson('/guest-chatbot', [
+            'message' => 'juan@example.com',
+            'booking_draft' => $draft4,
+            'history' => array_merge($history1, [
+                ['role' => 'user', 'content' => '09171234567'],
+                ['role' => 'assistant', 'content' => $reply4],
+            ]),
+        ]);
+        $resp5->assertOk();
+        $draft5 = $resp5->json('booking_draft');
+        $reply5 = $resp5->json('reply');
+
+        $this->assertEquals('juan@example.com', $draft5['guest']['email']);
+        $this->assertEquals('guest_info', $draft5['step']);
+        $this->assertEquals('guests_count', $draft5['guest_field']);
+        $this->assertStringNotContainsString('[PROCEED_PAYMENT_BUTTON]', $reply5);
+
+        // Turn 6: Guest provides Headcount (Final step!)
+        $resp6 = $this->postJson('/guest-chatbot', [
+            'message' => '2 katao',
+            'booking_draft' => $draft5,
+            'history' => array_merge($history1, [
+                ['role' => 'user', 'content' => 'juan@example.com'],
+                ['role' => 'assistant', 'content' => $reply5],
+            ]),
+        ]);
+        $resp6->assertOk();
+        $draft6 = $resp6->json('booking_draft');
+        $reply6 = $resp6->json('reply');
+
+        // Now, and ONLY now, step is payment
+        $this->assertEquals(2, $draft6['guest']['guests_count']);
+        $this->assertEquals('payment', $draft6['step']);
+
+        // Final summary MUST contain [PROCEED_PAYMENT_BUTTON]
+        $this->assertStringContainsString('PROCEED_PAYMENT_BUTTON', $reply6);
+    }
 }

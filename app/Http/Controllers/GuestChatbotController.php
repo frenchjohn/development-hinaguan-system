@@ -382,6 +382,13 @@ class GuestChatbotController extends Controller
             . "     * The online total remains strictly the amenity price (e.g. ₱1,000) and the 50% downpayment remains strictly ₱500!\n"
             . "     * Example reply (Bisaya): 'Oo, sakto—ang dugang nga bayad sa ikatulong bisita (extra head) kay ₱100, apan kining dugang bayad DILI iapil sa online downpayment o total. Ang online reservation total magpabilin nga ₱1,000 para sa A-House 2, ug ₱500 ang 50% downpayment. Ang ₱100 nga extra head fee bayran ra inig-abot ninyo sa park sa check-in. Aron maandam ang imong reservation pass, unsa imong full name?'\n"
             . "     * Example reply (English): 'Yes! The extra head fee for a 3rd guest is ₱100, but please note that additional head fees are NOT added to the online reservation downpayment or total. The online booking total remains ₱1,000 for A-House 2 (50% downpayment: ₱500). The ₱100 extra head fee will be handled and paid upon arrival at the park during check-in. To prepare your digital pass, may I have your Full Name?'\n\n"
+            . "16. STRICT DOWNPAYMENT BUTTON RULE (APPEARS ONLY AT THE VERY LAST AFTER ALL PROCESSES):\n"
+            . "   - The token [PROCEED_PAYMENT_BUTTON] MUST STRICTLY AND ONLY BE OUTPUT AT THE VERY END (STEP 4) when:\n"
+            . "     1) Date and session slot are fully confirmed.\n"
+            . "     2) Specific amenity unit(s) are chosen and finalized (NEVER while suggesting, listing unit numbers, or asking which unit/session they want).\n"
+            . "     3) ALL 4 guest details have been collected: Full Name, Philippine Mobile Number, Email Address, and Number of Guests / Pax.\n"
+            . "     4) You are outputting the complete, neat final reservation summary.\n"
+            . "   - STRICT PROHIBITION: NEVER output [PROCEED_PAYMENT_BUTTON] when asking a question (e.g. 'sigurado ka nga Night Tour ugma imong pilion?', 'available ang 1, 4, 5, 6, 7, 8; unsa imong gusto?'), NEVER output it during Step 1 (Date/Slot), Step 2 (Amenity), or Step 3 (Guest Info). It must ONLY appear on the final summary!\n\n"
             . "=== LIVE PARK & DATABASE CONTEXT ===\n"
             . $guestContext;
 
@@ -3131,12 +3138,17 @@ class GuestChatbotController extends Controller
                 // Find active category from draft or recent history
                 $activeCategory = null;
                 if (!empty($draft['tentativeCategory'])) {
-                    $activeCategory = $draft['tentativeCategory'];
+                    $activeCategory = match (true) {
+                        stripos($draft['tentativeCategory'], 'cottage') !== false => 'Cottage',
+                        stripos($draft['tentativeCategory'], 'payag') !== false => 'Payag',
+                        stripos($draft['tentativeCategory'], 'house') !== false => 'A-House',
+                        default => $draft['tentativeCategory'],
+                    };
                 } elseif (!empty($draft['tentativeAmenity'])) {
                     $activeCategory = match (true) {
                         stripos($draft['tentativeAmenity'], 'cottage') !== false => 'Cottage',
                         stripos($draft['tentativeAmenity'], 'payag') !== false => 'Payag',
-                        stripos($draft['tentativeAmenity'], 'a-house') !== false || stripos($draft['tentativeAmenity'], 'ahouse') !== false => 'A-House',
+                        stripos($draft['tentativeAmenity'], 'house') !== false => 'A-House',
                         default => null,
                     };
                 }
@@ -3216,6 +3228,16 @@ class GuestChatbotController extends Controller
         $isAdd = (bool) preg_match('/\b(?:add|dugang|dagdag|plus|also\s+add|can\s+u\s+add|pwede\s+add)\b/i', $msgLower);
         $isRemovalOnly = !empty($removed) && empty($wanted);
 
+        $categoryLabel = null;
+        foreach ($allFound as $item) {
+            if (!empty($item['category_label'])) {
+                $categoryLabel = $item['category_label'];
+                break;
+            }
+        }
+        $hasUnitNumber = (bool) preg_match('/\b[1-8]\b/', $message);
+        $isCategoryOnly = !$hasUnitNumber && (!empty($categoryLabel) || (empty($multiMatches[0] ?? []) && !empty($genMatch[0] ?? [])));
+
         return [
             'wanted' => $wanted,
             'removed' => $removed,
@@ -3226,6 +3248,8 @@ class GuestChatbotController extends Controller
             'swap_to' => $swapTo,
             'is_add' => $isAdd,
             'is_keep_only' => $isKeepOnly,
+            'is_category_only' => $isCategoryOnly,
+            'category_label' => $categoryLabel,
         ];
     }
 
@@ -3575,6 +3599,7 @@ class GuestChatbotController extends Controller
             }
 
             if (!empty($newAmenityItems)) {
+                $isCategoryOnly = (bool) ($userAmenityActions['is_category_only'] ?? false);
                 $isExplicitAdd = $userAmenityActions['is_add'];
                 $isExplicitSwitch = $userAmenityActions['is_switch'] || $userAmenityActions['is_keep_only'] || (!empty($userAmenityActions['removed']) && !empty($userAmenityActions['wanted']));
                 $isExplicitInquiry = (bool) preg_match('/\b(?:think|better|right\??|what\s+about|how\s+about|is\s+it\s+good|availab|pwede\s+ba|pwede\s+kaha|magkano|how\s+much|pila|unsa|ano|\?|siguro|tingin\s+mo|nindot\s+ba|maybe)\b/i', $msgLower)
@@ -3582,9 +3607,15 @@ class GuestChatbotController extends Controller
                 $isExplicitConfirm = (bool) preg_match('/\b(?:yes|sure|reserve|book|i\'?ll\s+take|i\s+will\s+take|let\'?s\s+go\s+with|confirm(?:ed)?|kunin\s+ko|i-?reserve|kuhaon|pilion|lock\s+in|okay\s+with|ok\s+with|fine\s+with|prefer|good\s+with|i\'?m\s+good|im\s+good|i\'?m\s+ok|im\s+ok|i\'?m\s+okay|im\s+okay)\b/i', $msgLower);
                 $isAnsweringAmenityPrompt = ($draft['step'] ?? '') === 'amenity' || !empty($draft['startDate']) || !empty($draft['tentativeDate']);
 
-                $isTentativeAmenity = $isExplicitInquiry || (!$isExplicitConfirm && !$isAnsweringAmenityPrompt && !$isExplicitAdd && !$isExplicitSwitch);
+                $isTentativeAmenity = $isCategoryOnly || $isExplicitInquiry || (!$isExplicitConfirm && !$isAnsweringAmenityPrompt && !$isExplicitAdd && !$isExplicitSwitch);
 
-                if ($isTentativeAmenity && !$isExplicitAdd && !$isExplicitSwitch) {
+                if ($isCategoryOnly) {
+                    $catLabel = $userAmenityActions['category_label'] ?? $newAmenityItems[0]['name'];
+                    $draft['active'] = true;
+                    $draft['tentativeCategory'] = $catLabel;
+                    $draft['tentativeAmenity'] = $catLabel;
+                    $draft['step'] = 'amenity';
+                } elseif ($isTentativeAmenity && !$isExplicitAdd && !$isExplicitSwitch) {
                     $draft['tentativeAmenities'] = array_map(fn($item) => $item['name'], $newAmenityItems);
                     $draft['tentativeAmenity'] = implode(', ', $draft['tentativeAmenities']);
                     $draft['active'] = true;
@@ -3605,18 +3636,21 @@ class GuestChatbotController extends Controller
                     $draft['amenity'] = $draft['amenities'][0];
                     $draft['tentativeAmenity'] = null;
                     $draft['tentativeAmenities'] = null;
+                    $draft['tentativeCategory'] = null;
                 } elseif (!empty($draft['amenities']) && $isExplicitSwitch) {
                     $draft['active'] = true;
                     $draft['amenities'] = $newAmenityItems;
                     $draft['amenity'] = $newAmenityItems[0];
                     $draft['tentativeAmenity'] = null;
                     $draft['tentativeAmenities'] = null;
+                    $draft['tentativeCategory'] = null;
                 } else {
                     $draft['active'] = true;
                     $draft['amenities'] = $newAmenityItems;
                     $draft['amenity'] = $newAmenityItems[0];
                     $draft['tentativeAmenity'] = null;
                     $draft['tentativeAmenities'] = null;
+                    $draft['tentativeCategory'] = null;
                     if (empty($draft['guest']['name']) || empty($draft['guest']['phone']) || empty($draft['guest']['email']) || empty($draft['guest']['guests_count'])) {
                         $draft['step'] = 'guest_info';
                     }
@@ -3689,6 +3723,7 @@ class GuestChatbotController extends Controller
                         $draft['amenity'] = $draft['amenities'][0];
                         $draft['tentativeAmenity'] = null;
                         $draft['tentativeAmenities'] = null;
+                        $draft['tentativeCategory'] = null;
                         if (empty($draft['startDate'])) {
                             $draft['step'] = 'date_slot';
                         } elseif (empty($draft['guest']['name']) || empty($draft['guest']['phone']) || empty($draft['guest']['email']) || empty($draft['guest']['guests_count'])) {
@@ -3748,17 +3783,14 @@ class GuestChatbotController extends Controller
             // Accept standalone or prefixed number if email was already known, or if an explicit pax/headcount word was provided
             if ($paxVal >= 1 && $paxVal <= 200 && ($hasExplicitPaxWord || ($hadEmailBefore && !$emailExtractedInThisTurn) || !empty($draft['guest']['email']))) {
                 $draft['guest']['guests_count'] = $paxVal;
-                $draft['step'] = 'payment';
             }
         } elseif (preg_match('/\b(?:just\s+me|solo|ako\s*lang|only\s+me|just\s+1|1\s+person|1\s+pax)\b/i', $msgLower)) {
             $draft['guest']['guests_count'] = 1;
-            $draft['step'] = 'payment';
         } elseif (preg_match('/\b(isa|usa|duha|dalawa|tulo|tatlo|upat|apat|lima|unom|anim|pito|walo|siyam|napulo|sampu)\b/i', $msgLower, $wMatch)) {
             $wordKey = strtolower($wMatch[1]);
             $hasExplicitPaxWord = (bool) preg_match('/\b(?:kami|mi|tawo|tao|pax|guests?|katao)\b/i', $msgLower);
             if (isset($wordNumbers[$wordKey]) && ($hasExplicitPaxWord || ($hadEmailBefore && !$emailExtractedInThisTurn) || !empty($draft['guest']['email']))) {
                 $draft['guest']['guests_count'] = $wordNumbers[$wordKey];
-                $draft['step'] = 'payment';
             }
         }
 
@@ -3778,27 +3810,28 @@ class GuestChatbotController extends Controller
             $draft['guest']['name'] = $candName;
         }
 
-        // 4.5 Step determination
-        if (!empty($draft['amenities'])) {
-            if (empty($draft['startDate'])) {
-                $draft['step'] = 'date_slot';
-                unset($draft['guest_field']);
-            } elseif (empty($draft['guest']['name'])) {
-                $draft['step'] = 'guest_info';
-                $draft['guest_field'] = 'name';
-            } elseif (empty($draft['guest']['phone'])) {
-                $draft['step'] = 'guest_info';
-                $draft['guest_field'] = 'phone';
-            } elseif (empty($draft['guest']['email'])) {
-                $draft['step'] = 'guest_info';
-                $draft['guest_field'] = 'email';
-            } elseif (empty($draft['guest']['guests_count'])) {
-                $draft['step'] = 'guest_info';
-                $draft['guest_field'] = 'guests_count';
-            } else {
-                $draft['step'] = 'payment';
-                unset($draft['guest_field']);
-            }
+        // 4.5 Step determination (Proceeds to payment strictly when all processes are complete)
+        if (empty($draft['amenities']) || !empty($draft['tentativeAmenity']) || !empty($draft['tentativeAmenities']) || !empty($draft['tentativeCategory'])) {
+            $draft['step'] = 'amenity';
+            unset($draft['guest_field']);
+        } elseif (empty($draft['startDate']) || !empty($draft['tentativeDate'])) {
+            $draft['step'] = 'date_slot';
+            unset($draft['guest_field']);
+        } elseif (empty($draft['guest']['name'])) {
+            $draft['step'] = 'guest_info';
+            $draft['guest_field'] = 'name';
+        } elseif (empty($draft['guest']['phone'])) {
+            $draft['step'] = 'guest_info';
+            $draft['guest_field'] = 'phone';
+        } elseif (empty($draft['guest']['email'])) {
+            $draft['step'] = 'guest_info';
+            $draft['guest_field'] = 'email';
+        } elseif (empty($draft['guest']['guests_count'])) {
+            $draft['step'] = 'guest_info';
+            $draft['guest_field'] = 'guests_count';
+        } else {
+            $draft['step'] = 'payment';
+            unset($draft['guest_field']);
         }
 
         // 4.6 Function Hall Sanity Guardrail: Function Hall is strictly for 15+ pax.

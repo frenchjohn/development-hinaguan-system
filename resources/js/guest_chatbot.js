@@ -740,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.reply) {
                 const msgEl = addMessage(data.reply, true, true, data.active_model);
 
-                // If in payment step, attach the proceed payment button (only if not currently evaluating tentative additions/changes AND all 4 guest details are fully completed)
+                // If in payment step, attach the proceed payment button (only at the very end after all processes: schedule confirmed, amenity unit locked, and all 4 guest details completed)
                 const hasAllGuestInfo = Boolean(
                     bookingDraft.guest?.name &&
                     bookingDraft.guest?.phone &&
@@ -749,7 +749,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     Number(bookingDraft.guest?.guests_count) > 0
                 );
 
-                if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && !bookingDraft.amenityConflict && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0 && hasAllGuestInfo && msgEl) {
+                const isFinalSummaryReply = Boolean(
+                    data.reply && (
+                        data.reply.includes('[PROCEED_PAYMENT_BUTTON]') ||
+                        /\[PROCEED_PAYMENT_BUTTON\]/i.test(data.reply) ||
+                        (
+                            /(?:summary|downpayment|down\s*payment|reservation\s+pass|digital\s+pass)/i.test(data.reply) &&
+                            /(?:total|₱|\bphp\b)/i.test(data.reply) &&
+                            !/\b(?:\?|which|sigurado ka|pilion|unsang|available ang)\b/i.test(data.reply)
+                        )
+                    )
+                );
+
+                if (bookingDraft.active && (bookingDraft.step === 'payment' || bookingDraft.step === 'review') && !bookingDraft.tentativeAmenity && !bookingDraft.tentativeCategory && !bookingDraft.tentativeDate && !bookingDraft.amenityConflict && Array.isArray(bookingDraft.amenities) && bookingDraft.amenities.length > 0 && hasAllGuestInfo && isFinalSummaryReply && msgEl) {
                     if (!msgEl.querySelector('.cb-btn-proceed-downpayment')) {
                         const total = calculateDraftTotal();
                         const deposit = Math.max(roundToTwo(total * 0.5), total > 0 ? 20.00 : 0);
@@ -3987,8 +3999,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             else if (/payag/i.test(bookingDraft.tentativeAmenity)) activeCat = 'payag';
                             else if (/a-?house/i.test(bookingDraft.tentativeAmenity)) activeCat = 'ahouse';
                         }
-                        if (!activeCat && chatMessages) {
-                            const lastBotBubble = chatMessages.querySelector('.bot-message:last-of-type, [data-role="assistant"]:last-of-type');
+                        if (!activeCat && chatbotMessages) {
+                            const lastBotBubble = chatbotMessages.querySelector('.chatbot-message--bot:last-of-type, .bot-message:last-of-type, [data-role="assistant"]:last-of-type');
                             const botText = lastBotBubble?.textContent || '';
                             if (/cottage/i.test(botText)) activeCat = 'cottage';
                             else if (/payag/i.test(botText)) activeCat = 'payag';
