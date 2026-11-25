@@ -253,12 +253,17 @@
                 </div>
 
                 {{-- Bottom Centered Anchor Indicator --}}
-                <div class="rp-bp-anchor-btn" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <polyline points="19 12 12 19 5 12"/>
+                <button
+                    type="button"
+                    onclick="document.getElementById('reservationGridShell')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
+                    aria-label="Scroll to amenities"
+                    class="absolute -bottom-9 left-1/2 -translate-x-1/2 z-10 inline-flex items-center justify-center rounded-full border border-emerald-400/40 bg-[#123724] p-2 text-emerald-300 shadow-lg shadow-black/25 transition-all duration-200 hover:border-emerald-300/70 hover:bg-[#17462e] hover:text-white animate-bounce cursor-pointer"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14"/>
+                        <path d="m19 12-7 7-7-7"/>
                     </svg>
-                </div>
+                </button>
 
             </div>
 

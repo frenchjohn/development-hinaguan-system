@@ -1652,7 +1652,13 @@ window.AppPage['admin_reports'] = function () {
                         y: {
                             grid: { color: gridColor },
                             ticks: {
-                                callback: (v) => '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                                callback: (v) => {
+                                    if (v >= 1000) {
+                                        const k = v / 1000;
+                                        return '₱' + (Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, '')) + 'k';
+                                    }
+                                    return '₱' + v;
+                                }
                             }
                         }
                     }
@@ -2126,10 +2132,17 @@ window.AppPage['admin_reports'] = function () {
                         }
                     },
                     x: {
+                        beginAtZero: true,
                         grid: { color: gridColor },
                         ticks: {
                             color: textColor,
-                            callback: (v) => '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                            callback: (v) => {
+                                if (v >= 1000) {
+                                    const k = v / 1000;
+                                    return '₱' + (Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, '')) + 'k';
+                                }
+                                return '₱' + v;
+                            }
                         }
                     }
                 }

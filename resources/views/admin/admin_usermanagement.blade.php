@@ -157,7 +157,6 @@
                             <input id="userSearch" type="search" placeholder="Search by name or email..." autocomplete="off" class="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] py-[0.55rem] pl-[2.2rem] pr-[0.9rem] text-[0.84rem] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--green)] focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_rgba(23,138,82,0.12)]">
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.28rem] text-[0.76rem] font-semibold text-[var(--ink-muted)]" id="userCountText">{{ $totalStaff }} staff account(s)</span>
                             <button type="button" class="btn btn--primary inline-flex items-center gap-2" data-open-user-modal>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-4 w-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -223,54 +222,71 @@
         </div>
     </div>
 
-    <div class="modal" id="userModal" aria-hidden="true">
+    <div class="modal !items-center !justify-center !p-4" id="userModal" aria-hidden="true">
         <div class="modal__backdrop" data-close-user-modal></div>
-        <div class="modal__panel">
-            <div class="modal__header">
-                <h3 id="userModalTitle">Create New Staff Account</h3>
-                <button type="button" class="modal__close" data-close-user-modal>&times;</button>
+        <div class="relative z-10 my-auto w-full max-w-[540px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <h3 id="userModalTitle" class="m-0 font-display text-lg font-bold text-[var(--ink)]">Create New Staff Account</h3>
+                <button type="button" data-close-user-modal aria-label="Close" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
-            <form method="POST" action="{{ route('admin.users.store') }}" class="modal-form" id="userForm" data-store-url="{{ route('admin.users.store') }}" data-update-base-url="{{ url('admin/users') }}">
+            <form method="POST" action="{{ route('admin.users.store') }}" id="userForm" data-store-url="{{ route('admin.users.store') }}" data-update-base-url="{{ url('admin/users') }}" data-has-errors="{{ $errors->any() ? '1' : '0' }}">
                 @csrf
                 <input type="hidden" name="user_id" id="userId">
                 <input type="hidden" name="_method" id="formMethod" value="POST">
+                <input type="hidden" id="ban_status" name="ban_status" value="0">
 
-                <div class="modal-form__section">
-                    <h4 class="modal-form__section-title">Staff Details</h4>
-                    <div class="modal-form__row">
-                        <label for="user_name">Name <span>*</span></label>
-                        <input id="user_name" name="name" type="text" value="{{ old('name') }}" required>
+                <div class="space-y-4 px-6 py-5">
+                    @if($errors->any())
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+                            @foreach ($errors->all() as $error)
+                                <p class="m-0">{{ $error }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="user_name" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Name <span class="text-red-500">*</span></label>
+                            <input id="user_name" name="name" type="text" value="{{ old('name') }}" placeholder="e.g. Juan Dela Cruz" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+
+                        <div>
+                            <label for="user_email" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Email <span class="text-red-500">*</span></label>
+                            <input id="user_email" name="email" type="email" value="{{ old('email') }}" placeholder="staff@hinaguan.com" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
                     </div>
 
-                    <div class="modal-form__row">
-                        <label for="user_email">Email <span>*</span></label>
-                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" required>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="user_password" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Password <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input id="user_password" name="password" type="password" minlength="8" placeholder="At least 8 characters" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] py-2 pl-3 pr-9 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <button type="button" data-toggle-password="user_password" aria-label="Show password" class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-1 text-[var(--ink-muted)] hover:text-[var(--ink)]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4 eye-open"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="hidden h-4 w-4 eye-closed"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
+                                </button>
+                            </div>
+                            <p id="userPasswordHint" class="mt-1 mb-0 text-[11px] text-[var(--ink-muted)]">Minimum 8 characters</p>
+                        </div>
+
+                        <div>
+                            <label for="user_password_confirmation" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Confirm Password <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input id="user_password_confirmation" name="password_confirmation" type="password" minlength="8" placeholder="Re-enter password" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] py-2 pl-3 pr-9 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <button type="button" data-toggle-password="user_password_confirmation" aria-label="Show confirm password" class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-1 text-[var(--ink-muted)] hover:text-[var(--ink)]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4 eye-open"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="hidden h-4 w-4 eye-closed"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
+                                </button>
+                            </div>
+                            <p id="userPasswordConfirmHint" class="mt-1 mb-0 text-[11px] text-red-600 hidden">Passwords do not match</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="modal-form__section">
-                    <h4 class="modal-form__section-title">Access & Status</h4>
-                    <div class="modal-form__row">
-                        <label for="user_password">Password <span>*</span></label>
-                        <input id="user_password" name="password" type="password">
-                    </div>
-
-                    <div class="modal-form__row">
-                        <label for="user_password_confirmation">Confirm Password <span>*</span></label>
-                        <input id="user_password_confirmation" name="password_confirmation" type="password">
-                    </div>
-
-                    <div class="modal-form__row">
-                        <label for="ban_status">Account Status</label>
-                        <select id="ban_status" name="ban_status">
-                            <option value="0">Active</option>
-                            <option value="1">Banned</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-form__actions">
+                <div class="flex flex-wrap items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
                     <button type="button" class="btn btn--ghost" data-close-user-modal>Cancel</button>
                     <button type="button" class="btn btn--ghost" id="userEditButton" style="display:none;">Edit</button>
                     <button type="submit" class="btn btn--primary" id="userSubmitButton">Create Account</button>
@@ -278,6 +294,38 @@
                     <button type="submit" class="btn btn--warning" id="userBanButton" style="display:none;" formaction="" formmethod="POST">Ban/Unban</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    {{-- Ban / Unban / Delete Confirmation Modal --}}
+    <div id="userActionConfirmModal" aria-hidden="true" class="fixed inset-0 z-[1300] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" data-close-action-confirm></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="userActionConfirmTitle" class="relative z-10 w-full max-w-[440px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span id="userActionConfirmIconWrap" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/12 text-amber-600">
+                        <svg id="userActionConfirmSvg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-5 w-5"></svg>
+                    </span>
+                    <h3 id="userActionConfirmTitle" class="m-0 font-display text-base font-bold text-[var(--ink)]">Confirm Action</h3>
+                </div>
+                <button type="button" data-close-action-confirm aria-label="Close" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-5 py-4 space-y-3">
+                <div id="userActionConfirmTarget" class="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-2.5">
+                    <span id="userActionConfirmAvatar" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1b5e3a] text-xs font-bold text-white uppercase"></span>
+                    <div class="min-w-0">
+                        <p id="userActionConfirmTargetName" class="m-0 truncate text-sm font-semibold text-[var(--ink)]"></p>
+                        <p id="userActionConfirmTargetEmail" class="m-0 truncate text-xs text-[var(--ink-muted)]"></p>
+                    </div>
+                </div>
+                <p id="userActionConfirmMessage" class="m-0 text-sm leading-relaxed text-[var(--ink-muted)]"></p>
+            </div>
+            <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-5 py-3.5">
+                <button type="button" data-close-action-confirm class="btn btn--ghost cursor-pointer">Cancel</button>
+                <button type="button" id="userActionConfirmBtn" class="cursor-pointer rounded-lg border-0 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors">Confirm</button>
+            </div>
         </div>
     </div>
 
