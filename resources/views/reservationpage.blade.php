@@ -108,24 +108,24 @@
         {{-- ── Unified Reservation Date, Weather & Stay Panel ── --}}
         <section class="rp-booking-panel" data-animate="fade-up" data-delay="100" id="dateControlsSection">
 
-            <div class="rp-bp-card">
+            <div class="rp-bp-card !grid grid-cols-1 lg:!grid-cols-[1.05fr_1fr_1.4fr] !gap-4 !items-stretch !p-4 !pb-5">
 
-                {{-- Top Row: Date Selector --}}
-                <div class="rp-bp-header">
+                {{-- Date Column --}}
+                <div class="rp-bp-header !flex !flex-col !items-stretch !gap-1.5 !mb-0 min-w-0">
 
-                    <div class="rp-bp-header__icon" aria-hidden="true">
+                    <div class="rp-bp-header__icon !hidden" aria-hidden="true">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
 
-                    <div class="rp-bp-header__main">
+                    <div class="rp-bp-header__main !flex !flex-col !gap-1.5 !flex-1 min-w-0">
 
                         <span class="rp-bp-label">Select reservation date</span>
 
                         <input id="reservation_date" name="reservation_date" type="hidden" value="" data-min-date="{{ now()->toDateString() }}">
 
-                        <button type="button" id="reservationDateTrigger" class="rp-bp-date-trigger">
+                        <button type="button" id="reservationDateTrigger" class="rp-bp-date-trigger !flex-1 !min-h-[2.75rem] !py-2.5 !px-3.5">
 
                             <span class="rp-bp-date-trigger__content">
                                 <svg class="rp-bp-date-trigger__cal-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -144,15 +144,15 @@
 
                 </div>
 
-                {{-- Bottom Row: Weather & Stay (2 Columns) --}}
-                <div class="rp-bp-body">
+                {{-- Weather & Stay Columns (flatten into 1 row on desktop) --}}
+                <div class="rp-bp-body lg:!contents">
 
                     {{-- Weather Column --}}
-                    <div class="rp-bp-col rp-bp-col--weather">
+                    <div class="rp-bp-col rp-bp-col--weather min-w-0">
 
                         <span class="rp-bp-col__title">Weather forecast</span>
 
-                        <div class="rp-bp-subcard rp-bp-subcard--weather" id="reservationWeatherPreview">
+                        <div class="rp-bp-subcard rp-bp-subcard--weather !py-2.5 !px-3.5" id="reservationWeatherPreview">
 
                             <div class="rp-weather-preview__wrap">
 
@@ -189,11 +189,11 @@
                     </div>
 
                     {{-- Your Stay Column --}}
-                    <div class="rp-bp-col rp-bp-col--stay">
+                    <div class="rp-bp-col rp-bp-col--stay min-w-0">
 
                         <span class="rp-bp-col__title">Your stay</span>
 
-                        <div class="rp-bp-subcard rp-bp-subcard--stay" id="mainDateTimePreview">
+                        <div class="rp-bp-subcard rp-bp-subcard--stay !py-2.5 !px-3.5" id="mainDateTimePreview">
 
                             {{-- Check-in Sub-column --}}
                             <div class="rp-stay-item rp-stay-item--checkin">

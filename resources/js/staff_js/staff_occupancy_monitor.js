@@ -558,22 +558,9 @@ window.AppPage['staff_occupancy_monitor'] = function () {
     }
 
     function animateKpiCounters() {
-        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         document.querySelectorAll('.occupancy-stat__value[data-count]').forEach(el => {
             const target = parseInt(el.dataset.count || '0', 10);
-            if (reduceMotion || target <= 0 || isNaN(target)) {
-                el.textContent = target;
-                return;
-            }
-            const duration = 700;
-            const start = performance.now();
-            const tick = (now) => {
-                const p = Math.min((now - start) / duration, 1);
-                const eased = 1 - Math.pow(1 - p, 3);
-                el.textContent = Math.round(target * eased);
-                if (p < 1) requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
+            el.textContent = isNaN(target) ? 0 : target;
         });
     }
 

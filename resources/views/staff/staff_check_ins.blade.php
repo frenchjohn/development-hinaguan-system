@@ -798,16 +798,9 @@
 									</div>
 								</div>
 								<div class="flex flex-wrap items-center gap-2">
-									<div class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-2xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
-										<span class="relative flex h-2 w-2">
-											<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-											<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-										</span>
-										<i class="bi bi-upc-scan text-xs"></i>
-										<span>Hardware Scanner Ready</span>
-									</div>
-									<button type="button" id="scanQrBtn" class="h-9 w-9 inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
-										<i class="bi bi-camera-video text-xs"></i>
+									<button type="button" id="scanQrBtn" onclick="if (typeof window.openScanQrModal === 'function') { window.openScanQrModal(); } else { const m = document.getElementById('scanQrModal'); if (m) { m.classList.remove('hidden'); m.classList.add('is-open'); m.setAttribute('aria-hidden', 'false'); m.style.display = 'flex'; } }" class="h-9 px-3.5 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" title="Scan reservation QR Code" aria-label="QR Code">
+										<i class="bi bi-qr-code-scan text-xs"></i>
+										<span>QR Code</span>
 									</button>
 									<button type="button" class="h-9 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-emerald-700 active:scale-95" data-open-add-guest-modal="true">
 										<i class="bi bi-person-plus-fill text-xs"></i>
@@ -2866,7 +2859,7 @@
 				</div>
 
 				{{-- Add Companion to Active Reservation Modal --}}
-				<div class="guest-modal guest-modal--add guest-modal--wide hidden" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
+				<div class="guest-modal guest-modal--add guest-modal--wide fixed inset-0 hidden items-center justify-center is-open:flex" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(90vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all duration-200 z-10" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
@@ -3287,7 +3280,7 @@
 				</div>
 
 				{{-- Scan QR Modal --}}
-				<div class="guest-modal guest-modal--add" id="scanQrModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--add fixed inset-0 z-[1100] hidden items-center justify-center is-open:flex" id="scanQrModal" aria-hidden="true" style="z-index: 1100;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-scan-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[900px] max-h-[min(84vh,760px)] flex-row overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>

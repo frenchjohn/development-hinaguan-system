@@ -333,23 +333,15 @@
 
                         {{-- Right actions --}}
                         <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
-                            <div class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-2xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
-                                <span class="relative flex h-2 w-2">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
-                                <i class="bi bi-upc-scan text-xs"></i>
-                                <span>Hardware Scanner Ready</span>
-                            </div>
-
                             <button 
                                 type="button" 
                                 id="scanQrBtn" 
-                                class="h-9 w-9 inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" 
-                                title="Scan reservation QR with Camera" 
-                                aria-label="Scan reservation QR with Camera"
+                                class="h-9 px-3.5 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" 
+                                title="Scan reservation QR Code" 
+                                aria-label="QR Code"
                             >
-                                <i class="bi bi-camera-video text-xs"></i>
+                                <i class="bi bi-qr-code-scan text-xs"></i>
+                                <span>QR Code</span>
                             </button>
 
                             <button 

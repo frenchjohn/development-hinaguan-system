@@ -301,10 +301,16 @@
                     </article>
 
                     {{-- 3. Check-Outs --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-sky-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="checked_out"
+                             data-breakdown-title="Check-Outs"
+                             data-breakdown-total="{{ $checkOutsCount }} completed"
+                             title="Click to view check-out ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Check-Outs</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Check-Outs</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-400 group-hover:bg-sky-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             </div>
                         </div>
@@ -312,15 +318,24 @@
                             <div class="text-2xl font-display font-bold text-hp-text leading-tight">
                                 {{ $checkOutsCount }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Completed departures</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>Completed departures</span>
+                                <span class="text-[0.65rem] font-bold text-sky-600 dark:text-sky-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
 
                     {{-- 4. Guests Handled --}}
-                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between hover:border-blue-500/40 cursor-pointer transition-all duration-150 group"
+                             role="button"
+                             tabindex="0"
+                             data-breakdown-action="guests_handled"
+                             data-breakdown-title="Guests Handled"
+                             data-breakdown-total="{{ $totalGuestsHandled }} guests"
+                             title="Click to view handled guest ledger records">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Guests Handled</span>
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted group-hover:text-hp-text transition-colors">Guests Handled</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-700 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             </div>
                         </div>
@@ -328,7 +343,10 @@
                             <div class="text-2xl font-display font-bold text-hp-text leading-tight">
                                 {{ $totalGuestsHandled }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Across {{ $totalReservationsHandled }} reservations</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium flex items-center justify-between">
+                                <span>Across {{ $totalReservationsHandled }} reservations</span>
+                                <span class="text-[0.65rem] font-bold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">View ledger &rarr;</span>
+                            </p>
                         </div>
                     </article>
 

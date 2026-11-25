@@ -1,26 +1,9 @@
 import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 import { openChargeCheckout } from './charge_checkout.js';
+import { initStaffCheckInsExtras } from './staff_check_ins_extras.js';
 
 let activeStaffCheckInsHandlers = null;
-
-// Permanent resilient top-level dispatcher for opening reservation modal
-window.openReservationModal = function (resId) {
-    if (activeStaffCheckInsHandlers && typeof activeStaffCheckInsHandlers.openReservationModal === 'function') {
-        return activeStaffCheckInsHandlers.openReservationModal(resId);
-    }
-    if (window.AppPage && typeof window.AppPage['staff_check_ins'] === 'function') {
-        try {
-            window.AppPage['staff_check_ins']();
-        } catch (e) {
-            console.warn('[staff_check_ins] Error initializing page handlers on openReservationModal:', e);
-        }
-        if (activeStaffCheckInsHandlers && typeof activeStaffCheckInsHandlers.openReservationModal === 'function') {
-            return activeStaffCheckInsHandlers.openReservationModal(resId);
-        }
-    }
-    console.warn('[staff_check_ins] openReservationModal handler not ready for id:', resId);
-};
 
 if (!window.__staffCheckInsGlobalClickBound) {
     window.__staffCheckInsGlobalClickBound = true;
@@ -70,45 +53,85 @@ if (!window.__staffCheckInsGlobalClickBound) {
             return;
         }
 
-        // Global delegated handler for Reservation Row clicking
-        const clickedResvRow = e.target.closest('.reservation-row');
-        if (clickedResvRow && !e.target.closest('button') && !e.target.closest('a') && !e.target.closest('.btn-expand-row') && !e.target.closest('.guest-companion-pill__delete')) {
-            const resId = clickedResvRow.getAttribute('data-reservation-id') || clickedResvRow.dataset.reservationId;
-            if (resId) {
-                e.preventDefault();
-                if (typeof window.openReservationModal === 'function') {
-                    window.openReservationModal(resId);
-                } else if (activeStaffCheckInsHandlers?.openReservationModal) {
-                    activeStaffCheckInsHandlers.openReservationModal(resId);
-                }
-                return;
-            }
-        }
-
-        // Global delegated handler for closing reservation modal
-        const closeResvModalBtn = e.target.closest('[data-close-reservation-modal="true"]');
-        if (closeResvModalBtn) {
+        const quickAddCompanionGlobalBtn = e.target.closest('.resv-quick-add-companion-btn');
+        if (quickAddCompanionGlobalBtn) {
             e.preventDefault();
-            const modal = document.getElementById('reservationModal');
-            if (modal) {
-                modal.classList.remove('is-open');
-                modal.setAttribute('aria-hidden', 'true');
-                modal.style.display = 'none';
-            }
+            e.stopPropagation();
+            window.openResAddCompanionModal(quickAddCompanionGlobalBtn.dataset.reservationId);
             return;
         }
 
-        // Global delegated handler for Filter & Sort Toggle button (kept permanently open)
+        const resAddCompGlobalBtn = e.target.closest('#reservationAddCompanionBtn');
+        if (resAddCompGlobalBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.openResAddCompanionModal();
+            return;
+        }
+
+        if (e.target.closest('[data-close-reservation-add-companion="true"]')) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.closeResAddCompanionModal?.();
+            return;
+        }
+
+        const scanQrGlobalBtn = e.target.closest('#scanQrBtn');
+        if (scanQrGlobalBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.openScanQrModal();
+            return;
+        }
+
+        if (e.target.closest('[data-close-scan-modal="true"]')) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.closeScanQrModal?.();
+            return;
+        }
+
+        const resvRowGlobal = e.target.closest('.reservation-row');
+        if (resvRowGlobal && !e.target.closest('button, a, input, select, textarea, [data-no-row-modal]')) {
+            window.openReservationModal(resvRowGlobal.dataset.reservationId);
+            return;
+        }
+
+        if (e.target.closest('[data-close-reservation-modal="true"]')) {
+            activeStaffCheckInsHandlers?.closeReservationModal?.();
+            return;
+        }
+
+        // Global delegated handler for Filter & Sort Toggle button
         const toggleBtn = e.target.closest('#resvFilterToggle');
         if (toggleBtn) {
             e.preventDefault();
             e.stopPropagation();
             const panel = document.getElementById('resvFilterPanel');
-            if (panel) {
+            const chevron = document.getElementById('resvFilterChevron');
+            const sortMenu = document.getElementById('resvSortDropdownMenu');
+            const sortChevron = document.getElementById('resvSortDropdownChevron');
+            const sortPill = document.getElementById('resvQuickSortPill');
+            if (sortMenu) sortMenu.classList.add('hidden');
+            if (sortChevron) sortChevron.classList.remove('rotate-180');
+            if (sortPill) sortPill.setAttribute('aria-expanded', 'false');
+
+            if (!panel) return;
+            const isHidden = panel.hasAttribute('hidden') || panel.classList.contains('guest-toolbar--collapsed') || panel.style.display === 'none';
+            if (isHidden) {
                 panel.removeAttribute('hidden');
                 panel.hidden = false;
                 panel.classList.remove('guest-toolbar--collapsed');
-                panel.style.display = '';
+                panel.style.display = 'block';
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                if (chevron) chevron.classList.add('rotate-180');
+            } else {
+                panel.setAttribute('hidden', '');
+                panel.hidden = true;
+                panel.classList.add('guest-toolbar--collapsed');
+                panel.style.display = 'none';
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                if (chevron) chevron.classList.remove('rotate-180');
             }
             return;
         }
@@ -118,6 +141,17 @@ if (!window.__staffCheckInsGlobalClickBound) {
         if (closeBtn) {
             e.preventDefault();
             e.stopPropagation();
+            const panel = document.getElementById('resvFilterPanel');
+            const toggle = document.getElementById('resvFilterToggle');
+            const chevron = document.getElementById('resvFilterChevron');
+            if (panel) {
+                panel.setAttribute('hidden', '');
+                panel.hidden = true;
+                panel.classList.add('guest-toolbar--collapsed');
+                panel.style.display = 'none';
+            }
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            if (chevron) chevron.classList.remove('rotate-180');
             return;
         }
 
@@ -235,12 +269,36 @@ if (!window.__staffCheckInsGlobalClickBound) {
 }
 
 window.AppPage = window.AppPage || {};
+window.openReservationModal = (id) => {
+    if (activeStaffCheckInsHandlers?.openReservationModal) {
+        return activeStaffCheckInsHandlers.openReservationModal(id);
+    }
+};
+window.openScanQrModal = () => {
+    if (activeStaffCheckInsHandlers?.openScanQrModal) {
+        return activeStaffCheckInsHandlers.openScanQrModal();
+    }
+};
+window.openResAddCompanionModal = (resId) => {
+    if (activeStaffCheckInsHandlers?.openResAddCompanionModal) {
+        return activeStaffCheckInsHandlers.openResAddCompanionModal(resId);
+    }
+    const modal = document.getElementById('reservationAddCompanionModal');
+    if (modal) {
+        modal.classList.add('is-open');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+};
+
 window.AppPage['staff_check_ins'] = function () {
     if (window.__staffCheckInsAbortController) {
         window.__staffCheckInsAbortController.abort();
     }
     window.__staffCheckInsAbortController = new AbortController();
     const pageSignal = window.__staffCheckInsAbortController.signal;
+    let monthNames = [], renderSelectedAmenities = () => {}, resvResultsCount = null, stopQrScanner = () => {}, openScanQrModal = () => {}, closeScanQrModal = () => {}, openResAddCompanionModal = () => {}, closeResAddCompanionModal = () => {};
 
 
     const reservationTableSection = document.getElementById('reservationTableSection');
@@ -1027,14 +1085,14 @@ window.AppPage['staff_check_ins'] = function () {
                     </div>
 
                     ${(() => {
-                const amenitiesTotal = validAmenities.reduce((sum, a) => {
-                    const unitPrice = parseFloat(a.price_at_booking ?? a.price ?? 0);
-                    const qty = Math.max(1, parseInt(a.quantity, 10) || 1);
-                    return sum + (unitPrice * qty);
-                }, 0);
-                const totalUnits = validAmenities.reduce((sum, a) => sum + (Math.max(1, parseInt(a.quantity, 10) || 1)), 0);
+                        const amenitiesTotal = validAmenities.reduce((sum, a) => {
+                            const unitPrice = parseFloat(a.price_at_booking ?? a.price ?? 0);
+                            const qty = Math.max(1, parseInt(a.quantity, 10) || 1);
+                            return sum + (unitPrice * qty);
+                        }, 0);
+                        const totalUnits = validAmenities.reduce((sum, a) => sum + (Math.max(1, parseInt(a.quantity, 10) || 1)), 0);
 
-                return `
+                        return `
                         <div class="ci-design-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.85rem 1rem;">
                             <div style="display:flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
                                 <div class="ci-col">
@@ -1048,7 +1106,7 @@ window.AppPage['staff_check_ins'] = function () {
                             </div>
                         </div>
                         `;
-            })()}
+                    })()}
 
                     ${(() => {
                 const periods = [];
@@ -1096,7 +1154,7 @@ window.AppPage['staff_check_ins'] = function () {
         if (stickyButtonsContainer) {
             if (isCheckedIn) {
                 stickyButtonsContainer.innerHTML = `
-                    <button type="button" class="resv-quick-add-companion-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-2 border-emerald-600 bg-emerald-600/10 hover:bg-emerald-600 hover:text-white px-3.5 py-1.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-200 transition-all shadow-xs" data-reservation-id="${reservation.id}">
+                    <button type="button" onclick="if (typeof window.openResAddCompanionModal === 'function') { window.openResAddCompanionModal('${reservation.id}'); }" class="resv-quick-add-companion-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-2 border-emerald-600 bg-emerald-600/10 hover:bg-emerald-600 hover:text-white px-3.5 py-1.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-200 transition-all shadow-xs" data-reservation-id="${reservation.id}">
                         <svg class="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                         <span>Add Companion</span>
                     </button>
@@ -1250,8 +1308,8 @@ window.AppPage['staff_check_ins'] = function () {
             const validAmenities = rawAmenities.filter(a => a.price > 0 || a.price_at_booking > 0 || a.amenity_name || a.amenity || a.name);
             const amenityCount = validAmenities.length;
             const amenityNames = validAmenities.map(a => a.amenity_name || a.amenity?.amenities_name || a.name || 'Amenity');
-            const amenitySummary = amenityCount > 0
-                ? (amenityNames.slice(0, 2).join(', ') + (amenityNames.length > 2 ? ` +${amenityNames.length - 2} more` : ''))
+            const amenitySummary = amenityCount > 0 
+                ? (amenityNames.slice(0, 2).join(', ') + (amenityNames.length > 2 ? ` +${amenityNames.length - 2} more` : '')) 
                 : 'No amenities availed';
 
             // 3. Supposed checkout date & time
@@ -3437,6 +3495,11 @@ window.AppPage['staff_check_ins'] = function () {
         openReservationModal: (id) => openReservationModal(id),
         handleAmenityCheckout,
         stopQrScanner: () => stopQrScanner?.(),
+        openScanQrModal: () => openScanQrModal?.(),
+        closeScanQrModal: () => closeScanQrModal?.(),
+        openResAddCompanionModal: (resId) => openResAddCompanionModal?.(resId),
+        closeResAddCompanionModal: () => closeResAddCompanionModal?.(),
+        closeReservationModal: () => closeReservationModal?.(),
     };
     activeStaffCheckInsHandlers = checkInsHandlers;
 
@@ -3797,11 +3860,11 @@ window.AppPage['staff_check_ins'] = function () {
                     // After charges, NOW do the final checkout
                     const finalResponse = await fetch(`/staff/reservations/${currentBulkResId}/check-out`, {
                         method: 'POST',
-                        headers: {
-                            Accept: 'application/json',
+                        headers: { 
+                            Accept: 'application/json', 
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-CSRF-TOKEN': csrfToken, 
+                            'X-Requested-With': 'XMLHttpRequest' 
                         },
                         body: JSON.stringify({}),
                     });
@@ -8509,884 +8572,68 @@ window.AppPage['staff_check_ins'] = function () {
 
     primaryAgeInput?.addEventListener('change', updateGrandTotal);
 
-    // ==========================================
-    // Walk-In Range Calendar Modal Logic
-    // ==========================================
-    const walkInCalendarModal = document.getElementById('walkInCalendarModal');
-    const walkInOpenCalendarBtn = document.getElementById('walkInOpenCalendarBtn');
-    const walkInCalCloseButtons = document.querySelectorAll('[data-close-walkin-calendar="true"]');
-    const walkInCalPrev = document.getElementById('walkInCalPrev');
-    const walkInCalNext = document.getElementById('walkInCalNext');
-    const walkInCalTitle = document.getElementById('walkInCalTitle');
-    const walkInCalYear = document.getElementById('walkInCalYear');
-    const walkInCalGrid = document.getElementById('walkInCalGrid');
-    const walkInCalSummaryText = document.getElementById('walkInCalSummaryText');
-    const walkInCalSpanText = document.getElementById('walkInCalSpanText');
-    const walkInCalStepHelp = document.getElementById('walkInCalStepHelp');
-    const walkInCalApplyBtn = document.getElementById('walkInCalApplyBtn');
-    const walkInCalCurrentBadge = document.getElementById('walkInCalCurrentBadge');
-    const walkInTopCheckoutTimeBadge = document.getElementById('walkInTopCheckoutTimeBadge');
-    const walkInCalCheckoutDateText = document.getElementById('walkInCalCheckoutDateText');
-    const walkInCalCheckoutSessionBadge = document.getElementById('walkInCalCheckoutSessionBadge');
-    const walkInCalCheckoutSessionIcon = document.getElementById('walkInCalCheckoutSessionIcon');
-    const walkInCalCheckoutSessionText = document.getElementById('walkInCalCheckoutSessionText');
-    const walkInCalStartSlotText = document.getElementById('walkInCalStartSlotText');
-    const walkInCalSpanDetailText = document.getElementById('walkInCalSpanDetailText');
-    const walkInCalDaysBadgeText = document.getElementById('walkInCalDaysBadgeText');
-
-    const walkInCalState = {
-        viewYear: new Date().getFullYear(),
-        viewMonth: new Date().getMonth(),
-        selectedStartDate: todayStr,
-        selectedEndDate: todayStr,
-        selectedStartSlot: currentServerSession,
-        selectedEndSlot: currentServerSession,
-        availabilityMap: {},
-        isLoadingAvailability: false,
-    };
-
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    // Populate Year Dropdown (current year up to +5 years)
-    const initWalkInCalYears = () => {
-        if (!walkInCalYear) return;
-        const currentYear = new Date().getFullYear();
-        walkInCalYear.innerHTML = '';
-        for (let y = currentYear; y <= currentYear + 5; y++) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            walkInCalYear.appendChild(opt);
-        }
-    };
-    initWalkInCalYears();
-
-    const isWalkInSlotAvailable = (dateStr, slot) => {
-        if (!dateStr || dateStr < todayStr) return false;
-        if (dateStr === todayStr && slot === 'Daytime' && currentServerSession === 'Nighttime') return false;
-        if (!selectedAmenities || selectedAmenities.length === 0) return true;
-
-        const entry = walkInCalState.availabilityMap?.[dateStr];
-        if (entry) {
-            const slotKey = slot === 'Daytime' ? 'daytime' : 'nighttime';
-            return Boolean(entry[slotKey]);
-        }
-        return true;
-    };
-
-    const checkWalkInRangeConflict = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
-        if (!startDate || !endDate || startDate > endDate) {
-            return { hasConflict: true, reason: 'Check-out date must be on or after check-in date.' };
-        }
-        if (!selectedAmenities || selectedAmenities.length === 0) {
-            return { hasConflict: false };
-        }
-
-        const timeline = buildContinuousTimeline(startDate, endDate, startSlot, endSlot);
-        if (!timeline.length) {
-            return { hasConflict: true, reason: 'Invalid stay range.' };
-        }
-
-        for (const [d, s] of timeline) {
-            if (!isWalkInSlotAvailable(d, s)) {
-                const isAtEnd = (d === endDate && s === endSlot);
-                return {
-                    hasConflict: true,
-                    conflictDate: d,
-                    conflictSlot: s,
-                    isDirectEndConflict: isAtEnd,
-                    isIntermediateConflict: !isAtEnd,
-                    reason: isAtEnd
-                        ? `Selected check-out date (${formatShortDate(d)} ${s}) is occupied or reserved for your selected amenities.`
-                        : `Cannot pass through occupied or reserved date (${formatShortDate(d)} ${s}). All dates throughout the stay must be available.`
-                };
-            }
-        }
-
-        return { hasConflict: false };
-    };
-
-    const ensureWalkInMonthAvailability = async (year, month, amenityIds) => {
-        try {
-            const url = new URL('/reservation/availability/calendar', window.location.origin);
-            url.searchParams.set('amenity_ids', amenityIds.join(','));
-            url.searchParams.set('month', month);
-            url.searchParams.set('year', year);
-
-            const response = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data.availability)) {
-                    data.availability.forEach(entry => {
-                        walkInCalState.availabilityMap[entry.date] = entry;
-                    });
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching availability for month:', year, month, err);
-        }
-    };
-
-    const loadWalkInCalAvailability = async (year = walkInCalState.viewYear, month = walkInCalState.viewMonth) => {
-        if (!selectedAmenities || selectedAmenities.length === 0) {
-            walkInCalState.availabilityMap = {};
-            renderWalkInCalendarMonth();
-            return;
-        }
-
-        const amenityIds = [...new Set(selectedAmenities.map(a => a.amenity_id).filter(Boolean))];
-        if (amenityIds.length === 0) {
-            walkInCalState.availabilityMap = {};
-            renderWalkInCalendarMonth();
-            return;
-        }
-
-        walkInCalState.isLoadingAvailability = true;
-        if (walkInCalGrid) {
-            walkInCalGrid.classList.add('opacity-50', 'pointer-events-none');
-        }
-
-        if (!walkInCalState.availabilityMap) walkInCalState.availabilityMap = {};
-
-        try {
-            const promises = [ensureWalkInMonthAvailability(year, month, amenityIds)];
-
-            if (walkInCalState.selectedStartDate) {
-                const [sY, sM] = walkInCalState.selectedStartDate.split('-').map(Number);
-                const sMonthIdx = sM - 1;
-                if (sY !== year || sMonthIdx !== month) {
-                    promises.push(ensureWalkInMonthAvailability(sY, sMonthIdx, amenityIds));
-                }
-            }
-
-            await Promise.all(promises);
-        } catch (err) {
-            console.error('Failed to load walk-in calendar availability:', err);
-        } finally {
-            walkInCalState.isLoadingAvailability = false;
-            if (walkInCalGrid) {
-                walkInCalGrid.classList.remove('opacity-50', 'pointer-events-none');
-            }
-            renderWalkInCalendarMonth();
-        }
-    };
-
-    const openWalkInCalendarModal = () => {
-        if (!walkInCalendarModal) return;
-        // Walk-in check-in is ALWAYS locked to TODAY and CURRENT SESSION
-        walkInCalState.selectedStartDate = todayStr;
-        walkInCalState.selectedStartSlot = currentServerSession;
-        walkInCalState.selectedEndDate = walkInSchedule.endDate || todayStr;
-        walkInCalState.selectedEndSlot = walkInSchedule.endSlot || currentServerSession;
-
-        // If checkin is today nighttime and selected checkout is today, force nighttime checkout
-        if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime') {
-            walkInCalState.selectedEndSlot = 'Nighttime';
-        }
-
-        const [y, m] = walkInCalState.selectedStartDate.split('-');
-        walkInCalState.viewYear = parseInt(y);
-        walkInCalState.viewMonth = parseInt(m) - 1;
-
-        walkInCalendarModal.classList.add('is-open');
-        walkInCalendarModal.setAttribute('aria-hidden', 'false');
-
-        syncWalkInSessionPills();
-        renderWalkInCalendarMonth();
-        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
-    };
-
-    const closeWalkInCalendarModal = () => {
-        if (!walkInCalendarModal) return;
-        walkInCalendarModal.classList.remove('is-open');
-        walkInCalendarModal.setAttribute('aria-hidden', 'true');
-    };
-
-    walkInOpenCalendarBtn?.addEventListener('click', openWalkInCalendarModal);
-    walkInCalCloseButtons.forEach(btn => btn.addEventListener('click', closeWalkInCalendarModal));
-
-    // Session pills toggle
-    const syncWalkInSessionPills = () => {
-        const isSameDayNighttime = (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime');
-
-        document.querySelectorAll('#walkInEndSlotGroup [data-slot-val]').forEach(btn => {
-            const val = btn.dataset.slotVal;
-            const isActive = (val === walkInCalState.selectedEndSlot);
-            btn.dataset.active = isActive ? 'true' : 'false';
-            btn.classList.toggle('is-active', isActive);
-
-            let isDisabled = false;
-            let disableReason = '';
-
-            if (isSameDayNighttime && val === 'Daytime') {
-                isDisabled = true;
-                disableReason = 'Daytime checkout not available for same-day nighttime check-in';
-            } else if (selectedAmenities && selectedAmenities.length > 0) {
-                const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, val);
-                if (conflict.hasConflict) {
-                    isDisabled = true;
-                    disableReason = conflict.reason;
-                }
-            }
-
-            if (isDisabled) {
-                btn.disabled = true;
-                btn.classList.add('is-disabled', 'opacity-50', 'cursor-not-allowed');
-                btn.title = disableReason;
-            } else {
-                btn.disabled = false;
-                btn.classList.remove('is-disabled', 'opacity-50', 'cursor-not-allowed');
-                btn.removeAttribute('title');
-            }
-        });
-    };
-
-    document.querySelectorAll('#walkInEndSlotGroup [data-slot-val]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = btn.dataset.slotVal;
-            // If same day and checkin is Nighttime, cannot pick Daytime checkout
-            if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime' && val === 'Daytime') {
-                return;
-            }
-            if (selectedAmenities && selectedAmenities.length > 0) {
-                const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, val);
-                if (conflict.hasConflict) {
-                    window.alert(conflict.reason || 'This session is already booked for one or more selected amenities.');
-                    return;
-                }
-            }
-            walkInCalState.selectedEndSlot = val;
-            syncWalkInSessionPills();
-            updateWalkInCalModalSummary();
-            renderWalkInCalendarMonth();
-        });
-    });
-
-    const updateWalkInCalModalSummary = () => {
-        const counts = calculateWalkInSlots(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, walkInCalState.selectedEndSlot);
-        const sFmt = formatDisplayDate(walkInCalState.selectedStartDate);
-        const checkout = getCheckoutDateAndDisplay(walkInCalState.selectedEndDate, walkInCalState.selectedEndSlot);
-        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
-
-        // Update prominent top summary cards
-        const walkInTopCheckInText = document.getElementById('walkInTopCheckInText');
-        const walkInTopCheckoutFullText = document.getElementById('walkInTopCheckoutFullText');
-        const inTime = walkInCalState.selectedStartSlot === 'Nighttime' ? 'Nighttime (8:00 PM)' : 'Daytime (8:00 AM)';
-        const outDesc = (walkInCalState.selectedEndSlot === 'Nighttime') ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)';
-        if (walkInTopCheckInText) {
-            walkInTopCheckInText.textContent = `${sFmt} · ${inTime}`;
-        }
-        if (walkInTopCheckoutFullText) {
-            walkInTopCheckoutFullText.textContent = `${checkout.displayDate} · ${outDesc}`;
-        }
-
-        // Attached amenities notice
-        const attachedNotice = document.getElementById('walkInCalAttachedNotice');
-        if (attachedNotice) {
-            if (selectedAmenities && selectedAmenities.length > 0) {
-                attachedNotice.textContent = `Syncing stay with ${selectedAmenities.length} availed amenity (${selectedAmenities.map(a => a.amenity_name).join(', ')}). Occupied/reserved dates are blocked.`;
-                attachedNotice.classList.remove('hidden');
-            } else {
-                attachedNotice.classList.add('hidden');
-            }
-        }
-
-        // Update footer and badges
-        if (walkInCalCheckoutDateText) {
-            walkInCalCheckoutDateText.textContent = `Check-Out: ${checkout.displayDate} · ${outDesc}`;
-        }
-        if (walkInCalCheckoutSessionText) {
-            walkInCalCheckoutSessionText.textContent = checkout.sessionLabel;
-        }
-        if (walkInCalStartSlotText) {
-            walkInCalStartSlotText.textContent = walkInCalState.selectedStartSlot;
-        }
-        if (walkInCalSpanDetailText) {
-            walkInCalSpanDetailText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
-        }
-        if (walkInCalSummaryScheduleText) {
-            walkInCalSummaryScheduleText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime) • Check-In: ${sFmt}`;
-        }
-        if (walkInCalDaysBadgeText) {
-            walkInCalDaysBadgeText.textContent = `${spanLabel} Stay`;
-        }
-        if (walkInTopCheckoutTimeBadge) {
-            walkInTopCheckoutTimeBadge.textContent = `${checkout.displayDate} · ${checkout.time}`;
-        }
-
-        if (walkInCalSummaryText) {
-            walkInCalSummaryText.textContent = `Check-In Today (${walkInCalState.selectedStartSlot}) → Check-Out ${checkout.textSummary}`;
-        }
-        if (walkInCalSpanText) {
-            walkInCalSpanText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
-        }
-        if (walkInCalCurrentBadge) {
-            walkInCalCurrentBadge.textContent = `${counts.daysSpan}D Stay`;
-        }
-        if (walkInCalStepHelp) {
-            walkInCalStepHelp.textContent = 'Click any date from Today onwards to set Check-Out Date';
-        }
-    };
-
-    const renderWalkInCalendarMonth = () => {
-        if (!walkInCalGrid) return;
-        const year = walkInCalState.viewYear;
-        const month = walkInCalState.viewMonth;
-
-        if (walkInCalTitle) walkInCalTitle.textContent = `${monthNames[month]} ${year}`;
-        if (walkInCalYear) walkInCalYear.value = year;
-
-        walkInCalGrid.innerHTML = '';
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        // Empty padding cells
-        for (let i = 0; i < firstDay; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
-            walkInCalGrid.appendChild(empty);
-        }
-
-        // Days
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'edit-calendar__day flex flex-col items-center justify-center rounded-lg p-1.5 text-xs font-semibold transition-all duration-150 relative cursor-pointer border border-transparent';
-            btn.textContent = d;
-            btn.dataset.date = dateStr;
-
-            const isPast = dateStr < todayStr;
-            const isToday = dateStr === todayStr;
-            const inRange = dateStr >= walkInCalState.selectedStartDate && dateStr <= walkInCalState.selectedEndDate;
-
-            if (isPast) {
-                btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
-                btn.disabled = true;
-            } else {
-                // Check if this date can be picked as Check-Out Date
-                let canPickDate = true;
-                let conflictReason = '';
-
-                if (selectedAmenities && selectedAmenities.length > 0) {
-                    const conflictDay = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, 'Daytime');
-                    const conflictNight = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, 'Nighttime');
-
-                    const dayPossible = !(dateStr === walkInCalState.selectedStartDate && walkInCalState.selectedStartSlot === 'Nighttime') && !conflictDay.hasConflict;
-                    const nightPossible = !conflictNight.hasConflict;
-
-                    if (!dayPossible && !nightPossible) {
-                        canPickDate = false;
-                        conflictReason = conflictNight.reason || conflictDay.reason || 'Booked / Occupied';
-                    }
-                }
-
-                if (!canPickDate) {
-                    btn.disabled = true;
-                    btn.classList.add('is-disabled', 'cursor-not-allowed', 'opacity-40', 'bg-rose-50/70', 'text-rose-400', 'border-rose-200', 'dark:bg-rose-950/30', 'dark:text-rose-400');
-                    btn.title = conflictReason;
-
-                    const bookedTag = document.createElement('span');
-                    bookedTag.className = 'text-[9px] font-bold text-rose-500 uppercase tracking-tighter leading-none mt-0.5 scale-90';
-                    bookedTag.textContent = 'Booked';
-                    btn.appendChild(bookedTag);
-                } else {
-                    btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
-                }
-            }
-
-            if (inRange && !isPast && !btn.disabled) {
-                btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
-                btn.classList.remove('hover:bg-hp-green/10');
-            }
-
-            if (isToday) {
-                const dot = document.createElement('span');
-                dot.className = 'absolute bottom-1 h-1 w-1 rounded-full bg-emerald-400';
-                btn.appendChild(dot);
-            }
-
-            btn.addEventListener('click', () => {
-                if (btn.disabled) return;
-
-                let targetSlot = walkInCalState.selectedEndSlot;
-                if (walkInCalState.selectedStartDate === dateStr && walkInCalState.selectedStartSlot === 'Nighttime') {
-                    targetSlot = 'Nighttime';
-                } else if (selectedAmenities && selectedAmenities.length > 0) {
-                    const testCur = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, targetSlot);
-                    if (testCur.hasConflict) {
-                        const altSlot = targetSlot === 'Nighttime' ? 'Daytime' : 'Nighttime';
-                        const testAlt = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, altSlot);
-                        if (!testAlt.hasConflict) {
-                            targetSlot = altSlot;
-                        } else {
-                            window.alert(testCur.reason || 'This date cannot be picked because one or more availed amenities are occupied or reserved.');
-                            return;
-                        }
-                    }
-                }
-
-                // Single click sets Check-Out Date (since check-in is fixed to today)
-                walkInCalState.selectedEndDate = dateStr;
-                walkInCalState.selectedEndSlot = targetSlot;
-
-                syncWalkInSessionPills();
-                updateWalkInCalModalSummary();
-                renderWalkInCalendarMonth();
-            });
-
-            walkInCalGrid.appendChild(btn);
-        }
-
-        updateWalkInCalModalSummary();
-    };
-
-    walkInCalPrev?.addEventListener('click', () => {
-        walkInCalState.viewMonth--;
-        if (walkInCalState.viewMonth < 0) {
-            walkInCalState.viewMonth = 11;
-            walkInCalState.viewYear--;
-        }
-        renderWalkInCalendarMonth();
-        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
-    });
-
-    walkInCalNext?.addEventListener('click', () => {
-        walkInCalState.viewMonth++;
-        if (walkInCalState.viewMonth > 11) {
-            walkInCalState.viewMonth = 0;
-            walkInCalState.viewYear++;
-        }
-        renderWalkInCalendarMonth();
-        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
-    });
-
-    walkInCalYear?.addEventListener('change', (e) => {
-        walkInCalState.viewYear = parseInt(e.target.value);
-        renderWalkInCalendarMonth();
-        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
-    });
-
-    walkInCalApplyBtn?.addEventListener('click', () => {
-        if (selectedAmenities && selectedAmenities.length > 0) {
-            const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, walkInCalState.selectedEndSlot);
-            if (conflict.hasConflict) {
-                window.alert(`Cannot apply schedule: ${conflict.reason}`);
-                return;
-            }
-        }
-
-        walkInSchedule.startDate = walkInCalState.selectedStartDate;
-        walkInSchedule.endDate = walkInCalState.selectedEndDate;
-        walkInSchedule.startSlot = walkInCalState.selectedStartSlot;
-        walkInSchedule.endSlot = walkInCalState.selectedEndSlot;
-
-        syncMasterScheduleDisplay();
-
-        // Automatically match ALL availed amenities to the master stay date and sessions
-        selectedAmenities.forEach(am => {
-            am.start_date = walkInSchedule.startDate;
-            am.end_date = walkInSchedule.endDate;
-            am.start_slot = walkInSchedule.startSlot;
-            am.end_slot = walkInSchedule.endSlot;
-
-            // Recalculate amenity price
-            const counts = calculateWalkInSlots(am.start_date, am.end_date, am.start_slot, am.end_slot);
-            am.total_days = counts.daysSpan;
-            am.day_count = counts.dayCount;
-            am.night_count = counts.nightCount;
-
-            const dayP = am.is_aircon && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
-            const nightP = am.is_aircon && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
-            const qty = am.quantity || 1;
-            am.price_at_booking = ((counts.dayCount * dayP) + (counts.nightCount * nightP)) * qty;
-        });
-
-        renderSelectedAmenities();
-        updateGrandTotal();
-        closeWalkInCalendarModal();
-    });
-
-    // ==========================================
-    // Amenities Modal & Dynamic Availability Loading
-    // ==========================================
-    const amenityModal = document.getElementById('amenityModal');
-    const amenityCloseButtons = document.querySelectorAll('[data-close-amenity-modal="true"]');
-    const amenityModalStayBadge = document.getElementById('amenityModalStayBadge');
-    const walkInAmenityCategorySelect = document.getElementById('walkInAmenityCategorySelect');
-    const walkInAmenityStatusFilters = document.getElementById('walkInAmenityStatusFilters');
-    const walkInAmenityFilterSummaryText = document.getElementById('walkInAmenityFilterSummaryText');
-
-    let cachedAmenityList = [];
-    let amenityStatusFilter = 'available'; // Default is 'available' per user request!
-    let amenityCategoryFilter = 'all';
-
-    // Categorization helper: groups like Payags, A-Houses, Cottages, etc.
-    const categorizeAmenity = (name = '') => {
-        const trimmed = (name || '').trim();
-        const lower = trimmed.toLowerCase();
-        if (lower.startsWith('a-house') || lower.startsWith('ahouse') || lower.includes('a-house')) return 'A-Houses';
-        if (lower.startsWith('payag') || lower.includes('payag')) return 'Payags';
-        if (lower.startsWith('cottage') || lower.includes('cottage')) return 'Cottages';
-        if (lower.includes('function') || lower.includes('hall')) return 'Function Halls';
-        if (lower.includes('room') || lower.includes('suite')) return 'Rooms';
-
-        const words = trimmed.split(/[\s\-_0-9]/).filter(Boolean);
-        if (words.length > 0 && words[0].length > 1) {
-            const base = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
-            return base.endsWith('s') ? base : `${base}s`;
-        }
-        return 'Other Amenities';
-    };
-
-    const syncStatusFilterPills = () => {
-        const pills = document.querySelectorAll('#walkInAmenityStatusFilters [data-filter-status]');
-        pills.forEach(pill => {
-            const st = pill.dataset.filterStatus;
-            if (st === amenityStatusFilter) {
-                pill.className = 'walkin-filter-pill is-active cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-all bg-hp-green text-white shadow-xs';
-            } else {
-                pill.className = 'walkin-filter-pill cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10';
-            }
-        });
-    };
-
-    // Render Categorized Amenities inside Choose Amenities Modal
-    const renderCategorizedAmenities = () => {
-        const container = document.getElementById('amenitiesContainer');
-        if (!container) return;
-        const prevScrollTop = container.scrollTop;
-
-        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
-        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
-
-        // Filter list based on active filters
-        let filtered = cachedAmenityList;
-        if (amenityStatusFilter === 'available') {
-            filtered = filtered.filter(a => a.is_available);
-        } else if (amenityStatusFilter === 'occupied') {
-            filtered = filtered.filter(a => !a.is_available);
-        }
-
-        if (amenityCategoryFilter !== 'all') {
-            filtered = filtered.filter(a => categorizeAmenity(a.amenities_name) === amenityCategoryFilter);
-        }
-
-        // Update footer summary text
-        if (walkInAmenityFilterSummaryText) {
-            const statusLabel = amenityStatusFilter === 'available' ? 'available' : (amenityStatusFilter === 'occupied' ? 'occupied' : 'total');
-            const catLabel = amenityCategoryFilter === 'all' ? 'all categories' : amenityCategoryFilter;
-            walkInAmenityFilterSummaryText.textContent = `Showing ${filtered.length} ${statusLabel} in ${catLabel}`;
-        }
-
-        // Empty state
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="py-12 text-center text-hp-text-muted">
-                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-hp-green/10 text-xl text-hp-green">
-                        <i class="bi bi-inbox"></i>
-                    </div>
-                    <div class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">No amenities found</div>
-                    <p class="text-xs text-hp-text-muted mt-1 max-w-[340px] mx-auto">No amenities match "${amenityStatusFilter}" in "${amenityCategoryFilter === 'all' ? 'All Categories' : amenityCategoryFilter}".</p>
-                    <button type="button" class="mt-3.5 cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all" id="walkInResetAmenityFiltersBtn">
-                        Show All Available Amenities
-                    </button>
-                </div>
-            `;
-            const resetBtn = document.getElementById('walkInResetAmenityFiltersBtn');
-            resetBtn?.addEventListener('click', () => {
-                amenityStatusFilter = 'available';
-                amenityCategoryFilter = 'all';
-                if (walkInAmenityCategorySelect) walkInAmenityCategorySelect.value = 'all';
-                syncStatusFilterPills();
-                renderCategorizedAmenities();
-            });
-            return;
-        }
-
-        // Group by category
-        const groups = {};
-        filtered.forEach(amenity => {
-            const cat = categorizeAmenity(amenity.amenities_name);
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push(amenity);
-        });
-
-        // Preferred order of categories: A-Houses, Payags, Cottages, Rooms, Function Halls, Others
-        const preferredOrder = ['A-Houses', 'Payags', 'Cottages', 'Rooms', 'Function Halls'];
-        const sortedCategories = Object.keys(groups).sort((a, b) => {
-            const idxA = preferredOrder.indexOf(a);
-            const idxB = preferredOrder.indexOf(b);
-            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-            if (idxA !== -1) return -1;
-            if (idxB !== -1) return 1;
-            return a.localeCompare(b);
-        });
-
-        container.innerHTML = '';
-
-        sortedCategories.forEach(cat => {
-            const items = groups[cat];
-            const groupWrap = document.createElement('div');
-            groupWrap.className = 'amenity-category-section space-y-2.5';
-
-            // Category Header
-            const availableCount = items.filter(a => a.is_available).length;
-            const header = document.createElement('div');
-            header.className = 'flex items-center justify-between pb-1.5 border-b border-glass-border/60 sticky top-0 bg-hp-cream/90 dark:bg-[rgba(30,30,30,0.95)] backdrop-blur-sm z-10';
-            header.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-hp-green dark:text-emerald-400">${cat}</span>
-                    <span class="rounded-full bg-hp-green/15 px-2 py-0.2 text-[0.68rem] font-bold text-hp-green dark:text-emerald-400">${items.length}</span>
-                </div>
-                <span class="text-[0.7rem] text-hp-text-muted">${availableCount} available</span>
-            `;
-            groupWrap.appendChild(header);
-
-            // Cards Grid
-            const cardsGrid = document.createElement('div');
-            cardsGrid.className = 'grid gap-2.5';
-
-            items.forEach(amenity => {
-                const isAvailable = Boolean(amenity.is_available);
-                const isAlreadySelected = selectedAmenities.some(a => String(a.amenity_id) === String(amenity.id));
-                const hasFreeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
-                const hasFreePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
-
-                const dayP = parseFloat(amenity.daytime_price) || 0;
-                const nightP = parseFloat(amenity.nighttime_price) || 0;
-                const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
-
-                const card = document.createElement('div');
-                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
-                    ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/10 shadow-xs' : 'border-glass-border bg-glass hover:border-hp-green/60 hover:bg-white/60 dark:hover:bg-white/5')
-                    : 'border-red-300/40 bg-red-50/25 opacity-70 dark:border-red-500/20 dark:bg-red-500/5'
-                    }`;
-                card.dataset.amenityId = amenity.id;
-
-                card.innerHTML = `
-                    <div class="flex-1 min-w-[200px]">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
-                            ${isAvailable
-                        ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
-                        : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Occupied</span>'
-                    }
-                            ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
-                            ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
-                        </div>
-                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
-                            <span>Capacity: ${amenity.minimum_capacity || 1}–${amenity.maximum_capacity || 10} guests</span>
-                            <span>•</span>
-                            <span>Day: ₱${formatPeso(dayP)}</span>
-                            <span>•</span>
-                            <span>Night: ₱${formatPeso(nightP)}</span>
-                        </div>
-                        ${isAvailable ? `
-                            <div class="mt-1 text-xs font-semibold text-hp-green dark:text-emerald-400">
-                                Stay Total: ₱${formatPeso(calculatedPrice)} <span class="font-normal text-hp-text-muted">(${spanLabel} • ${counts.dayCount}D ${counts.nightCount}N)</span>
-                            </div>
-                        ` : `
-                            <div class="mt-1 text-xs text-red-500/80 font-medium">
-                                Booked for this stay window
-                            </div>
-                        `}
-                    </div>
-                    <div>
-                        ${isAlreadySelected ? `
-                            <button type="button" class="walkin-remove-modal-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-xs flex items-center gap-1.5 transition-all duration-150 hover:bg-red-600 hover:border-red-600 group" data-amenity-id="${amenity.id}" title="Click to remove from selection">
-                                <i class="bi bi-check-lg group-hover:hidden"></i>
-                                <i class="bi bi-x-lg hidden group-hover:inline-block"></i>
-                                <span class="group-hover:hidden">Added</span>
-                                <span class="hidden group-hover:inline">Remove</span>
-                            </button>
-                        ` : (isAvailable ? `
-                            <button type="button" class="walkin-add-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white shadow-xs" data-amenity-id="${amenity.id}">
-                                + Add Amenity
-                            </button>
-                        ` : `
-                            <button type="button" class="rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text-muted cursor-not-allowed opacity-60" disabled>
-                                Unavailable
-                            </button>
-                        `)}
-                    </div>
-                `;
-
-                cardsGrid.appendChild(card);
-            });
-
-            groupWrap.appendChild(cardsGrid);
-            container.appendChild(groupWrap);
-        });
-
-        if (prevScrollTop) {
-            container.scrollTop = prevScrollTop;
-        }
-    };
-
-    const loadAvailableAmenitiesForStay = async () => {
-        const container = document.getElementById('amenitiesContainer');
-        if (!container) return;
-
-        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
-        const sFmt = formatDisplayDate(walkInSchedule.startDate);
-        const eFmt = formatDisplayDate(walkInSchedule.endDate);
-        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
-
-        if (amenityModalStayBadge) {
-            if (walkInSchedule.startDate === walkInSchedule.endDate) {
-                amenityModalStayBadge.textContent = `${sFmt} (${walkInSchedule.startSlot}) • ${spanLabel}`;
-            } else {
-                amenityModalStayBadge.textContent = `${sFmt} (${walkInSchedule.startSlot}) → ${eFmt} (${walkInSchedule.endSlot}) • ${spanLabel}`;
-            }
-        }
-
-        container.innerHTML = `
-            <div class="flex items-center justify-center py-8 text-sm text-hp-text-muted">
-                <svg class="mr-2 h-5 w-5 animate-spin text-hp-green" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                </svg>
-                Checking amenity availability for selected stay...
-            </div>
-        `;
-
-        try {
-            const params = new URLSearchParams({
-                start_date: walkInSchedule.startDate,
-                end_date: walkInSchedule.endDate,
-                start_slot: walkInSchedule.startSlot,
-                end_slot: walkInSchedule.endSlot,
-            });
-
-            const res = await fetch(`/api/amenities/availability?${params.toString()}`);
-            if (!res.ok) throw new Error('Failed to fetch availability');
-            const data = await res.json();
-            cachedAmenityList = data.amenities || [];
-
-            // Update Counts on pills
-            const availableCount = cachedAmenityList.filter(a => a.is_available).length;
-            const occupiedCount = cachedAmenityList.filter(a => !a.is_available).length;
-            const allCount = cachedAmenityList.length;
-
-            const countAvailEl = document.getElementById('walkInCountAvailable');
-            const countOccEl = document.getElementById('walkInCountOccupied');
-            const countAllEl = document.getElementById('walkInCountAll');
-            if (countAvailEl) countAvailEl.textContent = availableCount;
-            if (countOccEl) countOccEl.textContent = occupiedCount;
-            if (countAllEl) countAllEl.textContent = allCount;
-
-            // Populate category dropdown
-            if (walkInAmenityCategorySelect) {
-                const uniqueCategories = Array.from(new Set(cachedAmenityList.map(a => categorizeAmenity(a.amenities_name)))).sort();
-                const currentVal = walkInAmenityCategorySelect.value;
-                walkInAmenityCategorySelect.innerHTML = '<option value="all">All Categories</option>';
-                uniqueCategories.forEach(cat => {
-                    const opt = document.createElement('option');
-                    opt.value = cat;
-                    opt.textContent = cat;
-                    walkInAmenityCategorySelect.appendChild(opt);
-                });
-                if (uniqueCategories.includes(currentVal)) {
-                    walkInAmenityCategorySelect.value = currentVal;
-                    amenityCategoryFilter = currentVal;
-                } else {
-                    walkInAmenityCategorySelect.value = 'all';
-                    amenityCategoryFilter = 'all';
-                }
-            }
-
-            syncStatusFilterPills();
-            renderCategorizedAmenities();
-        } catch (err) {
-            console.error('Failed to load available amenities:', err);
-            container.innerHTML = '<p class="guest-empty px-4 py-8 text-center text-red-500">Failed to load amenity availability. Please close and retry.</p>';
-        }
-    };
-
-    // Filter listeners
-    walkInAmenityStatusFilters?.addEventListener('click', (e) => {
-        const pill = e.target.closest('[data-filter-status]');
-        if (pill) {
-            amenityStatusFilter = pill.dataset.filterStatus;
-            syncStatusFilterPills();
-            renderCategorizedAmenities();
+    ({
+        monthNames,
+        renderSelectedAmenities,
+        resvResultsCount,
+        stopQrScanner,
+        openScanQrModal,
+        closeScanQrModal,
+        openResAddCompanionModal,
+        closeResAddCompanionModal,
+    } = initStaffCheckInsExtras({
+        pageSignal,
+        reservationAddCompanionBtn,
+        csrfToken,
+        reservationData,
+        escapeHtml,
+        formatReservationId,
+        getCurrentReservationId: () => currentReservationId,
+        setCurrentReservationId: (v) => { currentReservationId = v; },
+        incrementCompanionCount: () => ++companionCount,
+        openReservationModal,
+        buildContinuousTimeline,
+        formatPeso,
+        chooseAmenitiesBtn,
+        selectedAmenitiesContainer,
+        amenitiesHiddenInputs,
+        noAmenitiesNotice,
+        todayStr,
+        currentServerSession,
+        walkInSchedule,
+        selectedAmenities,
+        getParkSettings: () => parkSettings,
+        mergeParkSettings: (patch) => { parkSettings = { ...parkSettings, ...patch }; },
+        calculateWalkInSlots,
+        formatDisplayDate,
+        formatShortDate,
+        getCheckoutDateAndDisplay,
+        syncMasterScheduleDisplay,
+        syncWalkInAmenityDropdowns,
+        syncMainGuestCardUI,
+        loadParkSettings,
+        updateGrandTotal,
+        companions,
+        getGenderBadgeHtml,
+        groupEditAccessRow,
+        groupEditPoolWrap,
+    }));
+
+
+    // Success toasts — show anything queued for after a reload and convert
+    // server-rendered flash banners (session('success')) into toasts.
+    convertFlashToToast();
+    showPendingToast();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof window.AppPage['staff_check_ins'] === 'function') {
+            window.AppPage['staff_check_ins']();
         }
     });
-
-    walkInAmenityCategorySelect?.addEventListener('change', (e) => {
-        amenityCategoryFilter = e.target.value;
-        renderCategorizedAmenities();
-    });
-
-    const openAmenityModal = () => {
-        if (!amenityModal) return;
-        amenityModal.classList.add('is-open');
-        amenityModal.setAttribute('aria-hidden', 'false');
-        loadAvailableAmenitiesForStay();
-    };
-
-    const closeAmenityModal = () => {
-        if (!amenityModal) return;
-        amenityModal.classList.remove('is-open');
-        amenityModal.setAttribute('aria-hidden', 'true');
-    };
-
-    chooseAmenitiesBtn?.addEventListener('click', openAmenityModal);
-    amenityCloseButtons.forEach(btn => btn.addEventListener('click', closeAmenityModal));
-
-    // Handle "+ Add Amenity" and "Added (Remove)" click from Choose Amenities Modal
-    document.addEventListener('click', (e) => {
-        const removeModalBtn = e.target.closest('.walkin-remove-modal-amenity-btn');
-        if (removeModalBtn) {
-            if (removeModalBtn.disabled) return;
-            removeModalBtn.disabled = true;
-            const amenityId = removeModalBtn.dataset.amenityId;
-            const idx = selectedAmenities.findIndex(a => String(a.amenity_id) === String(amenityId));
-            if (idx !== -1) {
-                const removedName = selectedAmenities[idx].amenity_name;
-                selectedAmenities.splice(idx, 1);
-                renderSelectedAmenities();
-                updateGrandTotal();
-                renderCategorizedAmenities();
-                showToast(`Removed ${removedName} from walk-in.`);
-            } else {
-                removeModalBtn.disabled = false;
-            }
-            return;
-        }
-
-        const addBtn = e.target.closest('.walkin-add-amenity-btn');
-        if (addBtn) {
-            if (addBtn.disabled) return;
-            addBtn.disabled = true;
-            const amenityId = addBtn.dataset.amenityId;
-            const allAmenities = window.ALL_AMENITIES || [];
-            let amenity = allAmenities.find(a => String(a.id) === String(amenityId));
-            if (!amenity && cachedAmenityList) {
-                amenity = cachedAmenityList.find(a => String(a.id) === String(amenityId));
-            }
-            if (!amenity) {
-                addBtn.disabled = false;
-                return;
-            }
-
-            // Check if already added
-            if (selectedAmenities.some(a => String(a.amenity_id) === String(amenityId))) {
-                showToast(`${amenity.amenities_name} is already added to this reservation.`, 'error');
-                addBtn.disabled = false;
-                return;
-            }
-
-            const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
-            const dayPrice = parseFloat(amenity.daytime_price) || 0;
-            const nightPrice = parseFloat(amenity.nighttime_price) || 0;
-            const price = (counts.dayCount * dayPrice) + (counts.nightCount * nightPrice);
-            const freeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
-            const freePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
-
-            selectedAmenities.push({
-                amenity_id: amenity.id,
-                amenity_name: amenity.amenities_name,
-                ...[truncated for diff preview]
+} else {
+    if (typeof window.AppPage['staff_check_ins'] === 'function') {
+        window.AppPage['staff_check_ins']();
+    }
+}

@@ -472,8 +472,12 @@ window.AppPage['staff_reports'] = function () {
             if (activeCategoryFilter) {
                 if (activeCategoryFilter === 'all_payments') {
                     categoryMatches = rowAmount > 0;
+                } else if (activeCategoryFilter === 'guests_handled') {
+                    categoryMatches = true;
                 } else if (activeCategoryFilter === 'checked_in') {
                     categoryMatches = (rowAction === 'checked_in' || rowAction === 'check_in');
+                } else if (activeCategoryFilter === 'checked_out') {
+                    categoryMatches = (rowAction === 'checked_out' || rowAction === 'check_out');
                 } else if (activeCategoryFilter === 'additional_charge_paid') {
                     categoryMatches = (rowAction === 'additional_charge_paid');
                 } else if (activeCategoryFilter === 'added_amenity') {

@@ -105,160 +105,192 @@
 
             <main class="dash-content p-6">
 
-                {{-- Live status strip (KPIs) --}}
-                <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3 lg:grid-cols-5" id="occupancyKpiStrip">
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
-                        </span>
+                {{-- Live status strip (KPIs matching Staff Records) --}}
+                <div class="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6" id="occupancyKpiStrip">
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $totalAmenities }}">{{ $totalAmenities }}</p>
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Amenities</p>
+                            <p class="occupancy-stat__value m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" data-count="{{ $totalAmenities }}">{{ $totalAmenities }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Amenities</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Total units</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                        </span>
+
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100/80 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $occupiedCount }}">{{ $occupiedCount }}</p>
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Occupied Now</p>
-                            <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">{{ $occupiedReservations }} active reservation{{ $occupiedReservations === 1 ? '' : 's' }}</p>
+                            <p class="occupancy-stat__value m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" data-count="{{ $occupiedCount }}">{{ $occupiedCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Occupied Now</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">{{ $occupiedReservations }} active reservation{{ $occupiedReservations === 1 ? '' : 's' }}</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
+
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100/80 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $reservedCount }}">{{ $reservedCount }}</p>
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Reserved Today</p>
+                            <p class="occupancy-stat__value m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" data-count="{{ $reservedCount }}">{{ $reservedCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Reserved Today</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Upcoming bookings</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
+
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $availableCount }}">{{ $availableCount }}</p>
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Available Now</p>
+                            <p class="occupancy-stat__value m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" data-count="{{ $availableCount }}">{{ $availableCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Available Now</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Ready to book</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-gradient-to-br from-[#e7f3ec]/60 to-transparent p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 dark:from-[#1e2220]/40">
-                        <div class="occupancy-rate-ring relative grid h-[3.1rem] w-[3.1rem] shrink-0 place-items-center rounded-full shadow-[inset_0_1px_2px_rgba(23,42,32,0.08)]" style="background: conic-gradient(var(--hp-green) calc(var(--pct) * 1%), var(--glass-border) 0); --pct: {{ $occupancyRate }}">
-                            <span class="grid h-[2.15rem] w-[2.15rem] place-items-center rounded-full bg-glass text-[0.68rem] font-bold text-hp-green shadow-[inset_0_1px_2px_rgba(23,42,32,0.06)]">{{ $occupancyRate }}%</span>
+
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="occupancy-rate-ring relative grid h-11 w-11 shrink-0 place-items-center rounded-full shadow-[inset_0_1px_2px_rgba(23,42,32,0.08)]" style="background: conic-gradient(var(--hp-green) calc(var(--pct) * 1%), var(--border) 0); --pct: {{ $occupancyRate }}">
+                            <span class="grid h-8 w-8 place-items-center rounded-full bg-[var(--surface)] text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">{{ $occupancyRate }}%</span>
                         </div>
                         <div class="min-w-0">
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Occupancy Rate</p>
-                            <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">{{ $inUseCount }} of {{ $totalAmenities }} in use</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums">{{ $occupancyRate }}%</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Occupancy Rate</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">{{ $inUseCount }} of {{ $totalAmenities }} in use</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 col-span-2 sm:col-span-1">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#f1eafd] text-[#7c3aed] dark:bg-[#2b2142] dark:text-[#b79df0]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                        </span>
+
+                    <article class="flex min-w-0 items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100/80 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $visitorCount }}">{{ $visitorCount }}</p>
-                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Visitors</p>
-                            <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">Guests inside with no amenity</p>
+                            <p class="occupancy-stat__value m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" data-count="{{ $visitorCount }}">{{ $visitorCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Visitors</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Guests inside with no amenity</p>
                         </div>
                     </article>
                 </div>
 
-                {{-- Date Range & Active Status Indicator Badge --}}
-                <div class="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-glass-border bg-glass px-4 py-2 text-[0.74rem] text-hp-text-muted shadow-glass" id="occupancyDateRangeBadge">
-                    @if ($startDate === $today && $endDate === $today && ($session === 'all' || empty($session)))
-                        <span class="inline-flex items-center gap-1.5 font-bold text-hp-green"><i class="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]"></i> Live (Today)</span>
-                    @elseif ($startDate === $endDate)
-                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Date: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
-                    @else
-                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Range: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }} – {{ \Illuminate\Support\Carbon::parse($endDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
-                    @endif
-                    <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#dc2626]"></i>Occupied</span>
-                    <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#c8a45d]"></i>Reserved</span>
-                    <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-hp-green"></i>Available</span>
-                </div>
-
-                {{-- Clean Modern Filter Toolbar --}}
-                <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass p-3 sm:p-3.5 shadow-glass backdrop-blur-md">
-                    {{-- Left: Filter Controls --}}
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        {{-- Date & Session Filter Modal Trigger --}}
-                        <button
-                            type="button"
-                            id="openDateFilterModalBtn"
-                            class="h-[38px] inline-flex cursor-pointer items-center gap-2.5 rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:bg-glass-hover hover:border-hp-green/40 px-3.5 py-1.5 text-xs font-semibold text-hp-text transition-all shadow-xs"
-                            title="Filter by Date & Session"
-                        >
-                            <i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400 text-sm"></i>
-                            <span id="dateFilterBtnLabel" class="max-w-[240px] truncate">
-                                @php
-                                    $labelParts = [];
-                                    if ($startDate && $endDate) {
-                                        if ($startDate === $endDate) {
-                                            if ($startDate === $today) {
-                                                $labelParts[] = 'Today';
-                                            } else {
-                                                $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
-                                            }
-                                        } else {
-                                            $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('m/d') . ' – ' . \Illuminate\Support\Carbon::parse($endDate)->format('m/d');
-                                        }
-                                    } elseif ($startDate) {
-                                        $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
-                                    }
-
-                                    $currSession = $session ?? 'all';
-                                    if ($currSession === 'daytime') {
-                                        $labelParts[] = 'Daytime';
-                                    } elseif ($currSession === 'nighttime' || $currSession === 'overnight') {
-                                        $labelParts[] = 'Overnight';
-                                    }
-                                    $isFiltered = ($startDate !== $today || $endDate !== $today || ($session && $session !== 'all'));
-                                @endphp
-                                {{ count($labelParts) > 0 ? implode(' • ', $labelParts) : 'Filter by Date & Session' }}
+                {{-- Filter & Legend Card (compact height, matching Staff Records) --}}
+                <div class="mb-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-[var(--shadow-sm)]">
+                    {{-- Header Row --}}
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-2.5 mb-2.5">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                <i class="bi bi-display text-xs"></i>
                             </span>
-                            <span id="dateFilterActiveDot" class="{{ $isFiltered ? '' : 'hidden' }} h-2 w-2 rounded-full bg-emerald-500 shadow-xs"></span>
-                            <i class="bi bi-chevron-down text-[10px] text-hp-text-muted"></i>
-                        </button>
+                            <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+                                <h3 class="m-0 text-xs font-bold text-[var(--ink)]">Amenity Availability &amp; Filters</h3>
+                                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-[var(--ink-muted)]" id="occupancyDateRangeBadge">
+                                    @if ($startDate === $today && $endDate === $today && ($session === 'all' || empty($session)))
+                                        <span class="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400"><i class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></i> Live (Today)</span>
+                                    @elseif ($startDate === $endDate)
+                                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Date: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Range: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }} – {{ \Illuminate\Support\Carbon::parse($endDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
+                                    @endif
+                                    <span class="inline-flex items-center gap-1.5 font-medium"><i class="h-2 w-2 rounded-full bg-[#dc2626]"></i> Occupied</span>
+                                    <span class="inline-flex items-center gap-1.5 font-medium"><i class="h-2 w-2 rounded-full bg-[#c8a45d]"></i> Reserved</span>
+                                    <span class="inline-flex items-center gap-1.5 font-medium"><i class="h-2 w-2 rounded-full bg-emerald-600"></i> Available</span>
+                                </div>
+                            </div>
+                        </div>
 
-                        {{-- Availability Dropdown --}}
-                        <div class="relative flex items-center">
-                            <i class="bi bi-funnel-fill absolute left-3 text-xs text-hp-text-muted pointer-events-none"></i>
-                            <select id="availabilityFilter" class="h-[38px] rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:border-hp-green/40 pl-8 pr-7 py-1.5 text-xs font-semibold text-hp-text outline-none focus:border-hp-green cursor-pointer appearance-none shadow-xs transition-colors">
+                        <div class="flex flex-wrap items-center gap-2">
+                            @php
+                                $labelParts = [];
+                                if ($startDate && $endDate) {
+                                    if ($startDate === $endDate) {
+                                        if ($startDate === $today) {
+                                            $labelParts[] = 'Today';
+                                        } else {
+                                            $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
+                                        }
+                                    } else {
+                                        $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('m/d') . ' – ' . \Illuminate\Support\Carbon::parse($endDate)->format('m/d');
+                                    }
+                                } elseif ($startDate) {
+                                    $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
+                                }
+
+                                $currSession = $session ?? 'all';
+                                if ($currSession === 'daytime') {
+                                    $labelParts[] = 'Daytime';
+                                } elseif ($currSession === 'nighttime' || $currSession === 'overnight') {
+                                    $labelParts[] = 'Overnight';
+                                }
+                                $isFiltered = ($startDate !== $today || $endDate !== $today || ($session && $session !== 'all'));
+                            @endphp
+                            <button
+                                type="button"
+                                id="clearFiltersBtn"
+                                class="{{ $isFiltered ? '' : 'hidden' }} h-8 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3 text-xs font-semibold text-rose-600 hover:border-rose-400 transition-all shadow-2xs"
+                                title="Reset to Today & All Sessions"
+                            >
+                                <i class="bi bi-arrow-counterclockwise text-xs"></i>
+                                <span>Reset to Today</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Filter Cards Grid (compact) --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 items-stretch gap-2.5 rounded-xl border border-[var(--border)] bg-gray-50/70 dark:bg-neutral-900/40 p-2.5 shadow-2xs">
+                        {{-- 1. Date & Session --}}
+                        <div class="rounded-lg border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 py-2 shadow-2xs flex flex-col justify-between gap-1 focus-within:border-emerald-500 transition-colors">
+                            <span class="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ink)]">
+                                <i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400"></i>
+                                <span>Date &amp; Session</span>
+                            </span>
+                            <button
+                                type="button"
+                                id="openDateFilterModalBtn"
+                                class="w-full flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2.5 py-1.5 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 outline-none cursor-pointer transition-colors text-left"
+                                title="Filter by Date & Session"
+                            >
+                                <span class="flex items-center gap-2 min-w-0">
+                                    <span id="dateFilterBtnLabel" class="truncate">{{ count($labelParts) > 0 ? implode(' • ', $labelParts) : 'Filter by Date & Session' }}</span>
+                                    <span id="dateFilterActiveDot" class="{{ $isFiltered ? '' : 'hidden' }} h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                                </span>
+                                <i class="bi bi-chevron-down text-[10px] text-[var(--ink-muted)] shrink-0"></i>
+                            </button>
+                        </div>
+
+                        {{-- 2. Availability Status --}}
+                        <div class="rounded-lg border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 py-2 shadow-2xs flex flex-col justify-between gap-1 focus-within:border-emerald-500 transition-colors">
+                            <label for="availabilityFilter" class="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ink)]">
+                                <i class="bi bi-funnel text-emerald-600 dark:text-emerald-400"></i>
+                                <span>Availability Status</span>
+                            </label>
+                            <select id="availabilityFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2.5 py-1.5 text-xs font-semibold text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
                                 <option value="all">All Statuses</option>
                                 <option value="available">Available</option>
                                 <option value="occupied">Occupied</option>
                                 <option value="reserved">Reserved</option>
                                 <option value="unavailable">Unavailable (Occupied/Reserved)</option>
                             </select>
-                            <i class="bi bi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-hp-text-muted pointer-events-none"></i>
                         </div>
 
-                        {{-- Reset Filter Button --}}
-                        <button
-                            type="button"
-                            id="clearFiltersBtn"
-                            class="{{ $isFiltered ? '' : 'hidden' }} h-[38px] inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:bg-glass-hover px-3 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-hp-text transition-all shadow-xs"
-                            title="Reset to Today & All Sessions"
-                        >
-                            <i class="bi bi-arrow-counterclockwise text-xs"></i>
-                            <span>Reset to Today</span>
-                        </button>
-                    </div>
-
-                    {{-- Right: Search Input --}}
-                    <div class="relative w-full sm:w-64 max-w-full">
-                        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted pointer-events-none"></i>
-                        <input
-                            type="text"
-                            id="searchAmenities"
-                            placeholder="Search amenities..."
-                            class="h-[38px] w-full rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 pl-8 pr-8 text-xs font-medium text-hp-text outline-none focus:border-hp-green placeholder:text-hp-text-muted/60 transition-colors shadow-xs"
-                        />
-                        <button type="button" id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Clear search">
-                            <i class="bi bi-x-circle-fill text-xs"></i>
-                        </button>
+                        {{-- 3. Search Amenities --}}
+                        <div class="rounded-lg border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 py-2 shadow-2xs flex flex-col justify-between gap-1 focus-within:border-emerald-500 transition-colors">
+                            <label for="searchAmenities" class="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ink)]">
+                                <i class="bi bi-search text-emerald-600 dark:text-emerald-400"></i>
+                                <span>Search Amenities</span>
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="searchAmenities"
+                                    placeholder="Search cottage, villa, hall..."
+                                    class="w-full rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2.5 py-1.5 pr-7 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 placeholder:text-[var(--ink-muted)]/70 transition-colors"
+                                />
+                                <button type="button" id="clearSearchBtn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Clear search">
+                                    <i class="bi bi-x-circle-fill text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

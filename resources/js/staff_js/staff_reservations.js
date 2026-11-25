@@ -4678,29 +4678,11 @@ window.AppPage['staff_reservations'] = function () {
                             <span>Cancel</span>
                         </button>
                         <button type="button" class="${isPastReservationDate
-                            ? 'cursor-pointer rounded-xl border-0 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white shadow-sm active:scale-[0.98]'
-                            : 'cursor-not-allowed rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 shadow-none opacity-60'} px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5" id="reservationNoShowBtn" ${isPastReservationDate ? '' : 'disabled'} title="${isPastReservationDate ? 'Mark this guest as No-Show' : 'No-Show is disabled until the scheduled reservation date has passed'}">
+                        ? 'cursor-pointer rounded-xl border-0 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white shadow-sm active:scale-[0.98]'
+                        : 'cursor-not-allowed rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 shadow-none opacity-60'} px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5" id="reservationNoShowBtn" ${isPastReservationDate ? '' : 'disabled'} title="${isPastReservationDate ? 'Mark this guest as No-Show' : 'No-Show is disabled until the scheduled reservation date has passed'}">
                             <i class="bi bi-person-x text-xs"></i>
                             <span>No-Show</span>
                         </button>
-                        ${hasSubmittedRequest ? `
-                            <button type="button" class="view-submitted-resched-trigger cursor-pointer rounded-xl border border-amber-500 bg-amber-500/15 hover:bg-amber-500 hover:text-white text-amber-900 dark:text-amber-200 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" data-request-id="${activeResched.id}" data-request-type="${activeResched.request_type}" title="Active ${activeResched.request_type === 'refund' ? 'refund' : 'reschedule'} request submitted by guest (awaiting staff confirmation). Click to review.">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                <i class="bi bi-clock-history text-xs"></i>
-                                <span>Active ${activeResched.request_type === 'refund' ? 'Refund' : 'Resched'} Request (Review)</span>
-                            </button>
-                        ` : hasActiveLink ? `
-                            <button type="button" class="cursor-pointer rounded-xl border border-amber-600 bg-amber-500/15 hover:bg-amber-600 hover:text-white text-amber-900 dark:text-amber-200 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Active reschedule link exists. Send link again via SMS">
-                                <i class="bi bi-arrow-repeat text-xs"></i>
-                                <span>Send Link Again</span>
-                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-600 text-white uppercase">Active</span>
-                            </button>
-                        ` : `
-                            <button type="button" class="cursor-pointer rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-800 dark:text-amber-300 dark:hover:bg-amber-600 dark:hover:text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationRequestReschedBtn" data-reservation-resched="${reservation.id}" title="Send temporary single-use rescheduling link via SMS">
-                                <i class="bi bi-chat-left-dots text-xs"></i>
-                                <span>Request Resched</span>
-                            </button>
-                        `}
                     </div>
                 `;
             } else if (isCancelled || isNoShow) {
