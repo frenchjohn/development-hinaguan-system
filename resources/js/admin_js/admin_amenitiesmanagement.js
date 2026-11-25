@@ -128,7 +128,7 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         const query = amenitySearch.value.trim().toLowerCase();
         const sortColumn = amenitySortColumn.value;
         const sortOrder = amenitySortOrder.value;
-        const tbody = document.querySelector('.amenities-table tbody');
+        const tbody = document.getElementById('amenitiesTableBody') || document.querySelector('.amenities-table tbody');
 
         const activeStatus = amenityStatus.value;
         let filteredRows = amenityRows.filter(row => {
@@ -171,7 +171,68 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         }
     };
 
+    let isSubmitting = false;
+
+    const setSubmitLoadingState = (loading) => {
+        isSubmitting = loading;
+        if (submitButton) {
+            submitButton.disabled = loading;
+            submitButton.classList.toggle('opacity-70', loading);
+            submitButton.classList.toggle('cursor-not-allowed', loading);
+            if (loading) {
+                const isUpdate = Boolean(amenityIdInput?.value);
+                submitButton.innerHTML = '<svg class="mr-1.5 inline-block h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> ' + (isUpdate ? 'Updating...' : 'Creating...');
+            } else {
+                submitButton.textContent = amenityIdInput?.value ? 'Update Amenity' : 'Create Amenity';
+            }
+        }
+        closeButtons.forEach((button) => {
+            button.disabled = loading;
+            button.classList.toggle('opacity-50', loading);
+            button.classList.toggle('cursor-not-allowed', loading);
+        });
+    };
+
+    const syncCapacityValidity = () => {
+        if (!fields.minimum_capacity || !fields.maximum_capacity) return;
+        const minRaw = fields.minimum_capacity.value.trim();
+        const maxRaw = fields.maximum_capacity.value.trim();
+        const minVal = minRaw === '' ? NaN : parseInt(minRaw, 10);
+        const maxVal = maxRaw === '' ? NaN : parseInt(maxRaw, 10);
+
+        if (minRaw === '' || isNaN(minVal) || minVal < 1) {
+            fields.minimum_capacity.setCustomValidity('Minimum capacity is required (at least 1).');
+        } else {
+            fields.minimum_capacity.setCustomValidity('');
+        }
+
+        if (maxRaw === '' || isNaN(maxVal) || maxVal < 1) {
+            fields.maximum_capacity.setCustomValidity('Maximum capacity is required (at least 1).');
+        } else if (!isNaN(minVal) && maxVal < minVal) {
+            fields.maximum_capacity.setCustomValidity('Maximum capacity must be at least minimum capacity.');
+        } else {
+            fields.maximum_capacity.setCustomValidity('');
+        }
+    };
+
+    fields.minimum_capacity?.addEventListener('input', syncCapacityValidity);
+    fields.maximum_capacity?.addEventListener('input', syncCapacityValidity);
+
+    form?.addEventListener('submit', (event) => {
+        if (isSubmitting) {
+            event.preventDefault();
+            return;
+        }
+        syncCapacityValidity();
+        if (!form.reportValidity()) {
+            event.preventDefault();
+            return;
+        }
+        setSubmitLoadingState(true);
+    });
+
     const closeModal = () => {
+        if (isSubmitting) return;
         modal.classList.remove('is-open');
         form.reset();
         if (fields.is_aircon) fields.is_aircon.checked = false;

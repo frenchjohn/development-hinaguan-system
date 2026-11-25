@@ -934,7 +934,7 @@
 
                                     <span class="rp-phone-prefix" title="Philippines (+63)">+63</span>
 
-                                    <input type="tel" name="phone" id="bookingPhoneInput" class="rp-phone-field" placeholder="912 345 6789" maxlength="12" inputmode="numeric" autocomplete="tel-national" required>
+                                    <input type="tel" name="phone" id="bookingPhoneInput" class="rp-phone-field !text-white placeholder:!text-white/50" placeholder="912 345 6789" maxlength="12" inputmode="numeric" autocomplete="tel-national" required>
 
                                 </div>
 

@@ -149,42 +149,22 @@
                     <div class="alert alert--success">{{ session('success') }}</div>
                 @endif
 
-                <section class="amenities-table-wrap">
-                    <div class="amenities-table-toolbar">
-                        <div class="amenities-table-toolbar__filters">
-                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--search">
-                                <label for="amenitySearch">Search amenities</label>
-                                <input id="amenitySearch" type="search" placeholder="Search by name..." autocomplete="off">
-                            </div>
-                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
-                                <label for="amenitySortColumn">Sort column</label>
-                                <select id="amenitySortColumn">
-                                    <option value="">None</option>
-                                    <option value="daytimePrice">Day price</option>
-                                    <option value="nighttimePrice">Night price</option>
-                                    <option value="additionalPerHead">Additional per head</option>
-                                    <option value="minimumCapacity">Minimum capacity</option>
-                                    <option value="maximumCapacity">Maximum capacity</option>
-                                </select>
-                            </div>
-                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
-                                <label for="amenitySortOrder">Sort order</label>
-                                <select id="amenitySortOrder">
-                                    <option value="none">None</option>
-                                    <option value="asc">Low to high</option>
-                                    <option value="desc">High to low</option>
-                                </select>
-                            </div>
-                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
-                                <label for="amenityStatus">Status</label>
-                                <select id="amenityStatus">
-                                    <option value="all">All statuses</option>
-                                    <option value="enabled">Enabled only</option>
-                                    <option value="disabled">Disabled only</option>
-                                </select>
+                <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]">
+                    {{-- Section header --}}
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                                </svg>
+                            </span>
+                            <div>
+                                <h2 class="m-0 font-display text-base font-bold text-[var(--ink)]">Amenities Directory</h2>
+                                <p class="m-0 text-xs text-[var(--ink-muted)]">Search, sort, and manage park amenities and pricing</p>
                             </div>
                         </div>
-                        <div class="amenities-table-toolbar__action flex items-center gap-2">
+
+                        <div class="flex items-center gap-2">
                             <button
                                 type="button"
                                 onclick="if(typeof window.refreshActivePage==='function'){window.refreshActivePage(true);}"
@@ -204,22 +184,57 @@
                             </button>
                         </div>
                     </div>
-                    <div class="amenities-table-scroll">
-                        <table class="amenities-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Day price</th>
-                                <th>Night price</th>
-                                <th>Benefits</th>
-                                <th>Min cap</th>
-                                <th>Max cap</th>
-                                <th>Sale %</th>
-                                <th>Status</th>
-                                <th class="amenities-table__actions-head">Actions</th>
+
+                    {{-- Filters row --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                        <div>
+                            <label for="amenitySearch" class="block mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Search amenities</label>
+                            <input id="amenitySearch" type="search" placeholder="Search by name..." autocomplete="off" class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                        <div>
+                            <label for="amenitySortColumn" class="block mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Sort column</label>
+                            <select id="amenitySortColumn" class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <option value="">None</option>
+                                <option value="daytimePrice">Day price</option>
+                                <option value="nighttimePrice">Night price</option>
+                                <option value="additionalPerHead">Additional per head</option>
+                                <option value="minimumCapacity">Minimum capacity</option>
+                                <option value="maximumCapacity">Maximum capacity</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="amenitySortOrder" class="block mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Sort order</label>
+                            <select id="amenitySortOrder" class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <option value="none">None</option>
+                                <option value="asc">Low to high</option>
+                                <option value="desc">High to low</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="amenityStatus" class="block mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Status</label>
+                            <select id="amenityStatus" class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <option value="all">All statuses</option>
+                                <option value="enabled">Enabled only</option>
+                                <option value="disabled">Disabled only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto overflow-y-auto max-h-[442px] rounded-xl border border-[var(--border)]" style="max-height: 442px;">
+                        <table class="w-full text-left text-xs border-separate border-spacing-0">
+                        <thead class="sticky top-0 z-10 shadow-xs">
+                            <tr class="font-semibold text-[var(--ink-muted)]">
+                                <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Amenity</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Day Price</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Night Price</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Benefits</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Capacity</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Sale</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Status</th>
+                                <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="amenitiesTableBody">
                             @forelse($amenities as $amenity)
                                 <tr
                                     data-amenity-id="{{ $amenity->id }}"
@@ -239,78 +254,87 @@
                                     data-sale-percentage="{{ $amenity->sale_percentage ?? 0 }}"
                                     data-original-daytime-price="{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}"
                                     data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}"
-                                    class="amenity-row {{ $amenity->sale_percentage && $amenity->sale_percentage > 0 ? 'amenity-row--sale' : '' }}"
+                                    class="amenity-row cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                                 >
-                                    <td>
-                                        <span class="amenity-cell-name">
-                                            <span class="amenity-cell-name__chip">{{ strtoupper(mb_substr($amenity->amenities_name, 0, 1)) }}</span>
-                                            <span class="amenity-cell-name__text">{{ $amenity->amenities_name }}</span>
-                                        </span>
+                                    <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
+                                        <div class="flex items-center gap-2.5">
+                                            <span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-500/15 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                                                {{ strtoupper(mb_substr($amenity->amenities_name, 0, 1)) }}
+                                            </span>
+                                            <span class="font-semibold text-[var(--ink)]">{{ $amenity->amenities_name }}</span>
+                                        </div>
                                     </td>
-                                    <td class="num-cell">
+                                    <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)] tabular-nums">
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                             <span class="price-old">₱{{ number_format($amenity->original_daytime_price ?? $amenity->daytime_price, 2) }}</span>
-                                            <span class="price-now">₱{{ number_format($amenity->daytime_price, 2) }}</span>
+                                            <p class="m-0 font-bold text-emerald-700 dark:text-emerald-400">₱{{ number_format($amenity->daytime_price, 2) }}</p>
+                                            <p class="m-0 text-[10px] text-[var(--ink-muted)] line-through">₱{{ number_format($amenity->original_daytime_price ?? $amenity->daytime_price, 2) }}</p>
                                         @else
-                                            <span>₱{{ number_format($amenity->daytime_price, 2) }}</span>
+                                            <span class="font-semibold text-[var(--ink)]">₱{{ number_format($amenity->daytime_price, 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="num-cell">
+                                    <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)] tabular-nums">
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                            <span class="price-old">₱{{ number_format($amenity->original_nighttime_price ?? $amenity->nighttime_price, 2) }}</span>
-                                            <span class="price-now">₱{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                            <p class="m-0 font-bold text-emerald-700 dark:text-emerald-400">₱{{ number_format($amenity->nighttime_price, 2) }}</p>
+                                            <p class="m-0 text-[10px] text-[var(--ink-muted)] line-through">₱{{ number_format($amenity->original_nighttime_price ?? $amenity->nighttime_price, 2) }}</p>
                                         @else
-                                            <span>₱{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                            <span class="font-semibold text-[var(--ink)]">₱{{ number_format($amenity->nighttime_price, 2) }}</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="py-3 px-4 border-b border-[var(--border)]">
                                         <div class="flex flex-wrap gap-1">
                                             @if($amenity->benefits?->is_aircon)
-                                                <span class="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-cyan-700 dark:text-cyan-300">
-                                                    <i class="bi bi-snow"></i> Aircon
-                                                </span>
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-700 dark:text-cyan-300">Aircon</span>
                                             @endif
                                             @if($amenity->benefits?->free_entrance)
-                                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">
-                                                    <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
-                                                </span>
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">Free Entrance</span>
                                             @endif
                                             @if($amenity->benefits?->free_pool)
-                                                <span class="inline-flex items-center gap-1 rounded-md bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-700 dark:text-blue-300">
-                                                    <i class="bi bi-water"></i> Free Pool
-                                                </span>
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">Free Pool</span>
                                             @endif
                                             @if(!$amenity->benefits?->is_aircon && !$amenity->benefits?->free_entrance && !$amenity->benefits?->free_pool)
-                                                <span class="text-xs text-hp-text-muted">—</span>
+                                                <span class="text-[var(--ink-muted)]">—</span>
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="num-cell">{{ $amenity->minimum_capacity !== null && $amenity->minimum_capacity !== '' ? $amenity->minimum_capacity : '—' }}</td>
-                                    <td class="num-cell">{{ $amenity->maximum_capacity !== null && $amenity->maximum_capacity !== '' ? $amenity->maximum_capacity : '—' }}</td>
-                                    <td>
-                                        @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                            <span class="badge badge--sale">{{ $amenity->sale_percentage }}% OFF</span>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] tabular-nums">
+                                        @if($amenity->minimum_capacity !== null || $amenity->maximum_capacity !== null)
+                                            <span class="inline-flex items-center rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-semibold text-[var(--ink)]">
+                                                {{ $amenity->minimum_capacity ?? '—' }}–{{ $amenity->maximum_capacity ?? '—' }} pax
+                                            </span>
                                         @else
-                                            <span class="num-cell">—</span>
+                                            <span class="text-[var(--ink-muted)]">—</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        <span class="status-pill {{ $amenity->status ? 'status-pill--enabled' : 'status-pill--disabled' }}">
-                                            {{ $amenity->status ? 'Enabled' : 'Disabled' }}
-                                        </span>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                                        @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
+                                            <span class="inline-flex items-center rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 text-[10px] font-bold">
+                                                {{ $amenity->sale_percentage }}% OFF
+                                            </span>
+                                        @else
+                                            <span class="text-[var(--ink-muted)]">—</span>
+                                        @endif
                                     </td>
-                                    <td class="amenities-table__actions">
-                                        <button type="button" class="row-action row-action--edit" data-action="edit" title="Edit amenity">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        </button>
-                                        <button type="button" class="row-action row-action--delete" data-action="delete" title="Delete amenity">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                        </button>
+                                    <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
+                                        @if($amenity->status)
+                                            <span class="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">Enabled</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 px-2 py-0.5 text-[10px] font-bold">Disabled</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)]">
+                                        <div class="inline-flex items-center gap-1.5">
+                                            <button type="button" data-action="edit" title="Edit amenity" class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-transparent text-[var(--ink-muted)] transition-colors hover:border-emerald-500 hover:text-emerald-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            </button>
+                                            <button type="button" data-action="delete" title="Delete amenity" class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-transparent text-[var(--ink-muted)] transition-colors hover:border-red-500 hover:text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="table-empty">No amenities found yet.</td>
+                                    <td colspan="8" class="py-10 px-4 text-center text-xs text-[var(--ink-muted)]">No amenities found yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -321,120 +345,122 @@
         </div>
     </div>
 
-    <div class="modal" id="amenityModal" aria-hidden="true">
+    <div class="modal !items-center !justify-center !p-4" id="amenityModal" aria-hidden="true">
         <div class="modal__backdrop" data-close-amenity-modal></div>
-        <div class="modal__panel">
-            <div class="modal__header">
-                <h3 id="amenityModalTitle">Add New Amenity</h3>
-                <button type="button" class="modal__close" data-close-amenity-modal>&times;</button>
+        <div class="relative z-10 my-auto flex w-full max-w-[660px] max-h-[90vh] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl">
+            <div class="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <h3 id="amenityModalTitle" class="m-0 font-display text-lg font-bold text-[var(--ink)]">Add New Amenity</h3>
+                <button type="button" data-close-amenity-modal aria-label="Close" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
-            <form method="POST" action="{{ route('admin.amenities.store') }}" class="modal-form" id="amenityForm" enctype="multipart/form-data" data-store-url="{{ route('admin.amenities.store') }}" data-update-base-url="{{ url('admin/amenities') }}">
+            <form method="POST" action="{{ route('admin.amenities.store') }}" id="amenityForm" enctype="multipart/form-data" data-store-url="{{ route('admin.amenities.store') }}" data-update-base-url="{{ url('admin/amenities') }}" class="flex min-h-0 flex-1 flex-col">
                 @csrf
                 <input type="hidden" name="amenity_id" id="amenityId">
                 <input type="hidden" name="existing_image" id="existingImage">
 
-                <div class="modal-form__row">
-                    <label for="amenities_name">Name <span>*</span></label>
-                    <input id="amenities_name" name="amenities_name" type="text" required>
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="daytime_price">Original Daytime Price <span>*</span></label>
-                    <input id="daytime_price" name="daytime_price" type="number" step="0.01" min="0" inputmode="decimal" required>
-                    <small style="color: var(--hp-text-muted); font-size: 0.8rem;">Base price before sale discount</small>
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="nighttime_price">Original Nighttime Price <span>*</span></label>
-                    <input id="nighttime_price" name="nighttime_price" type="number" step="0.01" min="0" inputmode="decimal" required>
-                    <small style="color: var(--hp-text-muted); font-size: 0.8rem;">Base price before sale discount</small>
-                </div>
-
-                <div class="modal-form__row modal-form__row--full">
-                    <label class="block mb-2 font-semibold">Included Benefits & Perks</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl border border-glass-border bg-glass">
-                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="is_aircon" name="is_aircon" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
-                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-snow text-cyan-600 dark:text-cyan-400"></i> Has Aircon</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="free_entrance" name="free_entrance" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
-                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-ticket-perforated-fill text-emerald-600 dark:text-emerald-400"></i> Free Entrance</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="free_pool" name="free_pool" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
-                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-water text-blue-600 dark:text-blue-400"></i> Free Pool Access</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="additional_per_head">Additional Per Head</label>
-                    <input id="additional_per_head" name="additional_per_head" type="number" step="0.01" min="0" inputmode="decimal">
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="minimum_capacity">Minimum Capacity</label>
-                    <input id="minimum_capacity" name="minimum_capacity" type="number" step="1" min="0" inputmode="numeric">
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="maximum_capacity">Maximum Capacity</label>
-                    <input id="maximum_capacity" name="maximum_capacity" type="number" step="1" min="0" inputmode="numeric">
-                </div>
-
-                <div class="modal-form__row modal-form__row--full">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3"></textarea>
-                </div>
-
-                <div class="modal-form__row modal-form__row--full">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label class="m-0 font-semibold text-sm text-hp-text dark:text-[#f3f4f6]">Amenity Image</label>
-                        <span class="text-xs text-hp-text-muted">PNG, JPG, WEBP up to 4MB</span>
-                    </div>
-
-                    {{-- Dynamic Image Preview (shows when adding new amenity or changing image) --}}
-                    <div id="imagePreview" class="image-preview mb-3" style="display:none;">
-                        <div class="relative overflow-hidden rounded-2xl border border-glass-border bg-black/5 dark:bg-white/5 shadow-md">
-                            <img id="imagePreviewImg" src="" alt="Amenity preview" class="w-full max-h-[220px] object-cover rounded-2xl block">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none rounded-2xl"></div>
-
-                            {{-- Preview Badge --}}
-                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm shadow-xs">
-                                <i class="bi bi-image text-emerald-400"></i>
-                                <span id="imagePreviewBadge">Image Preview</span>
-                            </div>
-
-                            {{-- Remove / Revert Selected Image Button --}}
-                            <button type="button" id="removeImageBtn" class="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-black/60 text-white hover:bg-red-600 hover:scale-105 transition-all cursor-pointer shadow-md" title="Remove selected image">
-                                <i class="bi bi-x-lg text-xs"></i>
-                            </button>
+                <div class="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                    {{-- Name, Status, Sale --}}
+                    <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-12">
+                        <div class="sm:col-span-6">
+                            <label for="amenities_name" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Amenity Name <span class="text-red-500">*</span></label>
+                            <input id="amenities_name" name="amenities_name" type="text" placeholder="e.g. A-House 1" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="status" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Status</label>
+                            <select id="status" name="status" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <option value="enabled">Enabled</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="sale_percentage" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Sale (%)</label>
+                            <input id="sale_percentage" name="sale_percentage" type="number" step="0.01" min="0" max="100" inputmode="decimal" placeholder="0" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
                         </div>
                     </div>
 
-                    <div class="dropzone" id="imageDropZone">
-                        <span class="dropzone__text">Drag & drop an image here, or click to browse</span>
-                        <span class="dropzone__filename" id="imageFileName">No file chosen</span>
+                    {{-- Pricing --}}
+                    <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                        <div>
+                            <label for="daytime_price" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Daytime Price (₱) <span class="text-red-500">*</span></label>
+                            <input id="daytime_price" name="daytime_price" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                        <div>
+                            <label for="nighttime_price" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Nighttime Price (₱) <span class="text-red-500">*</span></label>
+                            <input id="nighttime_price" name="nighttime_price" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                        <div>
+                            <label for="additional_per_head" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Extra Per Head (₱)</label>
+                            <input id="additional_per_head" name="additional_per_head" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
                     </div>
-                    <input id="image" name="image" type="file" accept="image/*" hidden>
+
+                    {{-- Capacity --}}
+                    <div class="grid grid-cols-2 gap-3.5">
+                        <div>
+                            <label for="minimum_capacity" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Minimum Capacity (pax) <span class="text-red-500">*</span></label>
+                            <input id="minimum_capacity" name="minimum_capacity" type="number" step="1" min="1" inputmode="numeric" placeholder="e.g. 1" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                        <div>
+                            <label for="maximum_capacity" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Maximum Capacity (pax) <span class="text-red-500">*</span></label>
+                            <input id="maximum_capacity" name="maximum_capacity" type="number" step="1" min="1" inputmode="numeric" placeholder="e.g. 4" required class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                        </div>
+                    </div>
+
+                    {{-- Included Benefits --}}
+                    <div>
+                        <span class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Included Benefits</span>
+                        <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--ink)] transition-colors hover:border-[var(--border-strong)]">
+                                <input type="checkbox" id="is_aircon" name="is_aircon" value="1" class="h-4 w-4 accent-[#1b5e3a] rounded cursor-pointer">
+                                <span>Has Aircon</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--ink)] transition-colors hover:border-[var(--border-strong)]">
+                                <input type="checkbox" id="free_entrance" name="free_entrance" value="1" class="h-4 w-4 accent-[#1b5e3a] rounded cursor-pointer">
+                                <span>Free Entrance</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-xs font-medium text-[var(--ink)] transition-colors hover:border-[var(--border-strong)]">
+                                <input type="checkbox" id="free_pool" name="free_pool" value="1" class="h-4 w-4 accent-[#1b5e3a] rounded cursor-pointer">
+                                <span>Free Pool Access</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Description --}}
+                    <div>
+                        <label for="description" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Description</label>
+                        <textarea id="description" name="description" rows="2" placeholder="Optional amenity notes or inclusions..." class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] resize-y"></textarea>
+                    </div>
+
+                    {{-- Amenity Image --}}
+                    <div>
+                        <div class="mb-1.5 flex items-center justify-between">
+                            <label class="m-0 text-xs font-semibold text-[var(--ink)]">Amenity Image</label>
+                            <span class="text-[11px] text-[var(--ink-muted)]">PNG, JPG, WEBP up to 4MB</span>
+                        </div>
+
+                        <div id="imagePreview" class="image-preview mb-2.5" style="display:none;">
+                            <div class="relative overflow-hidden rounded-xl border border-[var(--border)] bg-black/5">
+                                <img id="imagePreviewImg" src="" alt="Amenity preview" class="block max-h-[180px] w-full object-cover">
+                                <div class="absolute bottom-2.5 left-2.5 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                                    <span id="imagePreviewBadge">Image Preview</span>
+                                </div>
+                                <button type="button" id="removeImageBtn" class="absolute right-2.5 top-2.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/65 text-white transition-colors hover:bg-red-600" title="Remove selected image">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="dropzone" id="imageDropZone">
+                            <span class="dropzone__text">Drag &amp; drop an image here, or click to browse</span>
+                            <span class="dropzone__filename" id="imageFileName">No file chosen</span>
+                        </div>
+                        <input id="image" name="image" type="file" accept="image/*" hidden>
+                    </div>
                 </div>
 
-                <div class="modal-form__row">
-                    <label for="status">Status</label>
-                    <select id="status" name="status">
-                        <option value="enabled">Enabled</option>
-                        <option value="disabled">Disabled</option>
-                    </select>
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="sale_percentage">Sale Percentage (%)</label>
-                    <input id="sale_percentage" name="sale_percentage" type="number" step="0.01" min="0" max="100" inputmode="decimal" placeholder="0 = no sale">
-                </div>
-
-                <div class="modal-form__actions">
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
                     <button type="button" class="btn btn--ghost" data-close-amenity-modal>Cancel</button>
                     <button type="button" class="btn btn--ghost" id="amenityEditButton" style="display:none;">Edit</button>
                     <button type="submit" class="btn btn--primary" id="amenitySubmitButton">Create Amenity</button>
