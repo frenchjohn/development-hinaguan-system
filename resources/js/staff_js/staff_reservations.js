@@ -136,23 +136,23 @@ window.AppPage['staff_reservations'] = function () {
         const slots = reservation?.time_slots || [];
         const totalDays = Number(reservation?.total_days || 1);
         if (totalDays > 1) {
-            return `<span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap"><i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>Continuous Stay (${totalDays}D)</span>`;
+            return `<span class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap"><i class="bi bi-calendar-range text-[10px] text-teal-600 dark:text-teal-400"></i>Continuous Stay (${totalDays}D)</span>`;
         }
         if (slots.length > 0) {
-            return `<div class="time-slot-labels flex flex-wrap items-center justify-center gap-1.5">${slots.map(slot => {
+            return `<div class="time-slot-labels flex flex-wrap items-center justify-center gap-1">${slots.map(slot => {
                 const isNight = ['nighttime', 'overnight'].includes(String(slot).toLowerCase());
                 if (isNight) {
-                    return `<span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
+                    return `<span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[10px] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
                 }
-                return `<span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>${escapeHtml(slot)}</span>`;
+                return `<span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[10px] text-amber-500 dark:text-amber-400"></i>${escapeHtml(slot)}</span>`;
             }).join('')}</div>`;
         }
         const rawSlot = reservation?.start_slot || 'Daytime';
         const isNight = ['nighttime', 'overnight'].includes(String(rawSlot).toLowerCase());
         if (isNight) {
-            return `<span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
+            return `<span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[10px] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
         }
-        return `<span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>${escapeHtml(rawSlot)}</span>`;
+        return `<span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[10px] text-amber-500 dark:text-amber-400"></i>${escapeHtml(rawSlot)}</span>`;
     };
 
     // Shared row markup (used by server rows, refresh + fallback renders)
@@ -172,7 +172,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const formatDate = (dateStr, endDateStr, totalDays) => {
-            if (!dateStr) return 'N/A';
+            if (!dateStr) return '—';
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
             const sFormatted = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -186,53 +186,57 @@ window.AppPage['staff_reservations'] = function () {
                     ? endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                     : endDateStr;
                 if (eFormatted && eFormatted !== sFormatted) {
-                    return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>` : ''}</div>`;
+                    return `<div><p class="m-0 font-bold text-xs ${isPastArrival ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--ink)]'}">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</p><p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">(${daysCount} Days Stay)</p>${isPastArrival ? `<p class="m-0 mt-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</p>` : ''}</div>`;
                 }
             }
-            return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(1 Day Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>` : ''}</div>`;
+            return `<div><p class="m-0 font-bold text-xs ${isPastArrival ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--ink)]'}">${escapeHtml(sFormatted)}</p><p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">(1 Day Stay)</p>${isPastArrival ? `<p class="m-0 mt-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</p>` : ''}</div>`;
         };
 
         const badgeHtml = isToday
-            ? `<span class="today-reservation-badge ml-1.5 inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>`
+            ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider">TODAY</span>`
             : (isPastArrival
-                ? `<span class="past-reservation-badge ml-1.5 inline-flex items-center gap-1 rounded-md bg-[#ef4444] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white shadow-sm dark:bg-[#dc2626]" title="Arrival date was ${escapeHtml(resDateStr)} (${daysOverdue} days overdue)">
-                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
-                    PAST ARRIVAL (${daysOverdue}d ago)
+                ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white uppercase tracking-wider" title="Arrival date was ${escapeHtml(resDateStr)} (${daysOverdue} days overdue)">
+                    <i class="bi bi-exclamation-triangle-fill text-[9px]"></i>
+                    PAST ARRIVAL (-${daysOverdue}d ago)
                 </span>`
                 : '');
 
         const statusColors = {
-            pending: 'bg-[#fff3e0] text-[#e65100] border-[#ffe0b2] dark:bg-[rgba(230,81,0,0.2)] dark:text-[#ffb74d] dark:border-[#ff9800]/30',
-            confirmed: 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af] dark:border-[#9ca3af]/30',
-            'checked in': 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
-            'checked out': 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
-            cancelled: 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
-            'no show': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/40',
+            pending: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40',
+            confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40',
+            'checked in': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40',
+            'checked out': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/40',
+            cancelled: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40',
+            'no show': 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-800/40',
         };
-        const statusClass = statusColors[statusLower] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300';
+        const statusClass = statusColors[statusLower] || 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-neutral-800 dark:text-gray-300 dark:border-neutral-700';
 
         return `
-                <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(formatReservationId(reservation.id))}</span>
+                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                    <span class="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)] font-mono">
+                        <i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>${escapeHtml(formatReservationId(reservation.id))}
+                    </span>
                 </td>
-                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                    <div class="resv-booker flex items-center gap-3">
-                        <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">${escapeHtml(getInitials(reservation.booker_name))}</span>
-                        <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
-                            <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9] flex items-center gap-1.5 flex-wrap">
-                                <span>${escapeHtml(reservation.booker_name)}</span>
+                <td class="py-3 px-4 border-b border-[var(--border)]">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-900 text-xs font-bold uppercase text-white shadow-xs">${escapeHtml(getInitials(reservation.booker_name))}</span>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-xs text-[var(--ink)] leading-snug">${escapeHtml(reservation.booker_name)}</span>
                                 ${badgeHtml}
                             </div>
-                            <div class="guest-meta text-xs text-[#718076] dark:text-[#9baaa1] truncate">${escapeHtml(reservation.email)}</div>
+                            <p class="m-0 mt-0.5 text-[11px] text-[var(--ink-muted)] truncate max-w-xs">${escapeHtml(reservation.email)}</p>
                         </div>
                     </div>
                 </td>
-                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
-                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">${renderTimeSlots(reservation)}</td>
-                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                    <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize ${statusClass}">${escapeHtml(reservation.status)}</span>
+                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
+                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">${renderTimeSlots(reservation)}</td>
+                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                    <span class="reservation-status inline-flex items-center justify-center rounded-lg border px-2.5 py-1 text-xs font-semibold ${statusClass}">${escapeHtml(reservation.status)}</span>
                 </td>
-                <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
+                <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)]">
+                    <span class="font-bold text-xs text-[var(--ink)]">₱${Number(reservation.total_amount || 0).toFixed(2)}</span>
+                </td>
             `;
     };
 
@@ -5367,7 +5371,7 @@ window.AppPage['staff_reservations'] = function () {
             const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
 
             const row = document.createElement('tr');
-            row.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''}`;
+            row.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''} transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none`;
             row.setAttribute('data-reservation-id', reservation.id);
             row.setAttribute('data-booker-name', reservation.booker_name);
             row.setAttribute('data-email', reservation.email);
@@ -5433,7 +5437,7 @@ window.AppPage['staff_reservations'] = function () {
         const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
         const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
 
-        tableRow.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]`;
+        tableRow.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''} transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none`;
         tableRow.setAttribute('data-booker-name', bName);
         tableRow.setAttribute('data-email', bEmail);
         tableRow.setAttribute('data-phone', bPhone);
@@ -7210,6 +7214,15 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
+    // Delegated click handler on tableBody for bulletproof row clicking
+    tableBody?.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        const row = e.target.closest('.reservation-row');
+        if (row && row.dataset.reservationId) {
+            openModal(row.dataset.reservationId);
+        }
+    });
+
     rows.forEach((row) => {
         const openForRow = () => {
             openModal(row.dataset.reservationId);
@@ -7319,12 +7332,11 @@ window.AppPage['staff_reservations'] = function () {
         }
     }, { signal: pageSignal });
 
-    filterToggle?.addEventListener('click', () => {
-        const isExpanded = filterToggle.getAttribute('aria-expanded') === 'true';
-        filterToggle.setAttribute('aria-expanded', String(!isExpanded));
-        filterPanel?.toggleAttribute('hidden', isExpanded);
-        filterPanel?.classList.toggle('guest-toolbar--collapsed', isExpanded);
-    });
+    // Filters are permanently visible and never toggle off
+    if (filterPanel) {
+        filterPanel.removeAttribute('hidden');
+        filterPanel.classList.remove('guest-toolbar--collapsed');
+    }
 
     // ------------------------------------------------------------
     // Live clock + session badge (park settings come from data-park-settings)

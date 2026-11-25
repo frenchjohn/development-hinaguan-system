@@ -1548,13 +1548,16 @@ window.AppPage['staff_records'] = function () {
         applyReservationFilters();
     });
 
+    if (reservationFilterPanel) {
+        reservationFilterPanel.hidden = false;
+        reservationFilterPanel.removeAttribute('hidden');
+    }
+
     reservationFilterToggle?.addEventListener('click', () => {
         if (!reservationFilterPanel) return;
-        const isExpanded = reservationFilterToggle.getAttribute('aria-expanded') === 'true';
-        reservationFilterPanel.hidden = isExpanded;
-        reservationFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
-        const icon = reservationFilterToggle.querySelector('.guest-filter-toggle__icon');
-        if (icon) icon.textContent = isExpanded ? '▾' : '▴';
+        reservationFilterPanel.hidden = false;
+        reservationFilterPanel.removeAttribute('hidden');
+        reservationFilterToggle.setAttribute('aria-expanded', 'true');
     });
 
     // Reservation pagination controls

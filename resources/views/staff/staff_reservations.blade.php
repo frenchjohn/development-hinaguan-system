@@ -270,270 +270,333 @@
                 @endif
 
 
-                <div class="resv-toolbar mb-3.5 flex flex-wrap items-center justify-between gap-3">
-                    <div class="resv-toolbar__left flex flex-wrap items-center gap-2.5">
-                        <button type="button" class="guest-filter-toggle inline-flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#dfe5e0] bg-white px-4 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
-                            <svg class="h-4 w-4 text-[#718076] dark:text-[#9ca3af]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
-                            <span>Filters</span>
-                            <span class="guest-filter-toggle__icon text-xs text-[#718076] dark:text-[#9ca3af]">▾</span>
-                        </button>
-                        <div class="relative flex items-center">
-                            <span class="pointer-events-none absolute left-3.5 flex items-center justify-center text-[#718076] dark:text-[#9ca3af]">
-                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
-                                </svg>
+                <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]">
+
+                    {{-- Section header --}}
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                <i class="bi bi-calendar2-range-fill text-sm"></i>
                             </span>
-                            <input 
-                                type="search" 
-                                id="reservationSearchInput" 
-                                placeholder="Search main guest, ID, phone..." 
-                                autocomplete="off"
-                                spellcheck="false"
-                                class="h-10 w-[220px] sm:w-[280px] md:w-[320px] rounded-xl border border-[#dfe5e0] bg-white pl-10 pr-9 text-sm font-medium text-[#183d28] placeholder-[#718076] shadow-sm transition-all duration-150 focus:border-[#2d6a4f] focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/15 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:placeholder-[#9ca3af] dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
-                            >
+                            <div>
+                                <h3 class="m-0 text-sm font-bold text-[var(--ink)]">Reservation Management Log</h3>
+                                <p class="m-0 text-[11px] text-[var(--ink-muted)]">
+                                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ============================================================ --}}
+                    {{-- FILTER BAR                                                    --}}
+                    {{-- ============================================================ --}}
+                    <div class="resv-toolbar mb-4 flex flex-wrap items-center justify-between gap-2.5">
+                        <div class="resv-toolbar__left flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+
+                            {{-- Search --}}
+                            <div class="relative flex-1 min-w-[200px] max-w-xs">
+                                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
+                                <input 
+                                    type="search" 
+                                    id="reservationSearchInput" 
+                                    placeholder="Search main guest, ID, phone..." 
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    class="h-9 w-full rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-8 text-xs text-[var(--ink)] placeholder-[var(--ink-muted)] outline-none focus:border-emerald-500 transition-colors [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                                >
+                                <button 
+                                    type="button" 
+                                    id="reservationSearchClearBtn" 
+                                    class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full text-[var(--ink-muted)] hover:text-[var(--ink)] cursor-pointer transition-colors" 
+                                    aria-label="Clear search"
+                                    title="Clear"
+                                >
+                                    <i class="bi bi-x text-sm leading-none"></i>
+                                </button>
+                            </div>
+
+                            {{-- Hidden Filter Toggle hook for JS backwards compatibility --}}
+                            <button type="button" id="reservationFilterToggle" class="hidden" aria-hidden="true" tabindex="-1"></button>
+
+                            {{-- Reschedule Requests --}}
                             <button 
                                 type="button" 
-                                id="reservationSearchClearBtn" 
-                                class="hidden absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-[#718076] hover:bg-gray-100 hover:text-[#183d28] dark:text-[#9ca3af] dark:hover:bg-white/10 dark:hover:text-white cursor-pointer transition-colors" 
-                                aria-label="Clear search"
-                                title="Clear"
+                                class="h-9 flex items-center gap-1.5 px-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-900 dark:text-amber-300 hover:bg-amber-500 hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs" 
+                                id="reschedRequestsBtn" 
+                                title="View Reschedule Requests"
                             >
-                                <i class="bi bi-x text-lg leading-none"></i>
+                                <i class="bi bi-calendar2-range text-xs"></i>
+                                <span>Resched Requests</span>
+                                <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-amber-600 rounded-full">0</span>
+                            </button>
+                        </div>
+
+                        {{-- Right actions --}}
+                        <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
+                            <div class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-2xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
+                                <span class="relative flex h-2 w-2">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <i class="bi bi-upc-scan text-xs"></i>
+                                <span>Hardware Scanner Ready</span>
+                            </div>
+
+                            <button 
+                                type="button" 
+                                id="scanQrBtn" 
+                                class="h-9 w-9 inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" 
+                                title="Scan reservation QR with Camera" 
+                                aria-label="Scan reservation QR with Camera"
+                            >
+                                <i class="bi bi-camera-video text-xs"></i>
+                            </button>
+
+                            <button 
+                                type="button" 
+                                class="resv-tool-btn h-9 flex items-center gap-1.5 px-3.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all cursor-pointer shadow-2xs" 
+                                id="refreshTableBtn"
+                                title="Refresh reservations"
+                            >
+                                <i class="bi bi-arrow-clockwise text-xs"></i>
+                                <span>Refresh</span>
                             </button>
                         </div>
                     </div>
-                    <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
-                        <button type="button" class="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-sm font-semibold text-amber-900 transition-all duration-150 hover:bg-amber-500 hover:text-white active:scale-95 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-600 dark:hover:text-white shadow-xs" id="reschedRequestsBtn" title="View Reschedule Requests">
-                            <i class="bi bi-calendar2-range text-sm"></i>
-                            <span>Resched Requests</span>
-                            <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-amber-600 rounded-full">0</span>
-                        </button>
-                        <div class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <i class="bi bi-upc-scan text-xs"></i>
-                            <span>Hardware Scanner Ready</span>
-                        </div>
-                        <button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
-                            <i class="bi bi-camera-video text-base"></i>
-                        </button>
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="refreshTableBtn">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Refresh
+
+                    {{-- Filter Panel (Permanently Open) --}}
+                    <div class="guest-toolbar resv-filter-panel mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-end gap-3 rounded-xl border border-[var(--border)] bg-gray-50/70 dark:bg-neutral-900/40 p-4 shadow-2xs" id="reservationFilterPanel">
+                        <label class="grid gap-1.5 text-xs font-semibold text-[var(--ink)]">
+                            <span>Sort by</span>
+                            <select id="reservationSortSelect" class="h-9 w-full appearance-none rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                <option value="date-asc">Reservation date (soonest)</option>
+                                <option value="date-desc">Reservation date (latest)</option>
+                                <option value="name-asc">Main Guest (A-Z)</option>
+                                <option value="name-desc">Main Guest (Z-A)</option>
+                                <option value="amount-desc">Amount (High-Low)</option>
+                            </select>
+                        </label>
+                        <label class="grid gap-1.5 text-xs font-semibold text-[var(--ink)]">
+                            <span>Status</span>
+                            <select id="reservationStatusFilter" class="h-9 w-full appearance-none rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                <option value="all">All statuses</option>
+                                <option value="today">Today's Reservations</option>
+                                <option value="past">Past / Overdue Arrival</option>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="checked in">Checked In</option>
+                                <option value="checked out">Checked Out</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="no show">No Show</option>
+                            </select>
+                        </label>
+                        <label class="grid gap-1.5 text-xs font-semibold text-[var(--ink)]">
+                            <span>Reservation date from</span>
+                            <input type="date" id="reservationDateFrom" class="h-9 w-full rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors">
+                        </label>
+                        <label class="grid gap-1.5 text-xs font-semibold text-[var(--ink)]">
+                            <span>Reservation date to</span>
+                            <input type="date" id="reservationDateTo" class="h-9 w-full rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 px-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors">
+                        </label>
+                        <button type="button" class="h-9 flex items-center justify-center gap-1.5 px-3.5 rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 text-xs font-semibold text-[var(--ink-muted)] hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all cursor-pointer" id="reservationFiltersClear">
+                            <i class="bi bi-x-circle text-xs"></i>
+                            <span>Clear</span>
                         </button>
                     </div>
-                </div>
 
-                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3.5 grid items-end gap-3 rounded-2xl border border-[#dfe5e0] bg-white p-4 shadow-sm dark:border-white/15 dark:bg-[#181b19]" id="reservationFilterPanel" hidden>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#f3f4f6]">
-                        <span>Sort by</span>
-                        <select id="reservationSortSelect" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
-                            <option value="date-asc">Reservation date (soonest)</option>
-                            <option value="date-desc">Reservation date (latest)</option>
-                            <option value="name-asc">Main Guest (A-Z)</option>
-                            <option value="name-desc">Main Guest (Z-A)</option>
-                            <option value="amount-desc">Amount (High-Low)</option>
-                        </select>
-                    </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#f3f4f6]">
-                        <span>Status</span>
-                        <select id="reservationStatusFilter" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
-                            <option value="all">All statuses</option>
-                            <option value="today">Today's Reservations</option>
-                            <option value="past">Past / Overdue Arrival</option>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="checked in">Checked In</option>
-                            <option value="checked out">Checked Out</option>
-                            <option value="cancelled">Cancelled</option>
-                            <option value="no show">No Show</option>
-                        </select>
-                    </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#f3f4f6]">
-                        <span>Reservation date from</span>
-                        <input type="date" id="reservationDateFrom" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
-                    </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#f3f4f6]">
-                        <span>Reservation date to</span>
-                        <input type="date" id="reservationDateTo" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
-                    </label>
-                    <button type="button" class="guest-toolbar__clear cursor-pointer rounded-xl border border-[#dfe5e0] bg-[#f4f7f5] px-4 py-2 text-sm font-semibold text-[#183d28] transition-colors hover:bg-gray-200 dark:border-white/15 dark:bg-white/10 dark:text-[#f3f4f6]" id="reservationFiltersClear">Clear</button>
-                </div>
+                    {{-- ============================================================ --}}
+                    {{-- TABLE (Scrollable inside, ~7 items visible)                   --}}
+                    {{-- ============================================================ --}}
+                    <div class="overflow-x-auto overflow-y-auto max-h-[460px] rounded-xl border border-[var(--border)] custom-scrollbar" id="reservationTableWrap" style="max-height: 460px;">
+                        <table class="w-full text-left text-xs border-separate border-spacing-0">
+                            <thead class="sticky top-0 z-10 shadow-xs">
+                                <tr class="font-semibold text-[var(--ink-muted)]">
+                                    <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] w-[90px]">ID</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[220px]">Main Guest</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[180px]">Reservation Date</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[140px]">Session</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[120px]">Status</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[120px]">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservationTableBody">
+                                @forelse ($reservations as $reservation)
+                                    @php
+                                        $resDateStr = $reservation->reservation_date;
+                                        $resDateObj = $resDateStr ? \Carbon\Carbon::parse($resDateStr)->startOfDay() : null;
+                                        $todayObj = now()->startOfDay();
+                                        $isToday = $resDateObj && $resDateObj->equalTo($todayObj);
+                                        $statusLower = strtolower($reservation->status);
+                                        $isPendingOrConfirmed = in_array($statusLower, ['pending', 'confirmed']);
+                                        $isPastArrival = $resDateObj && $resDateObj->lessThan($todayObj) && $isPendingOrConfirmed;
+                                        $daysOverdue = $isPastArrival ? $todayObj->diffInDays($resDateObj) : 0;
 
-                <div class="guest-toolbar__meta mb-2.5 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">
-                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
-                </div>
-
-                <div class="overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-[0_4px_20px_rgba(20,50,30,0.04)] dark:border-white/10 dark:bg-[#181b19] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]" id="reservationTableWrap">
-                    <table class="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-left">
-                        <colgroup>
-                            <col style="width: 8%; min-width: 70px;">
-                            <col style="width: 28%; min-width: 220px;">
-                            <col style="width: 22%; min-width: 175px;">
-                            <col style="width: 15%; min-width: 125px;">
-                            <col style="width: 13%; min-width: 110px;">
-                            <col style="width: 14%; min-width: 115px;">
-                        </colgroup>
-                        <thead class="bg-[#f7faf8] dark:bg-[#1e2220]">
-                            <tr class="border-b border-[#e8eee9] dark:border-white/10">
-                                <th class="py-3.5 pl-5 pr-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] whitespace-nowrap">ID</th>
-                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">MAIN GUEST</th>
-                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">RESERVATION DATE</th>
-                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">SESSION</th>
-                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">STATUS</th>
-                                <th class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">AMOUNT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#181b19]">
-                            @forelse ($reservations as $reservation)
-                                @php
-                                    $resDateStr = $reservation->reservation_date;
-                                    $resDateObj = $resDateStr ? \Carbon\Carbon::parse($resDateStr)->startOfDay() : null;
-                                    $todayObj = now()->startOfDay();
-                                    $isToday = $resDateObj && $resDateObj->equalTo($todayObj);
-                                    $statusLower = strtolower($reservation->status);
-                                    $isPendingOrConfirmed = in_array($statusLower, ['pending', 'confirmed']);
-                                    $isPastArrival = $resDateObj && $resDateObj->lessThan($todayObj) && $isPendingOrConfirmed;
-                                    $daysOverdue = $isPastArrival ? $todayObj->diffInDays($resDateObj) : 0;
-
-                                    $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
-                                    $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
-                                        ->filter()
-                                        ->take(1)
-                                        ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
-                                        ->implode('') ?: '?';
-                                    $resStartDate = $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('Y-m-d') : null;
-                                    $resEndDate = $reservation->end_date ? \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d') : null;
-                                    $totalDays = (int) ($reservation->total_days ?? ($resStartDate && $resEndDate ? (\Carbon\Carbon::parse($resStartDate)->diffInDays(\Carbon\Carbon::parse($resEndDate)) + 1) : 1));
-                                    $isMultiDay = $resEndDate && $resStartDate && ($resEndDate !== $resStartDate) && ($totalDays > 1);
-                                @endphp
-                                <tr
-                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} {{ $isPastArrival ? 'past-reservation' : '' }} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]"
-                                    data-reservation-id="{{ $reservation->id }}"
-                                    data-booker-name="{{ e($reservation->booker_name) }}"
-                                    data-email="{{ e($reservation->email) }}"
-                                    data-phone="{{ e($reservation->phone) }}"
-                                    data-reservation-date="{{ $reservation->reservation_date }}"
-                                    data-status="{{ strtolower($reservation->status) }}"
-                                    data-guests="{{ $reservation->number_of_guests }}"
-                                    data-total-amount="{{ (float) $reservation->total_amount }}"
-                                    data-is-past="{{ $isPastArrival ? '1' : '0' }}"
-                                    data-search="{{ strtolower(trim($reservation->formatted_id . ' #' . $reservation->formatted_id . ' ' . $reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : '') . ' ' . ($reservation->start_slot ?? '') . ' ' . (($reservation->start_slot ?? '') === 'Nighttime' ? 'overnight' : ''))) }}"
-                                    tabindex="0"
-                                    role="button"
-                                    aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->formatted_id }})"
-                                >
-                                    <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
-                                        <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->formatted_id }}</span>
-                                    </td>
-                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                                        <div class="resv-booker flex items-center gap-3">
-                                            <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
-                                            <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
-                                                <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9] flex items-center gap-1.5 flex-wrap">
-                                                    <span>{{ $reservation->booker_name }}</span>
-                                                    @if ($isToday)
-                                                        <span class="today-reservation-badge inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>
-                                                    @elseif ($isPastArrival)
-                                                        <span class="past-reservation-badge inline-flex items-center gap-1 rounded-md bg-[#ef4444] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white shadow-sm dark:bg-[#dc2626]" title="Arrival date was {{ $resDateObj->format('M j, Y') }} ({{ $daysOverdue }} {{ $daysOverdue === 1 ? 'day' : 'days' }} overdue)">
-                                                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
-                                                            PAST ARRIVAL ({{ $daysOverdue }}d ago)
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                                <div class="guest-meta text-xs text-[#718076] dark:text-[#9baaa1] truncate">{{ $reservation->email }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                                        @if ($isMultiDay)
-                                            <div>
-                                                <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
-                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} Days Stay)</div>
-                                                @if ($isPastArrival)
-                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div>
-                                                <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }}</span>
-                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">(1 Day Stay)</div>
-                                                @if ($isPastArrival)
-                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                                        @if ($isMultiDay)
-                                            <span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">
-                                                <i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>
-                                                Continuous Stay ({{ $totalDays }}D)
+                                        $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
+                                        $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
+                                            ->filter()
+                                            ->take(1)
+                                            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+                                            ->implode('') ?: '?';
+                                        $resStartDate = $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('Y-m-d') : null;
+                                        $resEndDate = $reservation->end_date ? \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d') : null;
+                                        $totalDays = (int) ($reservation->total_days ?? ($resStartDate && $resEndDate ? (\Carbon\Carbon::parse($resStartDate)->diffInDays(\Carbon\Carbon::parse($resEndDate)) + 1) : 1));
+                                        $isMultiDay = $resEndDate && $resStartDate && ($resEndDate !== $resStartDate) && ($totalDays > 1);
+                                    @endphp
+                                    <tr
+                                        class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} {{ $isPastArrival ? 'past-reservation' : '' }} transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none"
+                                        data-reservation-id="{{ $reservation->id }}"
+                                        data-booker-name="{{ e($reservation->booker_name) }}"
+                                        data-email="{{ e($reservation->email) }}"
+                                        data-phone="{{ e($reservation->phone) }}"
+                                        data-reservation-date="{{ $reservation->reservation_date }}"
+                                        data-status="{{ strtolower($reservation->status) }}"
+                                        data-guests="{{ $reservation->number_of_guests }}"
+                                        data-total-amount="{{ (float) $reservation->total_amount }}"
+                                        data-is-past="{{ $isPastArrival ? '1' : '0' }}"
+                                        data-search="{{ strtolower(trim($reservation->formatted_id . ' #' . $reservation->formatted_id . ' ' . $reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : '') . ' ' . ($reservation->start_slot ?? '') . ' ' . (($reservation->start_slot ?? '') === 'Nighttime' ? 'overnight' : ''))) }}"
+                                        tabindex="0"
+                                        role="button"
+                                        aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->formatted_id }})"
+                                    >
+                                        {{-- ID --}}
+                                        <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                                            <span class="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)] font-mono">
+                                                <i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>{{ $reservation->formatted_id }}
                                             </span>
-                                        @elseif (!empty($timeSlots))
-                                            <div class="time-slot-labels flex flex-wrap items-center justify-center gap-1.5">
-                                                @foreach ($timeSlots as $slot)
-                                                    @php
-                                                        $isNight = in_array(strtolower($slot), ['nighttime', 'overnight']);
-                                                    @endphp
-                                                    @if ($isNight)
-                                                        <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap">
-                                                            <i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>
-                                                            Overnight
-                                                        </span>
-                                                    @else
-                                                        <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
-                                                            <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
-                                                            {{ str_ireplace('nighttime', 'Overnight', $slot) }}
-                                                        </span>
-                                                    @endif
-                                                @endforeach
+                                        </td>
+
+                                        {{-- Main Guest --}}
+                                        <td class="py-3 px-4 border-b border-[var(--border)]">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-900 text-xs font-bold uppercase text-white shadow-xs">
+                                                    {{ $initials }}
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="font-bold text-xs text-[var(--ink)] leading-snug">{{ $reservation->booker_name }}</span>
+                                                        @if ($isToday)
+                                                            <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider">TODAY</span>
+                                                        @elseif ($isPastArrival)
+                                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white uppercase tracking-wider" title="Arrival date was {{ $resDateObj->format('M j, Y') }} ({{ $daysOverdue }} {{ $daysOverdue === 1 ? 'day' : 'days' }} overdue)">
+                                                                <i class="bi bi-exclamation-triangle-fill text-[9px]"></i>
+                                                                PAST ARRIVAL (-{{ $daysOverdue }}d ago)
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    <p class="m-0 mt-0.5 text-[11px] text-[var(--ink-muted)] truncate max-w-xs">{{ $reservation->email }}</p>
+                                                </div>
                                             </div>
-                                        @else
-                                            @php
-                                                $startSlot = $reservation->start_slot ?? 'Daytime';
-                                                $isNight = in_array(strtolower($startSlot), ['nighttime', 'overnight']);
-                                            @endphp
-                                            @if ($isNight)
-                                                <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap">
-                                                    <i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>
-                                                    Overnight
-                                                </span>
+                                        </td>
+
+                                        {{-- Reservation Date --}}
+                                        <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
+                                            @if ($isMultiDay)
+                                                <p class="m-0 font-bold text-xs {{ $isPastArrival ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--ink)]' }}">
+                                                    {{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M d, Y') }}
+                                                </p>
+                                                <p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">({{ $totalDays }} Days Stay)</p>
+                                                @if ($isPastArrival)
+                                                    <p class="m-0 mt-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival
+                                                    </p>
+                                                @endif
                                             @else
-                                                <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
-                                                    <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
-                                                    {{ str_ireplace('nighttime', 'Overnight', $startSlot) }}
-                                                </span>
+                                                <p class="m-0 font-bold text-xs {{ $isPastArrival ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--ink)]' }}">
+                                                    {{ $resDateObj ? $resDateObj->format('M d, Y') : '—' }}
+                                                </p>
+                                                <p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">(1 Day Stay)</p>
+                                                @if ($isPastArrival)
+                                                    <p class="m-0 mt-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival
+                                                    </p>
+                                                @endif
                                             @endif
-                                        @endif
-                                    </td>
-                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
-                                        @php
-                                            $status = ucfirst(strtolower($reservation->status));
-                                            $statusClass = match($status) {
-                                                'Pending' => 'bg-[#fff3e0] text-[#e65100] border-[#ffe0b2] dark:bg-[rgba(230,81,0,0.2)] dark:text-[#ffb74d] dark:border-[#ff9800]/30',
-                                                'Confirmed' => 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af] dark:border-[#9ca3af]/30',
-                                                'Checked In', 'Checked in' => 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
-                                                'Checked Out', 'Checked out' => 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
-                                                'Cancelled' => 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
-                                                'No Show', 'No show' => 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700',
-                                                default => 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300'
-                                            };
-                                        @endphp
-                                        <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize {{ $statusClass }}">{{ $reservation->status }}</span>
-                                    </td>
-                                    <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                        </td>
+
+                                        {{-- Session --}}
+                                        <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                                            @if ($isMultiDay)
+                                                <span class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300">
+                                                    <i class="bi bi-calendar-range text-[10px] text-teal-600"></i>
+                                                    Continuous Stay ({{ $totalDays }}D)
+                                                </span>
+                                            @elseif (!empty($timeSlots))
+                                                <div class="flex flex-wrap items-center justify-center gap-1">
+                                                    @foreach ($timeSlots as $slot)
+                                                        @php
+                                                            $isNight = in_array(strtolower($slot), ['nighttime', 'overnight']);
+                                                        @endphp
+                                                        @if ($isNight)
+                                                            <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                                                <i class="bi bi-moon-stars-fill text-[10px] text-indigo-500"></i>
+                                                                Overnight
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300">
+                                                                <i class="bi bi-sun-fill text-[10px] text-amber-500"></i>
+                                                                {{ str_ireplace('nighttime', 'Overnight', $slot) }}
+                                                            </span>
+                                                        @endif
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                @php
+                                                    $startSlot = $reservation->start_slot ?? 'Daytime';
+                                                    $isNight = in_array(strtolower($startSlot), ['nighttime', 'overnight']);
+                                                @endphp
+                                                @if ($isNight)
+                                                    <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                                        <i class="bi bi-moon-stars-fill text-[10px] text-indigo-500"></i>
+                                                        Overnight
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300">
+                                                        <i class="bi bi-sun-fill text-[10px] text-amber-500"></i>
+                                                        {{ str_ireplace('nighttime', 'Overnight', $startSlot) }}
+                                                    </span>
+                                                @endif
+                                            @endif
+                                        </td>
+
+                                        {{-- Status --}}
+                                        <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
+                                            @php
+                                                $status = ucfirst(strtolower($reservation->status));
+                                                $statusClass = match($status) {
+                                                    'Pending' => 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40',
+                                                    'Confirmed' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40',
+                                                    'Checked In', 'Checked in' => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40',
+                                                    'Checked Out', 'Checked out' => 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/40',
+                                                    'Cancelled' => 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40',
+                                                    'No Show', 'No show' => 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-800/40',
+                                                    default => 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-neutral-800 dark:text-gray-300 dark:border-neutral-700'
+                                                };
+                                            @endphp
+                                            <span class="reservation-status inline-flex items-center justify-center rounded-lg border px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">
+                                                {{ $reservation->status }}
+                                            </span>
+                                        </td>
+
+                                        {{-- Amount --}}
+                                        <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)]">
+                                            <span class="font-bold text-xs text-[var(--ink)]">₱{{ number_format($reservation->total_amount, 2) }}</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="py-14 text-center text-xs text-[var(--ink-muted)] border-b border-[var(--border)]">
+                                            <div class="flex flex-col items-center justify-center gap-2">
+                                                <i class="bi bi-calendar-x text-4xl opacity-30"></i>
+                                                <p class="m-0 font-medium text-[var(--ink)]">No pending online reservations found.</p>
+                                                <p class="m-0 text-[11px] text-[var(--ink-muted)]">Reservation records will appear here.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
             </main>
         </div>

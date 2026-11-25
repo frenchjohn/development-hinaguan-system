@@ -130,6 +130,16 @@
 			/>
 
 			<main class="dash-content p-6">
+				<script>
+					window.staffGuestData = @json($guestData ?? []);
+					window.staffReservationData = @json($reservationData ?? []);
+					window.ALL_AMENITIES = @json($amenities ?? []);
+					window.SERVER_TODAY = "{{ now()->toDateString() }}";
+					window.SERVER_CURRENT_SESSION = "{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}";
+					window.AVAILABLE_AMENITY_IDS = @json($availableAmenityIds ?? []);
+					window.OCCUPIED_TODAY_AMENITY_IDS = @json($occupiedTodayAmenityIds ?? []);
+					window.parkSettings = @json($settings ?? null);
+				</script>
 				@if (session('success'))
 					<div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
 				@endif
@@ -771,13 +781,24 @@
 
 					{{-- RESERVATION TABLE --}}
 					<div id="reservationTableSection" class="tab-content-section" style="{{ $currentCheckInTab === 'dashboard' ? 'display: none;' : '' }}">
-						<section class="rounded-2xl border border-glass-border bg-glass shadow-glass dark:border-white/15 dark:bg-[#181b19]/80 relative">
-							<div class="flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5 rounded-t-2xl dark:border-white/10">
-								<div class="flex items-center">
-									<h2 class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Data View</h2>
+						<section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] relative">
+
+							{{-- Section Header --}}
+							<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
+								<div class="flex items-center gap-2.5">
+									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+										<i class="bi bi-person-check-fill text-sm"></i>
+									</span>
+									<div>
+										<h3 class="m-0 text-sm font-bold text-[var(--ink)]">Check-Ins Management Log</h3>
+										<p class="m-0 text-[11px] text-[var(--ink-muted)]">
+											<span id="resvResultsCount">Showing {{ $activeReservations->count() }} of {{ $activeReservations->count() }} reservations</span>
+											<span id="guestResultsCount" class="sr-only">Showing {{ $activeCustomers->count() }} active guest{{ $activeCustomers->count() === 1 ? '' : 's' }}</span>
+										</p>
+									</div>
 								</div>
 								<div class="flex flex-wrap items-center gap-2">
-									<div class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
+									<div class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-2xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
 										<span class="relative flex h-2 w-2">
 											<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
 											<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -785,159 +806,130 @@
 										<i class="bi bi-upc-scan text-xs"></i>
 										<span>Hardware Scanner Ready</span>
 									</div>
-									<button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
-										<i class="bi bi-camera-video text-base"></i>
+									<button type="button" id="scanQrBtn" class="h-9 w-9 inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all shadow-2xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
+										<i class="bi bi-camera-video text-xs"></i>
 									</button>
-									<button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-hp-green px-4 text-xs sm:text-sm font-semibold text-white shadow-xs transition-all duration-150 hover:bg-hp-green-dark hover:shadow active:scale-[0.98]" data-open-add-guest-modal="true">
-										<i class="bi bi-person-plus-fill text-sm"></i>
+									<button type="button" class="h-9 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-emerald-700 active:scale-95" data-open-add-guest-modal="true">
+										<i class="bi bi-person-plus-fill text-xs"></i>
 										<span>Walk-in Checkin</span>
 									</button>
 								</div>
 							</div>
 
-					{{-- Unified Filter, Search & Sort Control Strip --}}
-					<div class="resv-control-strip relative z-30 flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/40 bg-black/[0.015] px-6 py-3.5 dark:border-white/10 dark:bg-white/[0.015]">
-						<div class="flex flex-wrap items-center gap-2.5">
-							{{-- Search Input --}}
-							<div class="relative w-64 sm:w-72 max-w-full">
-								<i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-hp-text-muted text-xs pointer-events-none"></i>
-								<input
-									type="search"
-									id="resvSearchInput"
-									placeholder="Search ID, guest, amenity..."
-									class="w-full rounded-xl border border-glass-border bg-white/90 dark:bg-white/5 pl-9 pr-3.5 py-2 text-xs font-medium text-hp-text transition-all duration-150 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:bg-white dark:focus:bg-[#141715] focus:outline-none shadow-xs"
-								>
-							</div>
+							{{-- Filter Bar: Search, Quick Filters & Reset --}}
+							<div class="resv-control-strip mb-4 flex flex-wrap items-center justify-between gap-2.5">
+								<div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+									{{-- Search Input --}}
+									<div class="relative flex-1 min-w-[200px] max-w-xs">
+										<i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
+										<input
+											type="search"
+											id="resvSearchInput"
+											placeholder="Search ID, guest, amenity..."
+											class="h-9 w-full rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-3 text-xs text-[var(--ink)] placeholder-[var(--ink-muted)] outline-none focus:border-emerald-500 transition-colors"
+										>
+									</div>
 
-							{{-- Filter & Sort Toggle Button --}}
-							<button
-								type="button"
-								id="resvFilterToggle"
-								class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-glass-border bg-white/90 dark:bg-white/5 px-3.5 py-2 text-xs font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-emerald-50/50 dark:hover:bg-white/10 shadow-xs"
-								aria-expanded="false"
-								aria-controls="resvFilterPanel"
-							>
-								<i class="bi bi-funnel-fill text-emerald-600 dark:text-emerald-400"></i>
-								<span>Filter &amp; Sort</span>
-								<span id="resvActiveFilterCount" class="hidden h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-emerald-600 text-[0.62rem] text-white font-bold"></span>
-								<i class="bi bi-chevron-down text-[0.6rem] transition-transform duration-200" id="resvFilterChevron"></i>
-							</button>
+									{{-- Hidden toggle element so scripts referencing it don't break --}}
+									<button type="button" id="resvFilterToggle" class="hidden" aria-hidden="true" tabindex="-1"></button>
+									<span id="resvActiveFilterCount" class="hidden"></span>
+									<i id="resvFilterChevron" class="hidden"></i>
 
-							{{-- Dedicated Sort Dropdown --}}
-							<div class="relative inline-block" id="resvSortDropdownContainer">
-								<button
-									type="button"
-									id="resvQuickSortPill"
-									class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/90 dark:bg-white/5 px-3 py-2 text-xs text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-emerald-50/50 dark:hover:bg-white/10 shadow-xs select-none"
-									title="Sort reservations"
-									aria-haspopup="true"
-									aria-expanded="false"
-								>
-									<i class="bi bi-arrow-down-up text-emerald-600 dark:text-emerald-400 text-xs"></i>
-									<span class="text-hp-text-muted text-[0.72rem]">Sort:</span>
-									<span id="resvCurrentSortLabel" class="font-bold text-[0.75rem] text-hp-text dark:text-[#f3f4f6]">Nearest to Checkout</span>
-									<i class="bi bi-chevron-down text-[0.6rem] text-hp-text-muted transition-transform duration-200" id="resvSortDropdownChevron"></i>
+									{{-- Dedicated Sort Dropdown --}}
+									<div class="relative inline-block" id="resvSortDropdownContainer">
+										<button
+											type="button"
+											id="resvQuickSortPill"
+											class="h-9 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3 text-xs text-[var(--ink)] hover:border-emerald-500 transition-all shadow-2xs select-none"
+											title="Sort reservations"
+											aria-haspopup="true"
+											aria-expanded="false"
+										>
+											<i class="bi bi-arrow-down-up text-emerald-600 dark:text-emerald-400 text-xs"></i>
+											<span class="text-[var(--ink-muted)] text-[11px]">Sort:</span>
+											<span id="resvCurrentSortLabel" class="font-bold text-xs text-[var(--ink)]">Nearest to Checkout</span>
+											<i class="bi bi-chevron-down text-[10px] text-[var(--ink-muted)] transition-transform duration-200" id="resvSortDropdownChevron"></i>
+										</button>
+
+										{{-- Sort Choices Dropdown Menu --}}
+										<div
+											id="resvSortDropdownMenu"
+											class="hidden absolute left-0 top-full mt-1.5 z-[100] w-64 sm:w-72 rounded-2xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-1.5 shadow-2xl backdrop-blur-md animate-fade-in"
+											role="menu"
+											aria-orientation="vertical"
+										>
+											<div class="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)] border-b border-[var(--border)] mb-1 flex items-center justify-between">
+												<span>Sort Reservations</span>
+												<i class="bi bi-arrow-down-up text-[10px] text-emerald-600 dark:text-emerald-400"></i>
+											</div>
+											<div class="space-y-0.5 max-h-[165px] overflow-y-auto pr-1" id="resvSortDropdownOptions">
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="nearest_checkout">
+													<span>Nearest to Checkout</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="latest_checkout">
+													<span>Latest Checkout</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_newest">
+													<span>Check-in: Newest First</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_oldest">
+													<span>Check-in: Oldest First</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_desc">
+													<span>Reservation # (High to Low)</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_asc">
+													<span>Reservation # (Low to High)</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_name">
+													<span>Main Guest (A - Z)</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+												<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-[var(--ink)] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_count">
+													<span>Guest Count (High to Low)</span>
+													<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+												</button>
+											</div>
+										</div>
+									</div>
+
+									{{-- Quick Amenity Filter: All, With Amenities, Visit Only --}}
+									<div class="h-9 inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 p-1 text-xs" id="resvAmenityFilterGroup" title="Filter by amenity inclusion">
+										<span class="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-muted)] px-1.5 hidden lg:inline"><i class="bi bi-houses me-1 text-emerald-600 dark:text-emerald-400"></i>Stay:</span>
+										<button type="button" class="resv-amenity-filter active rounded-lg px-2.5 py-1 text-xs font-bold text-[var(--ink)] transition-all cursor-pointer bg-white dark:bg-neutral-800 shadow-2xs" data-amenity-filter="all">All</button>
+										<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all cursor-pointer" data-amenity-filter="with_amenities">With Amenities</button>
+										<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all cursor-pointer" data-amenity-filter="visit_only">Visit Only</button>
+									</div>
+
+									{{-- Quick Status Filter Chips --}}
+									<div class="h-9 hidden sm:inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 p-1 text-xs">
+										<button type="button" class="resv-quick-filter active rounded-lg px-2.5 py-1 text-xs font-bold text-[var(--ink)] transition-all cursor-pointer bg-white dark:bg-neutral-800 shadow-2xs" data-status-filter="all">All</button>
+										<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all cursor-pointer" data-status-filter="due">Due Checkout</button>
+										<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all cursor-pointer" data-status-filter="near">&le; 2h Left</button>
+									</div>
+								</div>
+
+								<button type="button" id="resvFiltersClear" class="h-9 flex items-center justify-center gap-1.5 px-3.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink-muted)] hover:border-rose-400 hover:text-rose-600 transition-all cursor-pointer shadow-2xs" title="Reset all filters and sorting">
+									<i class="bi bi-x-circle text-xs"></i>
+									<span>Reset Filters</span>
 								</button>
-
-								{{-- Sort Choices Dropdown Menu --}}
-								<div
-									id="resvSortDropdownMenu"
-									class="hidden absolute left-0 top-full mt-1.5 z-[100] w-64 sm:w-72 rounded-2xl border border-glass-border bg-white dark:bg-[#1a1e1c] p-1.5 shadow-2xl backdrop-blur-md dark:border-white/15 animate-fade-in"
-									role="menu"
-									aria-orientation="vertical"
-								>
-									<div class="px-2.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-wider text-hp-text-muted border-b border-glass-border/40 dark:border-white/10 mb-1 flex items-center justify-between">
-										<span>Sort Reservations</span>
-										<i class="bi bi-arrow-down-up text-[0.7rem] text-emerald-600 dark:text-emerald-400"></i>
-									</div>
-									<div class="space-y-0.5 max-h-[165px] overflow-y-auto pr-1" id="resvSortDropdownOptions">
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="nearest_checkout">
-											<span>Nearest to Checkout</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="latest_checkout">
-											<span>Latest Checkout</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_newest">
-											<span>Check-in: Newest First</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_oldest">
-											<span>Check-in: Oldest First</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_desc">
-											<span>Reservation # (High to Low)</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_asc">
-											<span>Reservation # (Low to High)</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_name">
-											<span>Main Guest (A - Z)</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_count">
-											<span>Guest Count (High to Low)</span>
-											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
-										</button>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						{{-- Right: Quick Amenity & Status Filter Chips --}}
-						<div class="flex items-center gap-2 flex-wrap">
-							{{-- Quick Amenity Filter: All, With Amenities, Visit Only --}}
-							<div class="inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/50 dark:bg-white/5 p-1 text-xs" id="resvAmenityFilterGroup" title="Filter by amenity inclusion">
-								<span class="text-[0.65rem] font-bold uppercase tracking-wider text-hp-text-muted px-1.5 hidden lg:inline"><i class="bi bi-houses me-1 text-emerald-600 dark:text-emerald-400"></i>Stay:</span>
-								<button type="button" class="resv-amenity-filter active rounded-lg px-2.5 py-1 text-[0.7rem] font-bold text-hp-text transition-all cursor-pointer bg-white dark:bg-[#1e2220] shadow-xs" data-amenity-filter="all">All</button>
-								<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-amenity-filter="with_amenities">With Amenities</button>
-								<button type="button" class="resv-amenity-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-amenity-filter="visit_only">Visit Only</button>
 							</div>
 
-							{{-- Quick Status Filter Chips --}}
-							<div class="hidden sm:inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/50 dark:bg-white/5 p-1 text-xs">
-								<button type="button" class="resv-quick-filter active rounded-lg px-2.5 py-1 text-[0.7rem] font-bold text-hp-text transition-all cursor-pointer bg-white dark:bg-[#1e2220] shadow-xs" data-status-filter="all">All</button>
-								<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="due">Due Checkout</button>
-								<button type="button" class="resv-quick-filter rounded-lg px-2.5 py-1 text-[0.7rem] font-semibold text-hp-text-muted hover:text-hp-text transition-all cursor-pointer" data-status-filter="near">&le; 2h Left</button>
-							</div>
-						</div>
-					</div>
-
-					{{-- Redesigned Expandable Filter & Sort Drawer (Sort placed inside the filter) --}}
-					<div class="guest-toolbar guest-toolbar--collapsed border-b border-glass-border/40 bg-gradient-to-b from-hp-cream/90 to-white/80 dark:from-[#141715] dark:to-[#181b19] p-4 sm:p-5 transition-all duration-300 shadow-inner" id="resvFilterPanel" hidden>
-						<div class="mx-auto max-w-7xl flex flex-col gap-3.5">
-							{{-- Header of the Filter Drawer --}}
-							<div class="flex items-center justify-between border-b border-glass-border/30 pb-2.5 dark:border-white/10">
-								<div class="flex items-center gap-2">
-									<span class="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-xs">
-										<i class="bi bi-sliders"></i>
-									</span>
-									<span class="text-xs font-bold uppercase tracking-wider text-hp-text dark:text-[#f3f4f6]">Filter &amp; Sort Parameters</span>
-									<span class="text-[0.72rem] text-hp-text-muted hidden sm:inline">&mdash; Real-time table updates</span>
-								</div>
-								<div class="flex items-center gap-2">
-									<button type="button" id="resvPanelResetBtn" class="cursor-pointer text-[0.72rem] font-bold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline-offset-2 hover:underline transition-colors">
-										Reset to Default
-									</button>
-									<button type="button" id="resvFilterCloseBtn" class="cursor-pointer inline-flex items-center gap-1 rounded-lg border border-glass-border bg-white/80 dark:bg-white/10 px-2 py-1 text-[0.7rem] font-bold text-hp-text hover:bg-black/5 dark:hover:bg-white/15 transition-all">
-										<i class="bi bi-check2"></i> Done
-									</button>
-								</div>
-							</div>
-
-							{{-- Main Grid: 5 Clean Control Cards (Sort is first inside the filter) --}}
-							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
-								{{-- 1. SORT ORDER (Inside the filter drawer) --}}
-								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
-									<label for="resvSortSelect" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
+							{{-- Filter Panel (Permanently Open) --}}
+							<div class="guest-toolbar resv-filter-panel mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch gap-3 rounded-xl border border-[var(--border)] bg-gray-50/70 dark:bg-neutral-900/40 p-4 shadow-2xs" id="resvFilterPanel">
+								{{-- 1. Sort Order --}}
+								<div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+									<label for="resvSortSelect" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
 										<i class="bi bi-sort-down text-emerald-600 dark:text-emerald-400"></i>
 										<span>Sort Order</span>
 									</label>
-									<select id="resvSortSelect" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-3 py-2 text-xs font-bold text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6] cursor-pointer">
+									<select id="resvSortSelect" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
 										<option value="nearest_checkout" selected>Nearest to Checkout (Default)</option>
 										<option value="latest_checkout">Latest Checkout</option>
 										<option value="checkin_newest">Check-in: Newest First</option>
@@ -947,325 +939,296 @@
 										<option value="guest_name">Main Guest (A - Z)</option>
 										<option value="guest_count">Guest Count (High to Low)</option>
 									</select>
-									<span class="text-[0.68rem] text-hp-text-muted/80">Active sort criterion for reservations</span>
+									<span class="text-[10px] text-[var(--ink-muted)]">Active sort criterion for reservations</span>
 								</div>
 
-								{{-- 2. RESERVATION TYPE --}}
-								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
-									<label for="resvTypeFilter" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
+								{{-- 2. Reservation Type --}}
+								<div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+									<label for="resvTypeFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
 										<i class="bi bi-tag text-emerald-600 dark:text-emerald-400"></i>
 										<span>Reservation Type</span>
 									</label>
-									<select id="resvTypeFilter" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-3 py-2 text-xs font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6] cursor-pointer">
+									<select id="resvTypeFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
 										<option value="all">All Types (Walk-in &amp; Online)</option>
 										<option value="walk_in">Walk-in only</option>
 										<option value="online">Online only</option>
 									</select>
-									<span class="text-[0.68rem] text-hp-text-muted/80">Filter by booking channel</span>
+									<span class="text-[10px] text-[var(--ink-muted)]">Filter by booking channel</span>
 								</div>
 
-								{{-- 3. AMENITY / VISIT INCLUSION --}}
-								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
-									<label for="resvAmenityFilter" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
+								{{-- 3. Amenities & Visit --}}
+								<div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+									<label for="resvAmenityFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
 										<i class="bi bi-houses text-emerald-600 dark:text-emerald-400"></i>
 										<span>Amenities &amp; Visit</span>
 									</label>
-									<select id="resvAmenityFilter" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-3 py-2 text-xs font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6] cursor-pointer">
-										<option value="all" selected>All (With Amenities &amp; Visit Only)</option>
+									<select id="resvAmenityFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+										<option value="all" selected>All (With Amenities &amp; Visit)</option>
 										<option value="with_amenities">With Amenities only</option>
 										<option value="visit_only">Visit Only (No Amenities)</option>
 									</select>
-									<span class="text-[0.68rem] text-hp-text-muted/80">Filter by booked amenities</span>
+									<span class="text-[10px] text-[var(--ink-muted)]">Filter by booked amenities</span>
 								</div>
 
-								{{-- 3. CHECKOUT STATUS --}}
-								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
-									<label for="resvStatusFilter" class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
+								{{-- 4. Checkout Status --}}
+								<div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+									<label for="resvStatusFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
 										<i class="bi bi-clock-history text-emerald-600 dark:text-emerald-400"></i>
 										<span>Checkout Status</span>
 									</label>
-									<select id="resvStatusFilter" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-3 py-2 text-xs font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6] cursor-pointer">
+									<select id="resvStatusFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
 										<option value="all">All Statuses</option>
 										<option value="due">Time to checkout (Due / Overdue)</option>
 										<option value="near">Near checkout (&le; 2 hours left)</option>
 										<option value="normal">Active / Regular stay</option>
 									</select>
-									<span class="text-[0.68rem] text-hp-text-muted/80">Filter by remaining duration</span>
+									<span class="text-[10px] text-[var(--ink-muted)]">Filter by remaining duration</span>
 								</div>
 
-								{{-- 4. CHECK-IN DATE RANGE --}}
-								<div class="rounded-xl border border-glass-border/70 bg-white/90 dark:bg-[#1a1e1c] p-3 shadow-xs flex flex-col justify-between gap-1.5 focus-within:border-hp-green transition-colors">
-									<span class="flex items-center gap-1.5 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">
-										<i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400"></i>
-										<span>Check-in Date Range</span>
-									</span>
-									<div class="grid grid-cols-2 gap-2">
-										<input type="date" id="resvDateFrom" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-2 py-1.5 text-[0.72rem] font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6]" title="From Date">
-										<input type="date" id="resvDateTo" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#141715] px-2 py-1.5 text-[0.72rem] font-medium text-hp-text transition-colors duration-150 focus:border-hp-green focus:outline-none dark:border-white/15 dark:text-[#f3f4f6]" title="To Date">
+								{{-- 5. Check-in Date Range & Reset --}}
+								<div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+									<div class="flex items-center justify-between">
+										<span class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+											<i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400"></i>
+											<span>Check-in Date</span>
+										</span>
+										<button type="button" id="resvPanelResetBtn" class="cursor-pointer text-[10px] font-bold text-rose-600 hover:underline">Reset</button>
 									</div>
-									<div class="flex justify-between text-[0.68rem] text-hp-text-muted/80">
-										<span>From date</span>
-										<span>To date</span>
+									<div class="grid grid-cols-2 gap-1.5">
+										<input type="date" id="resvDateFrom" class="w-full rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2 py-1 text-[11px] font-medium text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors" title="From Date">
+										<input type="date" id="resvDateTo" class="w-full rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2 py-1 text-[11px] font-medium text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors" title="To Date">
+									</div>
+									<div class="flex justify-between text-[10px] text-[var(--ink-muted)]">
+										<span>From</span>
+										<span>To</span>
 									</div>
 								</div>
 							</div>
-						</div>
-					</div>
 
-					{{-- Results Meta Bar (Positioned directly below the filter) --}}
-					<div class="resv-results-strip flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/30 bg-black/[0.012] px-6 py-2.5 text-xs text-hp-text-muted dark:border-white/10 dark:bg-white/[0.012]">
-						<div class="flex items-center gap-2">
-							<div class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-xs">
-								<i class="bi bi-person-check-fill text-emerald-600 dark:text-emerald-400 text-xs"></i>
-								<span id="resvResultsCount">Showing {{ $activeReservations->count() }} of {{ $activeReservations->count() }} reservations</span>
-								<span id="guestResultsCount" class="sr-only">Showing {{ $activeCustomers->count() }} active guest{{ $activeCustomers->count() === 1 ? '' : 's' }}</span>
-							</div>
-						</div>
-						<div class="flex items-center gap-2">
-							<button type="button" id="resvFiltersClear" class="hidden cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all shadow-xs" title="Reset all filters and sorting">
-								<i class="bi bi-x-circle"></i> Reset Filters
-							</button>
-						</div>
-					</div>
+							{{-- Scrollable Table Container --}}
+							<div class="overflow-x-auto overflow-y-auto max-h-[460px] rounded-xl border border-[var(--border)] custom-scrollbar" id="staffCheckInsResvTableWrap" style="max-height: 460px;">
+								<table class="w-full text-left text-xs border-separate border-spacing-0" id="staffCheckInsResvTable">
+									<thead class="sticky top-0 z-10 shadow-xs">
+										<tr class="font-semibold text-[var(--ink-muted)]">
+											<th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Reservation</th>
+											<th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[200px]">Main Guest</th>
+											<th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Check-in &amp; Time</th>
+											<th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[180px]">Amenities</th>
+											<th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Guests</th>
+											<th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Status / Time Left</th>
+											<th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] w-10"></th>
+										</tr>
+									</thead>
+									<tbody id="checkInsReservationTableBody">
+										@forelse ($activeReservations ?? collect() as $reservation)
+											@php
+												$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+												$rowAmenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+												$rowPrimaryName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : '';
+												$guestInitials = $primaryGuest
+													? collect(explode(' ', trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?'
+													: '?';
+												// Mixed Time badge: multiple amenities spanning different time periods
+												$resvTimePeriods = $reservation->reservationAmenities
+													->map(fn ($ra) => str_replace([' Aircon', 'Aircon'], '', (string) $ra->pricing_type))
+													->filter()
+													->unique();
+												$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
+												$isVisitOnly = $reservation->reservationAmenities->isEmpty();
 
-					{{-- Scrollable Table Container: table data scrolls internally --}}
-					<div class="w-full overflow-x-auto overflow-y-auto max-h-[clamp(380px,65vh,720px)] rounded-b-2xl border-t border-glass-border/30 bg-white dark:border-white/10 dark:bg-[#181b19] [overscroll-behavior:contain]" id="staffCheckInsResvTableWrap">
-						<table class="w-full min-w-[920px] border-separate border-spacing-0 bg-white text-left text-sm dark:bg-[#181b19]" id="staffCheckInsResvTable">
-							<thead class="sticky top-0 z-20 border-b border-glass-border/70 bg-[#f7faf8] text-[0.72rem] font-bold uppercase tracking-wider text-hp-text-muted dark:border-white/10 dark:bg-[#1e2220] dark:text-[#9baaa1]">
-								<tr>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Reservation</th>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Main Guest</th>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Check-in & Time</th>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Amenities</th>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Guests</th>
-									<th class="px-5 py-3.5 text-left font-bold select-none">Status / Time Left</th>
-									<th class="px-5 py-3.5 text-center font-bold select-none w-10"></th>
-								</tr>
-							</thead>
-							<tbody id="checkInsReservationTableBody" class="divide-y divide-glass-border/30 bg-white dark:divide-white/5 dark:bg-[#181b19]">
-								@forelse ($activeReservations ?? collect() as $reservation)
-									@php
-										$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
-										$rowAmenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
-										$rowPrimaryName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : '';
-										$guestInitials = $primaryGuest
-											? collect(explode(' ', trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?'
-											: '?';
-										// Mixed Time badge: multiple amenities spanning different time periods
-										$resvTimePeriods = $reservation->reservationAmenities
-											->map(fn ($ra) => str_replace([' Aircon', 'Aircon'], '', (string) $ra->pricing_type))
-											->filter()
-											->unique();
-										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
-										$isVisitOnly = $reservation->reservationAmenities->isEmpty();
-
-										$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
-										$checkoutDue = false;
-										$checkoutNear = false;
-										if ($checkoutAtStr) {
-											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
-											if ($coCarbon->isPast()) {
-												$checkoutDue = true;
-											} else {
-												// Near checkout: 2 hours or below left (<= 120 minutes)
-												$diffMinutes = (int) now()->diffInMinutes($coCarbon, false);
-												if ($diffMinutes >= 0 && $diffMinutes <= 120) {
-													$checkoutNear = true;
+												$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
+												$checkoutDue = false;
+												$checkoutNear = false;
+												if ($checkoutAtStr) {
+													$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
+													if ($coCarbon->isPast()) {
+														$checkoutDue = true;
+													} else {
+														// Near checkout: 2 hours or below left (<= 120 minutes)
+														$diffMinutes = (int) now()->diffInMinutes($coCarbon, false);
+														if ($diffMinutes >= 0 && $diffMinutes <= 120) {
+															$checkoutNear = true;
+														}
+													}
 												}
-											}
-										}
-										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
+												$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
 
-										// Check if any individual amenity is past its checkout time
-										$resAmenitiesData = $reservationData[$reservation->id]['reservation_amenities'] ?? [];
-										$hasAmenityDue = false;
-										$amenityCheckoutTimes = [];
-										foreach ($resAmenitiesData as $raData) {
-											if (($raData['status'] ?? '') === 'Completed') continue;
-											if (!empty($raData['checkout_at'])) {
-												$amenityCheckoutTimes[] = $raData['checkout_at'];
-												if (\Carbon\Carbon::parse($raData['checkout_at'])->isPast()) {
-													$hasAmenityDue = true;
+												// Check if any individual amenity is past its checkout time
+												$resAmenitiesData = $reservationData[$reservation->id]['reservation_amenities'] ?? [];
+												$hasAmenityDue = false;
+												$amenityCheckoutTimes = [];
+												foreach ($resAmenitiesData as $raData) {
+													if (($raData['status'] ?? '') === 'Completed') continue;
+													if (!empty($raData['checkout_at'])) {
+														$amenityCheckoutTimes[] = $raData['checkout_at'];
+														if (\Carbon\Carbon::parse($raData['checkout_at'])->isPast()) {
+															$hasAmenityDue = true;
+														}
+													}
 												}
-											}
-										}
 
-										// Only flag specific amenity due if the entire reservation stay is NOT already due for checkout
-										$isSpecificAmenityDue = $hasAmenityDue && !$checkoutDue;
+												// Only flag specific amenity due if the entire reservation stay is NOT already due for checkout
+												$isSpecificAmenityDue = $hasAmenityDue && !$checkoutDue;
 
-										$totalResGuests = $reservation->reservationGuests->count();
-										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
+												$totalResGuests = $reservation->reservationGuests->count();
+												$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
 
-										// Pre-compute checkout pill state to avoid layout shifts on initial paint
-										$resStatus = strtolower((string)($reservation->status ?? ''));
-										$isCheckedOut = in_array($resStatus, ['checked_out', 'checkedout', 'checked-out']);
-										$initialTimeLeftStr = '';
-										if (!$isCheckedOut && $checkoutAtStr) {
-											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
-											if ($coCarbon->isPast()) {
-												$initialTimeLeftStr = 'Time to checkout';
-											} else {
-												$diffMinutesTotal = max(0, (int) now()->diffInMinutes($coCarbon));
-												$diffHours = floor($diffMinutesTotal / 60);
-												$remMinutes = $diffMinutesTotal % 60;
-												$initialTimeLeftStr = ($diffHours > 0 ? "{$diffHours}h " : '') . "{$remMinutes}m left";
-											}
-										}
-
-										// Row background: Normal rows MUST be white. Only orange/amber when near checkout (<=2h)
-										$rowBgClass = 'bg-white hover:bg-[#f2f7f4] focus-visible:bg-[#f2f7f4] dark:bg-[#181b19] dark:hover:bg-[#202522] dark:focus-visible:bg-[#202522]';
-										if ($checkoutDue) {
-											$rowBgClass = 'bg-red-500/[0.08] hover:!bg-red-500/[0.16] focus-visible:!bg-red-500/[0.16] dark:bg-red-500/[0.14] dark:hover:!bg-red-500/[0.22] dark:focus-visible:!bg-red-500/[0.22]';
-										} elseif ($checkoutNear) {
-											$rowBgClass = 'bg-amber-500/[0.09] hover:!bg-amber-500/[0.20] focus-visible:!bg-amber-500/[0.20] dark:bg-amber-500/[0.14] dark:hover:!bg-amber-500/[0.24] dark:focus-visible:!bg-amber-500/[0.24]';
-										}
-									@endphp
-									<tr
-										class="reservation-row {{ $highlightClass }} {{ $rowBgClass }} cursor-pointer select-none transition-colors duration-150 focus-visible:outline-none"
-										data-reservation-id="{{ $reservation->id }}"
-										data-reservation-type="{{ $reservation->reservation_type }}"
-										data-has-amenities="{{ $isVisitOnly ? 'false' : 'true' }}"
-										data-amenity-mode="{{ $isVisitOnly ? 'visit_only' : 'with_amenities' }}"
-										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
-										data-checkin-timestamp="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->timestamp : 0 }}"
-										data-checkout-at="{{ $checkoutAtStr ?? '' }}"
-										data-checkout-timestamp="{{ $checkoutAtStr ? \Carbon\Carbon::parse($checkoutAtStr)->timestamp : 9999999999 }}"
-										data-checkout-status="{{ $checkoutDue ? 'due' : ($checkoutNear ? 'near' : 'normal') }}"
-										data-primary-name="{{ strtolower($rowPrimaryName) }}"
-										data-amenities-name="{{ strtolower($rowAmenityNames) }}"
-										data-amount-total="{{ (float) ($reservation->total_amount ?? 0) }}"
-										data-guest-count="{{ $totalResGuests }}"
-										data-reservation-search="{{ strtolower(trim($reservation->formatted_id . ' ' . $reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . ($isVisitOnly ? 'visit only visit' : 'with amenities') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
-										data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"
-										tabindex="0"
-										role="button"
-										aria-label="View reservation {{ $reservation->formatted_id }}"
-									>
-										<td class="px-5 py-3.5 align-middle">
-											<div class="flex items-center gap-2">
-												<div>
-													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
-														<span>#{{ $reservation->formatted_id }}</span>
+												// Pre-compute checkout pill state to avoid layout shifts on initial paint
+												$resStatus = strtolower((string)($reservation->status ?? ''));
+												$isCheckedOut = in_array($resStatus, ['checked_out', 'checkedout', 'checked-out']);
+												$initialTimeLeftStr = '';
+												if (!$isCheckedOut && $checkoutAtStr) {
+													$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
+													if ($coCarbon->isPast()) {
+														$initialTimeLeftStr = 'Time to checkout';
+													} else {
+														$diffMinutesTotal = max(0, (int) now()->diffInMinutes($coCarbon));
+														$diffHours = floor($diffMinutesTotal / 60);
+														$remMinutes = $diffMinutesTotal % 60;
+														$initialTimeLeftStr = ($diffHours > 0 ? "{$diffHours}h " : '') . "{$remMinutes}m left";
+													}
+												}
+											@endphp
+											<tr
+												class="reservation-row {{ $highlightClass }} transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none"
+												data-reservation-id="{{ $reservation->id }}"
+												data-reservation-type="{{ $reservation->reservation_type }}"
+												data-has-amenities="{{ $isVisitOnly ? 'false' : 'true' }}"
+												data-amenity-mode="{{ $isVisitOnly ? 'visit_only' : 'with_amenities' }}"
+												data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
+												data-checkin-timestamp="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->timestamp : 0 }}"
+												data-checkout-at="{{ $checkoutAtStr ?? '' }}"
+												data-checkout-timestamp="{{ $checkoutAtStr ? \Carbon\Carbon::parse($checkoutAtStr)->timestamp : 9999999999 }}"
+												data-checkout-status="{{ $checkoutDue ? 'due' : ($checkoutNear ? 'near' : 'normal') }}"
+												data-primary-name="{{ strtolower($rowPrimaryName) }}"
+												data-amenities-name="{{ strtolower($rowAmenityNames) }}"
+												data-amount-total="{{ (float) ($reservation->total_amount ?? 0) }}"
+												data-guest-count="{{ $totalResGuests }}"
+												data-reservation-search="{{ strtolower(trim($reservation->formatted_id . ' ' . $reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . ($isVisitOnly ? 'visit only visit' : 'with amenities') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
+												data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"
+												tabindex="0"
+												role="button"
+												aria-label="View reservation {{ $reservation->formatted_id }}"
+												onclick="if (typeof window.openReservationModal === 'function') { window.openReservationModal('{{ $reservation->id }}'); } else if (window.AppPage && typeof window.AppPage['staff_check_ins'] === 'function') { window.AppPage['staff_check_ins'](); window.openReservationModal && window.openReservationModal('{{ $reservation->id }}'); }"
+											>
+												{{-- Reservation ID & Type --}}
+												<td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+													<div class="flex items-center gap-1.5">
+														<span class="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)] font-mono">
+															<i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>{{ $reservation->formatted_id }}
+														</span>
 														@if($isSpecificAmenityDue)
 															<span class="amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
 														@endif
 													</div>
-													<div class="guest-meta mt-1 flex items-center gap-1.5 text-[0.72rem] leading-tight text-hp-text-muted">
+													<div class="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
 														<span>{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</span>
 														@if ($isMixedTime)
-															<span class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Mixed</span>
+															<span class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Mixed</span>
 														@endif
 													</div>
-												</div>
-											</div>
-										</td>
-										<td class="px-5 py-3.5 align-middle">
-											@if ($primaryGuest)
-												@php
-													$resHasAmenity = (bool) $reservation->reservationAmenities->isNotEmpty();
-													$primaryGuestObj = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
-													$primaryHasPool = (bool) ($primaryGuestObj?->has_pool_access ?? false);
-													$resGlowClass = '';
-													$resGlowTitle = '';
-													if ($primaryHasPool && $resHasAmenity) {
-														$resGlowClass = 'guest-avatar-glow--both';
-														$resGlowTitle = 'Pool Pass + Amenity Booked';
-													} elseif ($primaryHasPool) {
-														$resGlowClass = 'guest-avatar-glow--pool';
-														$resGlowTitle = 'Pool Pass Active';
-													} elseif ($resHasAmenity) {
-														$resGlowClass = 'guest-avatar-glow--amenity';
-														$resGlowTitle = 'Amenity Booked';
-													}
-												@endphp
-												<div class="cell-person flex min-w-0 items-center gap-2.5">
-													<span class="cell-person__avatar cell-person__avatar--star {{ $resGlowClass }} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm" title="{{ $resGlowTitle ? ($resGlowTitle . ' • ') : '' }}Main Guest">
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
-													</span>
-													<div class="cell-person__body min-w-0">
-														<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
-															<span class="truncate">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</span>
-															@if($primaryHasPool)
-																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
+												</td>
+
+												{{-- Main Guest --}}
+												<td class="py-3 px-4 border-b border-[var(--border)] align-middle">
+													@if ($primaryGuest)
+														@php
+															$resHasAmenity = (bool) $reservation->reservationAmenities->isNotEmpty();
+															$primaryGuestObj = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
+															$primaryHasPool = (bool) ($primaryGuestObj?->has_pool_access ?? false);
+														@endphp
+														<div class="flex items-center gap-2.5">
+															<span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-900 text-xs font-bold uppercase text-white shadow-xs" title="Main Guest">
+																{{ $guestInitials }}
+															</span>
+															<div class="min-w-0">
+																<div class="flex items-center gap-1.5 flex-wrap">
+																	<span class="font-bold text-xs text-[var(--ink)] leading-snug">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</span>
+																	@if($primaryHasPool)
+																		<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[10px] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
+																	@endif
+																</div>
+															</div>
+														</div>
+													@else
+														<span class="text-xs text-[var(--ink-muted)]">—</span>
+													@endif
+												</td>
+
+												{{-- Check-in & Time --}}
+												<td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+													<p class="m-0 font-bold text-xs text-[var(--ink)]">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</p>
+													<p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</p>
+												</td>
+
+												{{-- Amenities --}}
+												<td class="py-3 px-4 border-b border-[var(--border)] align-middle max-w-[200px]">
+													@php
+														$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+													@endphp
+													@if ($isVisitOnly)
+														<span class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300" title="Visit Only (No amenities booked)">
+															<i class="bi bi-geo-alt-fill text-teal-600 text-[10px]"></i>
+															Visit Only
+														</span>
+													@else
+														<div class="flex items-center gap-1.5">
+															<span class="text-xs text-[var(--ink-muted)] truncate" title="{{ $amenityNames }}">{{ $amenityNames }}</span>
+															@if($isSpecificAmenityDue)
+																<span class="amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
 															@endif
 														</div>
+													@endif
+												</td>
+
+												{{-- Guests --}}
+												<td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+													<p class="m-0 font-bold text-xs text-[var(--ink)]">{{ $totalResGuests }} Total</p>
+													<p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">{{ $remainingResGuests }} Remaining</p>
+												</td>
+
+												{{-- Status / Time Left --}}
+												<td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+													<div class="flex items-center justify-center gap-1.5 flex-wrap min-h-[26px]">
+														<span class="table-time-left inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold {{ $isCheckedOut ? 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-neutral-800 dark:text-gray-300' : ($checkoutDue ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' : ($checkoutNear ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300')) }}" data-checkout-at="{{ $checkoutAtStr ?? '' }}" data-status="{{ $reservation->status ?? '' }}">
+															@if ($isCheckedOut)
+																Checked Out
+															@elseif ($checkoutDue)
+																Time to checkout
+															@elseif ($initialTimeLeftStr)
+																<i class="bi bi-clock text-[10px]"></i>
+																<span>{{ $initialTimeLeftStr }}</span>
+															@else
+																Checked In
+															@endif
+														</span>
+														@if($isSpecificAmenityDue)
+															<span class="amenity-due-status-pill inline-flex items-center gap-1 rounded-lg bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300" title="One or more specific amenities are time to checkout">
+																<span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span> Amenity Due
+															</span>
+														@endif
 													</div>
-												</div>
-											@else
-												<div class="guest-name text-[0.82rem] font-semibold text-hp-text">—</div>
-											@endif
-										</td>
-										<td class="px-5 py-3.5 align-middle">
-											<div class="guest-name mono-cell whitespace-nowrap text-[0.8rem] font-semibold leading-tight text-hp-text">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
-											<div class="guest-meta mono-cell mt-1 whitespace-nowrap text-[0.72rem] leading-tight text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
-										</td>
-										<td class="px-5 py-3.5 align-middle max-w-[200px]">
-											@php
-												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
-											@endphp
-											@if ($isVisitOnly)
-												<div class="flex items-center gap-1.5">
-													<span class="inline-flex items-center gap-1 rounded-full border border-teal-500/30 bg-teal-500/10 dark:bg-teal-500/15 text-teal-800 dark:text-teal-300 px-2.5 py-0.5 text-[0.72rem] font-bold shadow-2xs tracking-wide" title="Visit Only (No amenities booked)">
-														<i class="bi bi-geo-alt-fill text-teal-600 dark:text-teal-400 text-[0.68rem]"></i>
-														Visit Only
-													</span>
-												</div>
-											@else
-												<div class="flex items-center gap-1.5">
-													<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted" title="{{ $amenityNames }}">{{ $amenityNames }}</span>
-													@if($isSpecificAmenityDue)
-														<span class="amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
-													@endif
-												</div>
-											@endif
-										</td>
-										<td class="px-5 py-3.5 align-middle whitespace-nowrap">
-											<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $totalResGuests }} Total</div>
-											<div class="guest-meta mt-1 text-[0.72rem] leading-tight text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
-										</td>
-										<td class="px-5 py-3.5 align-middle">
-											<div class="flex items-center gap-1.5 flex-wrap min-h-[26px]">
-												<span class="table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 {{ $isCheckedOut ? 'bg-gray-500/10 text-gray-600 dark:text-gray-400' : ($checkoutDue ? 'bg-red-500/15 text-red-600 dark:text-red-400' : ($checkoutNear ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : ($initialTimeLeftStr ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'))) }}" data-checkout-at="{{ $checkoutAtStr ?? '' }}" data-status="{{ $reservation->status ?? '' }}">
-													@if ($isCheckedOut)
-														Checked Out
-													@elseif ($checkoutDue)
-														Time to checkout
-													@elseif ($initialTimeLeftStr)
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-														<span>{{ $initialTimeLeftStr }}</span>
-													@else
-														Checked In
-													@endif
-												</span>
-												@if($isSpecificAmenityDue)
-													<span class="amenity-due-status-pill inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[0.65rem] font-bold text-red-600 dark:text-red-400" title="One or more specific amenities are time to checkout">
-														<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> Amenity Due
-													</span>
-												@endif
-											</div>
-										</td>
-										<td class="px-5 py-3.5 align-middle text-right text-hp-text-muted/60">
-											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
-										</td>
-									</tr>
-								@empty
-									<tr>
-										<td colspan="7" class="border-0">
-											<div class="empty-state-wrapper flex flex-col items-center justify-center gap-1 py-12 text-center">
-												<div class="empty-state-icon mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ec] text-[#1c5c3c]">
-													<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
-													</svg>
-												</div>
-												<h4 class="m-0 text-base font-bold text-hp-text">No active reservations</h4>
-												<p class="m-0 text-sm text-hp-text-muted">There are no checked-in reservations right now.</p>
-											</div>
-										</td>
-									</tr>
-								@endforelse
-							</tbody>
-						</table>
-					</div>
+												</td>
+
+												{{-- Action chevron --}}
+												<td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle text-[var(--ink-muted)]">
+													<i class="bi bi-chevron-right text-xs"></i>
+												</td>
+											</tr>
+										@empty
+											<tr>
+												<td colspan="7" class="py-14 text-center text-xs text-[var(--ink-muted)] border-b border-[var(--border)]">
+													<div class="flex flex-col items-center justify-center gap-2">
+														<i class="bi bi-calendar-x text-4xl opacity-30"></i>
+														<p class="m-0 font-medium text-[var(--ink)]">No active reservations found.</p>
+														<p class="m-0 text-[11px] text-[var(--ink-muted)]">There are no checked-in reservations right now.</p>
+													</div>
+												</td>
+											</tr>
+										@endforelse
+									</tbody>
+								</table>
+							</div>
 						</section>
 					</div>
 				</div>
@@ -2885,9 +2848,9 @@
 
 				{{-- Reservation Detail Modal --}}
 				<div class="guest-modal" id="reservationModal" aria-hidden="true" style="z-index: 1100;">
-					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-reservation-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-reservation-modal="true" onclick="const m = document.getElementById('reservationModal'); if (m) { m.classList.remove('is-open'); m.setAttribute('aria-hidden', 'true'); m.style.display = 'none'; }"></div>
 					<div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-2xl bg-glass shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle" style="width: min(94vw, 780px) !important; max-width: 780px !important; height: min(92vh, 880px) !important; min-height: min(86vh, 760px) !important; max-height: 94vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
-						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text z-10" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text z-10" data-close-reservation-modal="true" onclick="const m = document.getElementById('reservationModal'); if (m) { m.classList.remove('is-open'); m.setAttribute('aria-hidden', 'true'); m.style.display = 'none'; }" aria-label="Close details">&times;</button>
 						<div class="guest-modal__header p-5 pb-3 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 shrink-0">
 							<div class="flex items-center gap-2.5">
 								<h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
@@ -2896,7 +2859,7 @@
 						</div>
 						<div id="reservationModalBody" class="guest-modal__body p-6 overflow-y-auto flex-1 space-y-4" style="display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding: 1.5rem 1.75rem !important;"></div>
 						<div class="guest-form__actions p-4 px-6 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/90 dark:bg-[#1a201c] backdrop-blur-md shrink-0 flex items-center justify-between gap-3 flex-wrap" id="reservationModalActions">
-							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true">Close</button>
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true" onclick="const m = document.getElementById('reservationModal'); if (m) { m.classList.remove('is-open'); m.setAttribute('aria-hidden', 'true'); m.style.display = 'none'; }">Close</button>
 							<div class="flex items-center gap-2.5 flex-wrap ml-auto" id="reservationModalStickyButtons"></div>
 						</div>
 					</div>

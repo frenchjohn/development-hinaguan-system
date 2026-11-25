@@ -102,74 +102,74 @@
             <main class="dash-content p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
                 <!-- SUMMARY STRIP METRIC CARDS -->
-                <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <div class="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
                     <!-- Card 1: Guest Records -->
-                    <article class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/95 dark:bg-[#181b19]/95 border border-[#dbe3de] dark:border-[#282c29] border-l-[4px] border-l-emerald-600 dark:border-l-emerald-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <article class="flex items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="m-0 text-xl font-extrabold leading-tight text-[#0d2c1d] dark:text-[#f5f5f0]" id="counterGuestRecords">{{ $guestRecordsCount }}</p>
-                            <p class="m-0 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Guest Records</p>
-                            <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] truncate">Checked-out visitors</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" id="counterGuestRecords">{{ $guestRecordsCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Guest Records</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Checked-out visitors</p>
                         </div>
                     </article>
 
                     <!-- Card 2: Checked Out Stays -->
-                    <article class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/95 dark:bg-[#181b19]/95 border border-[#dbe3de] dark:border-[#282c29] border-l-[4px] border-l-blue-600 dark:border-l-blue-400 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                    <article class="flex items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100/80 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="m-0 text-xl font-extrabold leading-tight text-[#0d2c1d] dark:text-[#f5f5f0]" id="counterCheckedOut">{{ $checkedOutCount ?? $completedReservationsCount }}</p>
-                            <p class="m-0 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Checked Out</p>
-                            <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] truncate">Completed visits</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" id="counterCheckedOut">{{ $checkedOutCount ?? $completedReservationsCount }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Checked Out</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Completed visits</p>
                         </div>
                     </article>
 
                     <!-- Card 3: No Show Records -->
-                    <article class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/95 dark:bg-[#181b19]/95 border border-[#dbe3de] dark:border-[#282c29] border-l-[4px] border-l-slate-500 dark:border-l-slate-400 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <article class="flex items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="m-0 text-xl font-extrabold leading-tight text-[#0d2c1d] dark:text-[#f5f5f0]" id="counterNoShow">{{ $noShowCount ?? 0 }}</p>
-                            <p class="m-0 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">No Show</p>
-                            <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] truncate">Unattended bookings</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" id="counterNoShow">{{ $noShowCount ?? 0 }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">No Show</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Unattended bookings</p>
                         </div>
                     </article>
 
                     <!-- Card 4: Cancelled Records -->
-                    <article class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/95 dark:bg-[#181b19]/95 border border-[#dbe3de] dark:border-[#282c29] border-l-[4px] border-l-rose-500 dark:border-l-rose-400 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+                    <article class="flex items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100/80 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="m-0 text-xl font-extrabold leading-tight text-[#0d2c1d] dark:text-[#f5f5f0]" id="counterCancelled">{{ $cancelledCount ?? 0 }}</p>
-                            <p class="m-0 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Cancelled</p>
-                            <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] truncate">Voided bookings</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" id="counterCancelled">{{ $cancelledCount ?? 0 }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Cancelled</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Voided bookings</p>
                         </div>
                     </article>
 
                     <!-- Card 5: Total Revenue Logged -->
-                    <article class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/95 dark:bg-[#181b19]/95 border border-[#dbe3de] dark:border-[#282c29] border-l-[4px] border-l-amber-500 dark:border-l-amber-400 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:col-span-2 lg:col-span-1">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                    <article class="flex items-center gap-3.5 p-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 sm:col-span-2 lg:col-span-1">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100/80 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="m-0 text-xl font-extrabold leading-tight text-[#0d2c1d] dark:text-[#f5f5f0]" id="counterRevenueCollected">₱{{ number_format($completedRevenue, 0) }}</p>
-                            <p class="m-0 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Total Revenue</p>
-                            <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] truncate">Ingested funds</p>
+                            <p class="m-0 text-xl font-extrabold leading-tight text-[var(--ink)] tabular-nums" id="counterRevenueCollected">₱{{ number_format($completedRevenue, 0) }}</p>
+                            <p class="m-0 text-xs font-bold text-[var(--ink)]">Total Revenue</p>
+                            <p class="m-0 text-[11px] text-[var(--ink-muted)] truncate">Ingested funds</p>
                         </div>
                     </article>
                 </div>
@@ -185,121 +185,152 @@
                         $onlineCount  = $checkedOutReservations->where('reservation_type', '!=', 'walk_in')->count();
                     @endphp
                     <section data-tab-content="reservations">
-                        <div class="guest-panel my-4 rounded-2xl border border-[#dbe3de] dark:border-[#282c29] bg-white/95 dark:bg-[#181b19]/95 shadow-sm overflow-hidden transition-all">
-                            <div class="p-4 sm:p-5 border-b border-[#e8eee9] dark:border-[#282c29]">
-                                <div class="flex flex-wrap items-center justify-between gap-4">
-                                    {{-- All / Online / Walk-in section buttons --}}
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <button type="button" id="tabAll" data-resv-type="all"
-                                            class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
-                                            All
-                                            <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $totalResvCount }}</span>
-                                        </button>
-                                        <button type="button" id="tabOnline" data-resv-type="online"
-                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-3.5 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                            Online
-                                            <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $onlineCount }}</span>
-                                        </button>
-                                        <button type="button" id="tabWalkIn" data-resv-type="walk_in"
-                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-3.5 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                                            Walk-in
-                                            <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $walkInCount }}</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <div class="relative">
-                                            <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#889b8a]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                                            <input type="search" id="reservationSearchInput" placeholder="Search main guest, email, phone, ID..." class="w-60 sm:w-68 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] py-2.5 pl-9 pr-3 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] placeholder:text-[#889b8a] focus:bg-white dark:focus:bg-[#181b19] focus:border-[#178a52] focus:ring-2 focus:ring-[#178a52]/20 focus:outline-none transition-all shadow-xs">
-                                        </div>
-
-                                        <button type="button" class="guest-filter-toggle inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] shadow-xs cursor-pointer" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
-                                            <svg class="h-3.5 w-3.5 text-[#5a6b5c] dark:text-[#a8b8a8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
-                                            <span>Filters</span>
-                                            <span class="guest-filter-toggle__icon text-[0.7rem] text-[#889b8a]">▾</span>
-                                        </button>
-
-                                        <button type="button" id="printRecordsPdfBtn" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] shadow-xs cursor-pointer" title="Print currently filtered records as PDF">
-                                            <svg class="h-3.5 w-3.5 text-[#178a52] dark:text-[#8fd0ab]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.656h10.5z" />
-                                            </svg>
-                                            <span>Print as PDF</span>
-                                        </button>
+                        <div class="my-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] relative">
+                            {{-- Section Header & Top Controls --}}
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
+                                <div class="flex items-center gap-2.5 flex-wrap">
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                        <i class="bi bi-journal-check text-sm"></i>
+                                    </span>
+                                    <div>
+                                        <h3 class="m-0 text-sm font-bold text-[var(--ink)]">Reservation Records Log</h3>
+                                        <p class="m-0 text-[11px] text-[var(--ink-muted)]">Completed, no-show, and cancelled reservations</p>
                                     </div>
                                 </div>
 
-                                <div class="guest-filter-shell mt-4 grid gap-3" id="reservationFilterPanel" hidden>
-                                    <div class="guest-toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 items-end gap-3 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] p-4 transition-all shadow-inner">
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Status</span>
-                                            <select id="reservationStatusFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
-                                                <option value="all">All Statuses</option>
-                                                <option value="checked out">Checked Out</option>
-                                                <option value="no show">No Show</option>
-                                                <option value="cancelled">Cancelled</option>
-                                            </select>
-                                        </label>
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Checked In By</span>
-                                            <select id="reservationCheckInStaffFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
-                                                <option value="all">All Staff</option>
-                                                @foreach($staffMembersList ?? [] as $staffMember)
-                                                    <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Checked Out By</span>
-                                            <select id="reservationCheckOutStaffFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
-                                                <option value="all">All Staff</option>
-                                                @foreach($staffMembersList ?? [] as $staffMember)
-                                                    <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Sort by</span>
-                                            <select id="reservationSortSelect" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
-                                                <option value="date-desc">Date (Newest first)</option>
-                                                <option value="date-asc">Date (Oldest first)</option>
-                                                <option value="res-id-desc">Reservation ID (High-Low)</option>
-                                                <option value="res-id-asc">Reservation ID (Low-High)</option>
-                                                <option value="name-asc">Main Guest Name (A-Z)</option>
-                                                <option value="name-desc">Main Guest Name (Z-A)</option>
-                                                <option value="amount-desc">Amount Paid (High-Low)</option>
-                                            </select>
-                                        </label>
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Date from</span>
-                                            <input type="date" id="reservationCheckOutFrom" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs">
-                                        </label>
-                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                            <span>Date to</span>
-                                            <input type="date" id="reservationCheckOutTo" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs">
-                                        </label>
-                                        <button type="button" class="cursor-pointer rounded-xl bg-[#e8efe9] dark:bg-[#1e2220] px-4 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-colors hover:bg-[#178a52] hover:text-white border-0 shadow-xs" id="reservationFiltersClear">Clear</button>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    {{-- All / Online / Walk-in section buttons --}}
+                                    <div class="h-9 inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 p-1 text-xs">
+                                        <button type="button" id="tabAll" data-resv-type="all"
+                                            class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-2.5 py-1 text-xs font-bold text-white shadow-2xs transition-all">
+                                            <span>All</span>
+                                            <span class="rounded-full bg-white/25 px-1.5 py-0.2 text-[10px] font-bold">{{ $totalResvCount }}</span>
+                                        </button>
+                                        <button type="button" id="tabOnline" data-resv-type="online"
+                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all">
+                                            <span>Online</span>
+                                            <span class="rounded-full bg-gray-200/80 dark:bg-neutral-800 px-1.5 py-0.2 text-[10px] font-bold text-[var(--ink-muted)]">{{ $onlineCount }}</span>
+                                        </button>
+                                        <button type="button" id="tabWalkIn" data-resv-type="walk_in"
+                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-all">
+                                            <span>Walk-in</span>
+                                            <span class="rounded-full bg-gray-200/80 dark:bg-neutral-800 px-1.5 py-0.2 text-[10px] font-bold text-[var(--ink-muted)]">{{ $walkInCount }}</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="relative">
+                                        <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)]"></i>
+                                        <input type="search" id="reservationSearchInput" placeholder="Search guest, email, phone, ID..." class="h-9 w-56 sm:w-64 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-3 text-xs text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:bg-[var(--surface)] focus:border-emerald-500 focus:outline-none transition-all shadow-2xs">
+                                    </div>
+
+                                    <button type="button" id="printRecordsPdfBtn" class="h-9 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3.5 text-xs font-semibold text-[var(--ink)] transition-all hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 shadow-2xs cursor-pointer" title="Print currently filtered records as PDF">
+                                        <i class="bi bi-printer text-xs text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>Print as PDF</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Filter Panel (Permanently Open, matching Check-Ins) --}}
+                            <div class="guest-filter-shell mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-stretch gap-3 rounded-xl border border-[var(--border)] bg-gray-50/70 dark:bg-neutral-900/40 p-4 shadow-2xs" id="reservationFilterPanel">
+                                {{-- 1. Status --}}
+                                <div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+                                    <label for="reservationStatusFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                                        <i class="bi bi-check2-circle text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>Status</span>
+                                    </label>
+                                    <select id="reservationStatusFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                        <option value="all">All Statuses</option>
+                                        <option value="checked out">Checked Out</option>
+                                        <option value="no show">No Show</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                    <span class="text-[10px] text-[var(--ink-muted)]">Filter by final outcome</span>
+                                </div>
+
+                                {{-- 2. Checked In By --}}
+                                <div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+                                    <label for="reservationCheckInStaffFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                                        <i class="bi bi-box-arrow-in-right text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>Checked In By</span>
+                                    </label>
+                                    <select id="reservationCheckInStaffFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                        <option value="all">All Staff</option>
+                                        @foreach($staffMembersList ?? [] as $staffMember)
+                                            <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-[10px] text-[var(--ink-muted)]">Handling check-in staff</span>
+                                </div>
+
+                                {{-- 3. Checked Out By --}}
+                                <div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+                                    <label for="reservationCheckOutStaffFilter" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                                        <i class="bi bi-box-arrow-right text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>Checked Out By</span>
+                                    </label>
+                                    <select id="reservationCheckOutStaffFilter" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                        <option value="all">All Staff</option>
+                                        @foreach($staffMembersList ?? [] as $staffMember)
+                                            <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-[10px] text-[var(--ink-muted)]">Handling check-out staff</span>
+                                </div>
+
+                                {{-- 4. Sort By --}}
+                                <div class="rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+                                    <label for="reservationSortSelect" class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                                        <i class="bi bi-sort-down text-emerald-600 dark:text-emerald-400"></i>
+                                        <span>Sort Order</span>
+                                    </label>
+                                    <select id="reservationSortSelect" class="w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors">
+                                        <option value="date-desc">Date (Newest first)</option>
+                                        <option value="date-asc">Date (Oldest first)</option>
+                                        <option value="res-id-desc">Reservation ID (High-Low)</option>
+                                        <option value="res-id-asc">Reservation ID (Low-High)</option>
+                                        <option value="name-asc">Main Guest Name (A-Z)</option>
+                                        <option value="name-desc">Main Guest Name (Z-A)</option>
+                                        <option value="amount-desc">Amount Paid (High-Low)</option>
+                                    </select>
+                                    <span class="text-[10px] text-[var(--ink-muted)]">Active sort criterion</span>
+                                </div>
+
+                                {{-- 5. Date Range & Reset --}}
+                                <div class="sm:col-span-2 rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-900 p-3 shadow-2xs flex flex-col justify-between gap-1.5 focus-within:border-emerald-500 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <span class="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)]">
+                                            <i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400"></i>
+                                            <span>Date Range</span>
+                                        </span>
+                                        <button type="button" id="reservationFiltersClear" class="cursor-pointer text-[10px] font-bold text-rose-600 hover:underline">Reset</button>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <input type="date" id="reservationCheckOutFrom" class="w-full rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2 py-1 text-[11px] font-medium text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors" title="From Date">
+                                        <input type="date" id="reservationCheckOutTo" class="w-full rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 px-2 py-1 text-[11px] font-medium text-[var(--ink)] outline-none focus:border-emerald-500 transition-colors" title="To Date">
+                                    </div>
+                                    <div class="flex justify-between text-[10px] text-[var(--ink-muted)]">
+                                        <span>From</span>
+                                        <span>To</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto w-full" id="reservationTableWrap">
-                                <table class="guest-table w-full min-w-[980px] text-left border-collapse">
-                                    <thead class="bg-[#f4f8f5] dark:bg-[#151c17] border-b border-[#e2e8e4] dark:border-[#282c29]">
-                                        <tr>
-                                            <th class="py-3.5 px-5 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">RESERVATION ID</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">MAIN GUEST</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider text-center">GUESTS</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider text-center">STATUS</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">SCHEDULE / CHECK-IN</th>
-                                            <th class="py-3.5 px-4 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider">CHECK-OUT / ACTIVITY</th>
-                                            <th class="py-3.5 px-5 text-[0.7rem] font-bold text-[#1f5c38] dark:text-[#8fd0ab] uppercase tracking-wider text-right">PAID / TOTAL</th>
-                                            <th class="py-3.5 px-4 text-right w-12"></th>
+                            {{-- Scrollable Table Container (matching Check-Ins) --}}
+                            <div class="overflow-x-auto overflow-y-auto max-h-[460px] rounded-xl border border-[var(--border)] custom-scrollbar" id="reservationTableWrap" style="max-height: 460px;">
+                                <table class="w-full text-left text-xs border-separate border-spacing-0" id="staffRecordsTable">
+                                    <thead class="sticky top-0 z-10 shadow-xs">
+                                        <tr class="font-semibold text-[var(--ink-muted)]">
+                                            <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Reservation</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] min-w-[200px]">Main Guest</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Guests</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Status</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Schedule / Check-in</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Check-out / Activity</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Paid / Total</th>
+                                            <th class="sticky top-0 z-10 py-3 px-4 text-center whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)] w-10"></th>
                                         </tr>
                                     </thead>
-                                    <tbody id="reservationTableBody" class="divide-y divide-[#edf2ee] dark:divide-[#242a26] bg-white dark:bg-[#181b19]">
+                                    <tbody id="reservationTableBody">
                                         @php
                                             $walkInReservations = $checkedOutReservations->filter(fn($r) => ($r->reservation_type ?? '') === 'walk_in');
                                             $onlineReservations = $checkedOutReservations->filter(fn($r) => ($r->reservation_type ?? '') !== 'walk_in');
@@ -344,9 +375,14 @@
                                                 $resDetail = $reservationData[$reservation->id] ?? null;
                                                 $checkInStaff = $resDetail['checked_in_staff'] ?? '';
                                                 $checkOutStaff = $resDetail['checked_out_staff'] ?? '';
+                                                $guestInitials = collect(explode(' ', trim((string) ($reservation->booker_name ?? ''))))
+                                                    ->filter()
+                                                    ->take(2)
+                                                    ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))
+                                                    ->implode('') ?: '?';
                                             @endphp
                                             <tr
-                                                class="reservation-row group cursor-pointer select-none transition-all hover:bg-[#f2f7f4] dark:hover:bg-[#1e2621]"
+                                                class="reservation-row group transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none"
                                                 data-reservation-id="{{ $reservation->id }}"
                                                 data-reservation-type="{{ $reservation->reservation_type === 'walk_in' ? 'walk_in' : 'online' }}"
                                                 data-guest-count="{{ $reservation->number_of_guests ?? 1 }}"
@@ -361,66 +397,71 @@
                                                 tabindex="0"
                                                 role="button"
                                             >
-                                                <td class="py-3.5 px-5">
-                                                    <div class="flex items-center gap-2.5 min-w-0">
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <div class="flex items-center gap-2 min-w-0">
                                                         @if($reservation->reservationGuests->count() > 0)
-                                                            <button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#dbe3de] dark:border-[#282c29] bg-[#f4f7f5] dark:bg-[#141715] text-[#5a6b5c] transition-all hover:bg-[#178a52] hover:text-white [&.expanded]:rotate-180 [&.expanded]:text-[#178a52]" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Companions">
+                                                            <button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 text-[var(--ink-muted)] transition-all hover:bg-[#178a52] hover:text-white [&.expanded]:rotate-180 [&.expanded]:text-[#178a52]" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Companions">
                                                                 <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->formatted_id }}</span>
-                                                            <div class="mt-0.5">
-                                                                <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
+                                                            <span class="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)] font-mono">
+                                                                <i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>{{ $reservation->formatted_id }}
+                                                            </span>
+                                                            <div class="mt-1 text-[11px] text-[var(--ink-muted)]">
+                                                                {{ ($reservation->reservation_type ?? 'online') === 'walk_in' ? 'Walk-in' : 'Online' }}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3.5 px-4 text-xs">
-                                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $reservation->booker_name }}</div>
-                                                    <div class="text-[0.72rem] text-[#718774] dark:text-[#889b8a] mt-0.5 truncate max-w-[200px]">{{ $reservation->email ?: 'No email' }} · {{ $reservation->phone ?: 'No phone' }}</div>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs font-bold text-center text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                                    <span class="inline-flex items-center justify-center min-w-[26px] px-2 py-0.5 rounded-full bg-[#f0f4f1] dark:bg-[#202722] border border-[#dbe3de] dark:border-[#282c29]">{{ $reservation->number_of_guests }}</span>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-center">
-                                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $statusTheme }} shadow-2xs">{{ $displayStatus }}</span>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                    @if($reservation->check_in)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') }}</div>
-                                                    @elseif($reservation->reservation_date)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ $reservation->start_slot ?? 'Daytime' }}</div>
-                                                    @else
-                                                        <span class="text-[#889b8a]">N/A</span>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                    @if($displayCheckout)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($displayCheckout)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($displayCheckout)->format('h:i A') }}</div>
-                                                    @elseif($reservation->end_date)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->end_date)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ $reservation->end_slot ?? 'Daytime' }}</div>
-                                                    @else
-                                                        <span class="text-[#889b8a]">N/A</span>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-5 text-xs text-right font-bold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">
-                                                    <div class="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm">₱{{ number_format($reservation->amount_paid, 2) }}</div>
-                                                    <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
-                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
-                                                        <div class="text-[0.62rem] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-4 text-right">
-                                                    <div class="flex items-center justify-end">
-                                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab]" title="View booking details">
-                                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                <td class="py-3 px-4 border-b border-[var(--border)] align-middle">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <div class="h-8 w-8 rounded-full bg-emerald-900 dark:bg-emerald-800 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                            {{ $guestInitials }}
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <div class="font-bold text-[var(--ink)] truncate max-w-[210px]">{{ $reservation->booker_name }}</div>
+                                                            <div class="text-[11px] text-[var(--ink-muted)] truncate max-w-[210px]">{{ $reservation->email ?: 'No email' }} · {{ $reservation->phone ?: 'No phone' }}</div>
                                                         </div>
                                                     </div>
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <div class="font-bold text-[var(--ink)]">{{ $reservation->number_of_guests }} Total</div>
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border {{ $statusTheme }}">{{ $displayStatus }}</span>
+                                                </td>
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    @if($reservation->check_in)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') }}</div>
+                                                    @elseif($reservation->reservation_date)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ $reservation->start_slot ?? 'Daytime' }}</div>
+                                                    @else
+                                                        <span class="text-[var(--ink-muted)]">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    @if($displayCheckout)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($displayCheckout)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ \Carbon\Carbon::parse($displayCheckout)->format('h:i A') }}</div>
+                                                    @elseif($reservation->end_date)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->end_date)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ $reservation->end_slot ?? 'Daytime' }}</div>
+                                                    @else
+                                                        <span class="text-[var(--ink-muted)]">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)] align-middle tabular-nums">
+                                                    <div class="font-bold text-emerald-600 dark:text-emerald-400">₱{{ number_format($reservation->amount_paid, 2) }}</div>
+                                                    <div class="text-[11px] text-[var(--ink-muted)]">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
+                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
+                                                        <div class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle text-[var(--ink-muted)]">
+                                                    <i class="bi bi-chevron-right text-xs"></i>
                                                 </td>
                                             </tr>
 
@@ -660,9 +701,14 @@
                                                 $resDetail = $reservationData[$reservation->id] ?? null;
                                                 $checkInStaff = $resDetail['checked_in_staff'] ?? '';
                                                 $checkOutStaff = $resDetail['checked_out_staff'] ?? '';
+                                                $guestInitials = collect(explode(' ', trim((string) ($reservation->booker_name ?? ''))))
+                                                    ->filter()
+                                                    ->take(2)
+                                                    ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))
+                                                    ->implode('') ?: '?';
                                             @endphp
                                             <tr
-                                                class="reservation-row group cursor-pointer select-none transition-all hover:bg-[#f2f7f4] dark:hover:bg-[#1e2621]"
+                                                class="reservation-row group transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer select-none"
                                                 data-reservation-id="{{ $reservation->id }}"
                                                 data-reservation-type="{{ $reservation->reservation_type === 'walk_in' ? 'walk_in' : 'online' }}"
                                                 data-guest-count="{{ $reservation->number_of_guests ?? 1 }}"
@@ -677,66 +723,71 @@
                                                 tabindex="0"
                                                 role="button"
                                             >
-                                                <td class="py-3.5 px-5">
-                                                    <div class="flex items-center gap-2.5 min-w-0">
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <div class="flex items-center gap-2 min-w-0">
                                                         @if($reservation->reservationGuests->count() > 0)
-                                                            <button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#dbe3de] dark:border-[#282c29] bg-[#f4f7f5] dark:bg-[#141715] text-[#5a6b5c] transition-all hover:bg-[#178a52] hover:text-white [&.expanded]:rotate-180 [&.expanded]:text-[#178a52]" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Companions">
+                                                            <button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-800 text-[var(--ink-muted)] transition-all hover:bg-[#178a52] hover:text-white [&.expanded]:rotate-180 [&.expanded]:text-[#178a52]" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Companions">
                                                                 <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->formatted_id }}</span>
-                                                            <div class="mt-0.5">
-                                                                <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
+                                                            <span class="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)] font-mono">
+                                                                <i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>{{ $reservation->formatted_id }}
+                                                            </span>
+                                                            <div class="mt-1 text-[11px] text-[var(--ink-muted)]">
+                                                                {{ ($reservation->reservation_type ?? 'online') === 'walk_in' ? 'Walk-in' : 'Online' }}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3.5 px-4 text-xs">
-                                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $reservation->booker_name }}</div>
-                                                    <div class="text-[0.72rem] text-[#718774] dark:text-[#889b8a] mt-0.5 truncate max-w-[200px]">{{ $reservation->email ?: 'No email' }} · {{ $reservation->phone ?: 'No phone' }}</div>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs font-bold text-center text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                                    <span class="inline-flex items-center justify-center min-w-[26px] px-2 py-0.5 rounded-full bg-[#f0f4f1] dark:bg-[#202722] border border-[#dbe3de] dark:border-[#282c29]">{{ $reservation->number_of_guests }}</span>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-center">
-                                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $statusTheme }} shadow-2xs">{{ $displayStatus }}</span>
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                    @if($reservation->check_in)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') }}</div>
-                                                    @elseif($reservation->reservation_date)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ $reservation->start_slot ?? 'Daytime' }}</div>
-                                                    @else
-                                                        <span class="text-[#889b8a]">N/A</span>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                    @if($displayCheckout)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($displayCheckout)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($displayCheckout)->format('h:i A') }}</div>
-                                                    @elseif($reservation->end_date)
-                                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($reservation->end_date)->format('M d, Y') }}</div>
-                                                        <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ $reservation->end_slot ?? 'Daytime' }}</div>
-                                                    @else
-                                                        <span class="text-[#889b8a]">N/A</span>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-5 text-xs text-right font-bold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">
-                                                    <div class="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm">₱{{ number_format($reservation->amount_paid, 2) }}</div>
-                                                    <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
-                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
-                                                        <div class="text-[0.62rem] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3.5 px-4 text-right">
-                                                    <div class="flex items-center justify-end">
-                                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab]" title="View booking details">
-                                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                <td class="py-3 px-4 border-b border-[var(--border)] align-middle">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <div class="h-8 w-8 rounded-full bg-emerald-900 dark:bg-emerald-800 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                            {{ $guestInitials }}
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <div class="font-bold text-[var(--ink)] truncate max-w-[210px]">{{ $reservation->booker_name }}</div>
+                                                            <div class="text-[11px] text-[var(--ink-muted)] truncate max-w-[210px]">{{ $reservation->email ?: 'No email' }} · {{ $reservation->phone ?: 'No phone' }}</div>
                                                         </div>
                                                     </div>
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <div class="font-bold text-[var(--ink)]">{{ $reservation->number_of_guests }} Total</div>
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border {{ $statusTheme }}">{{ $displayStatus }}</span>
+                                                </td>
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    @if($reservation->check_in)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') }}</div>
+                                                    @elseif($reservation->reservation_date)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ $reservation->start_slot ?? 'Daytime' }}</div>
+                                                    @else
+                                                        <span class="text-[var(--ink-muted)]">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)] align-middle">
+                                                    @if($displayCheckout)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($displayCheckout)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ \Carbon\Carbon::parse($displayCheckout)->format('h:i A') }}</div>
+                                                    @elseif($reservation->end_date)
+                                                        <div class="font-semibold text-[var(--ink)]">{{ \Carbon\Carbon::parse($reservation->end_date)->format('M d, Y') }}</div>
+                                                        <div class="text-[11px] text-[var(--ink-muted)]">{{ $reservation->end_slot ?? 'Daytime' }}</div>
+                                                    @else
+                                                        <span class="text-[var(--ink-muted)]">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)] align-middle tabular-nums">
+                                                    <div class="font-bold text-emerald-600 dark:text-emerald-400">₱{{ number_format($reservation->amount_paid, 2) }}</div>
+                                                    <div class="text-[11px] text-[var(--ink-muted)]">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
+                                                    @if(in_array(strtolower((string)$reservation->status), ['cancelled', 'cancel']) && (float)($reservation->refunded_amount ?? 0) > 0)
+                                                        <div class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">(₱{{ number_format($reservation->refunded_amount, 2) }} refunded)</div>
+                                                    @endif
+                                                </td>
+                                                <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)] align-middle text-[var(--ink-muted)]">
+                                                    <i class="bi bi-chevron-right text-xs"></i>
                                                 </td>
                                             </tr>
 
@@ -938,30 +989,28 @@
                             </div>
 
                             {{-- RESERVATION TABLE PAGINATION (Embedded in Card Footer) --}}
-                            <div class="records-pagination bg-[#f8faf9] dark:bg-[#141715] border-t border-[#e2e8e4] dark:border-[#282c29] px-5 py-4">
-                                <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 text-xs">
-                                    <div class="flex items-center gap-2 text-[#4a5c4d] dark:text-[#a8b8a8]">
-                                        <span class="font-medium">Showing</span>
-                                        <select id="reservationPerPage" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs">
-                                            <option value="10">10</option>
-                                            <option value="25">25</option>
-                                            <option value="50">50</option>
-                                            <option value="100" selected>100</option>
-                                        </select>
-                                        <span class="font-medium">per page</span>
+                            <div class="records-pagination mt-4 pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-x-5 gap-y-3 text-xs">
+                                <div class="flex items-center gap-2 text-[var(--ink-muted)]">
+                                    <span class="font-medium">Showing</span>
+                                    <select id="reservationPerPage" class="cursor-pointer rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3 py-1.5 text-xs font-semibold text-[var(--ink)] focus:border-emerald-500 focus:outline-none shadow-2xs">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100" selected>100</option>
+                                    </select>
+                                    <span class="font-medium">per page</span>
+                                </div>
+                                <span id="reservationResultsCount" class="font-bold text-[var(--ink)]">Showing 0 of 0 reservations</span>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" id="reservationPrevPage" class="cursor-pointer rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3.5 py-1.5 font-bold text-[var(--ink)] transition-all hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 shadow-2xs">‹ Prev</button>
+                                        <div id="reservationPageNumbers" class="flex items-center gap-1"></div>
+                                        <button type="button" id="reservationNextPage" class="cursor-pointer rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-3.5 py-1.5 font-bold text-[var(--ink)] transition-all hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 shadow-2xs">Next ›</button>
                                     </div>
-                                    <span id="reservationResultsCount" class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Showing 0 of 0 reservations</span>
-                                    <div class="flex items-center gap-2">
-                                        <div class="flex items-center gap-1.5">
-                                            <button type="button" id="reservationPrevPage" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3.5 py-1.5 font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#202722] disabled:cursor-not-allowed disabled:opacity-40 shadow-xs">‹ Prev</button>
-                                            <div id="reservationPageNumbers" class="flex items-center gap-1"></div>
-                                            <button type="button" id="reservationNextPage" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3.5 py-1.5 font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#202722] disabled:cursor-not-allowed disabled:opacity-40 shadow-xs">Next ›</button>
-                                        </div>
-                                        <div class="hidden sm:flex items-center gap-1.5 pl-3 border-l border-[#dbe3de] dark:border-[#282c29] text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                            <span>Go to</span>
-                                            <input type="number" id="reservationPageInput" min="1" value="1" class="w-14 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-2 py-1 text-center text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs">
-                                            <button type="button" id="reservationGoPage" class="cursor-pointer rounded-xl bg-[#178a52] px-3 py-1 font-bold text-white transition-colors hover:bg-[#126e41] border-0 shadow-xs">Go</button>
-                                        </div>
+                                    <div class="hidden sm:flex items-center gap-1.5 pl-3 border-l border-[var(--border)] text-xs text-[var(--ink-muted)]">
+                                        <span>Go to</span>
+                                        <input type="number" id="reservationPageInput" min="1" value="1" class="w-14 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 px-2 py-1 text-center text-xs font-semibold text-[var(--ink)] focus:border-emerald-500 focus:outline-none shadow-2xs">
+                                        <button type="button" id="reservationGoPage" class="cursor-pointer rounded-xl bg-[#178a52] px-3 py-1 font-bold text-white transition-colors hover:bg-[#126e41] border-0 shadow-2xs">Go</button>
                                     </div>
                                 </div>
                             </div>
