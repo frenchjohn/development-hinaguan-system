@@ -82,199 +82,81 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
         document.body.appendChild(modal);
     }
 
+    const chargeCategories = [
+        { type: 'damage', label: 'Damage', hint: 'Property, furniture, fixtures', placeholder: 'e.g. Broken chair, damaged lamp' },
+        { type: 'cleaning', label: 'Cleaning', hint: 'Excess trash, stains, sanitizing', placeholder: 'e.g. Heavy stain cleanup, left waste' },
+        { type: 'lost', label: 'Lost Item', hint: 'Keys, towels, rented gear', placeholder: 'e.g. Missing key, lost pool towel' },
+        { type: 'others', label: 'Others', hint: 'Late checkout, noise, incidental', placeholder: 'e.g. Late checkout fee, noise penalty' },
+    ];
+
+    const categoryRowsHtml = chargeCategories.map((cat) => `
+        <div class="charge-corner-card grid grid-cols-1 gap-3 border border-slate-200 bg-white p-3.5 transition-colors sm:grid-cols-12 sm:items-center dark:border-white/10 dark:bg-white/[0.03]" data-card-type="${cat.type}">
+            <div class="sm:col-span-4">
+                <div class="flex items-center gap-2">
+                    <h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">${cat.label}</h4>
+                    <span class="active-pill hidden rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">Active</span>
+                </div>
+                <span class="block text-xs text-slate-500 dark:text-slate-400">${cat.hint}</span>
+            </div>
+            <div class="sm:col-span-3">
+                <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:hidden dark:text-slate-400">Amount (₱)</label>
+                <div class="relative flex items-center">
+                    <span class="pointer-events-none absolute left-3 text-xs font-bold text-slate-400">₱</span>
+                    <input type="number" step="0.01" min="0" data-charge-type="${cat.type}"
+                        class="charge-amount-input h-9 w-full rounded-lg border border-slate-300 bg-white pl-7 pr-2.5 font-mono text-sm font-bold text-slate-900 transition-colors focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/15 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                        placeholder="0.00">
+                </div>
+            </div>
+            <div class="sm:col-span-5">
+                <label class="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:hidden dark:text-slate-400">Details (optional)</label>
+                <input type="text" data-charge-desc="${cat.type}"
+                    class="charge-desc-input h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 placeholder:text-slate-400 transition-colors focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/15 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                    placeholder="${cat.placeholder}">
+            </div>
+        </div>
+    `).join('');
+
     modal.innerHTML = `
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-charge-close="true"></div>
-        <div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-hp-cream dark:bg-[#181c19] shadow-2xl border border-glass-border dark:border-white/10" role="dialog" aria-modal="true" aria-labelledby="reservationChargesModalTitle" style="width: min(94vw, 760px) !important; max-width: 760px !important; max-height: 92vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/55 dark:bg-black/75" data-charge-close="true"></div>
+        <div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#181b19]" role="dialog" aria-modal="true" aria-labelledby="reservationChargesModalTitle" style="width: min(94vw, 760px) !important; max-width: 760px !important; max-height: 92vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
             
             <!-- HEADER -->
-            <div class="p-4 sm:p-5 pb-3 sm:pb-4 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 shrink-0 bg-white/40 dark:bg-white/5">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-base shrink-0">
-                        <i class="bi bi-receipt"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 id="reservationChargesModalTitle" class="m-0 font-display text-base sm:text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Additional Charges</h3>
-                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">Checkout Review</span>
-                        </div>
-                        <p class="text-[11px] sm:text-xs text-hp-text-muted m-0 mt-0.5">Declare any incidental fees or penalties incurred by the guest before checkout.</p>
-                    </div>
+            <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-white/10">
+                <div>
+                    <h3 id="reservationChargesModalTitle" class="m-0 text-base font-bold text-slate-900 dark:text-white">Additional Charges</h3>
+                    <p class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Declare any incidental fees or penalties before checkout.</p>
                 </div>
-                <button type="button" class="cursor-pointer border-0 bg-transparent text-2xl text-hp-text-muted hover:text-red-500 transition-colors p-1 leading-none rounded-lg" data-charge-close="true" aria-label="Close charges">&times;</button>
+                <button type="button" class="cursor-pointer rounded-md border-0 bg-transparent p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-200" data-charge-close="true" aria-label="Close charges">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
             
-            <!-- BODY: 4 CORNERS / 2 PER ROW -->
-            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 [scrollbar-width:thin]" style="min-height: 0;">
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                    
-                    <!-- 1. DAMAGE -->
-                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="damage">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center text-xs font-bold">
-                                        <i class="bi bi-hammer"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Damage</h4>
-                                        <span class="text-[10px] text-hp-text-muted block">Property, furniture, fixtures</span>
-                                    </div>
-                                </div>
-                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300">Active</span>
-                            </div>
-
-                            <div class="mt-2.5 space-y-2">
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
-                                        Amount (₱)
-                                    </label>
-                                    <div class="relative flex items-center">
-                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
-                                        <input type="number" step="0.01" min="0" data-charge-type="damage" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-amber-500 focus:outline-none transition-colors" placeholder="0.00">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
-                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
-                                    </label>
-                                    <input type="text" data-charge-desc="damage" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-amber-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Broken chair, damaged lamp">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2. CLEANING -->
-                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="cleaning">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-400 flex items-center justify-center text-xs font-bold">
-                                        <i class="bi bi-stars"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Cleaning</h4>
-                                        <span class="text-[10px] text-hp-text-muted block">Excess trash, stains, sanitizing</span>
-                                    </div>
-                                </div>
-                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-500/20 text-sky-800 dark:text-sky-300">Active</span>
-                            </div>
-
-                            <div class="mt-2.5 space-y-2">
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
-                                        Amount (₱)
-                                    </label>
-                                    <div class="relative flex items-center">
-                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
-                                        <input type="number" step="0.01" min="0" data-charge-type="cleaning" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-sky-500 focus:outline-none transition-colors" placeholder="0.00">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
-                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
-                                    </label>
-                                    <input type="text" data-charge-desc="cleaning" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-sky-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Heavy stain cleanup, left waste">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3. LOST ITEM -->
-                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="lost">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-700 dark:text-rose-400 flex items-center justify-center text-xs font-bold">
-                                        <i class="bi bi-tag"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Lost Item</h4>
-                                        <span class="text-[10px] text-hp-text-muted block">Keys, towels, rented gear</span>
-                                    </div>
-                                </div>
-                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-800 dark:text-rose-300">Active</span>
-                            </div>
-
-                            <div class="mt-2.5 space-y-2">
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
-                                        Amount (₱)
-                                    </label>
-                                    <div class="relative flex items-center">
-                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
-                                        <input type="number" step="0.01" min="0" data-charge-type="lost" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-rose-500 focus:outline-none transition-colors" placeholder="0.00">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
-                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
-                                    </label>
-                                    <input type="text" data-charge-desc="lost" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-rose-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Missing key, lost pool towel">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. OTHERS -->
-                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="others">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-700 dark:text-purple-400 flex items-center justify-center text-xs font-bold">
-                                        <i class="bi bi-three-dots"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Others</h4>
-                                        <span class="text-[10px] text-hp-text-muted block">Late checkout, noise, incidental</span>
-                                    </div>
-                                </div>
-                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/20 text-purple-800 dark:text-purple-300">Active</span>
-                            </div>
-
-                            <div class="mt-2.5 space-y-2">
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
-                                        Amount (₱)
-                                    </label>
-                                    <div class="relative flex items-center">
-                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
-                                        <input type="number" step="0.01" min="0" data-charge-type="others" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-purple-500 focus:outline-none transition-colors" placeholder="0.00">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
-                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
-                                    </label>
-                                    <input type="text" data-charge-desc="others" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-purple-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Late checkout fee, noise penalty">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+            <!-- BODY -->
+            <div class="flex-1 space-y-4 overflow-y-auto p-5 [scrollbar-width:thin]" style="min-height: 0;">
+                <div class="hidden grid-cols-12 gap-3 px-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:grid dark:text-slate-400">
+                    <div class="col-span-4">Category</div>
+                    <div class="col-span-3">Amount (₱)</div>
+                    <div class="col-span-5">Details (Optional)</div>
                 </div>
 
-                <!-- TOTAL SUMMARY STRIP -->
-                <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 dark:bg-emerald-950/30 p-3.5 sm:p-4 flex items-center justify-between">
+                <div class="overflow-hidden rounded-lg border border-slate-200 divide-y divide-slate-200 dark:divide-white/10 dark:border-white/10 [&>.charge-corner-card]:border-0">
+                    ${categoryRowsHtml}
+                </div>
+
+                <!-- TOTAL SUMMARY -->
+                <div class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
                     <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-hp-text dark:text-[#f3f4f6] block">Total Additional Charges</span>
-                        <p class="m-0 text-[11px] text-hp-text-muted" id="chargeSummarySubtext">No additional charges declared</p>
+                        <span class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Total Additional Charges</span>
+                        <p class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400" id="chargeSummarySubtext">No additional charges declared</p>
                     </div>
-                    <div class="text-right">
-                        <strong id="chargeTotalDisplay" class="text-xl sm:text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 font-display tabular-nums">₱0.00</strong>
-                    </div>
+                    <strong id="chargeTotalDisplay" class="text-xl font-bold tabular-nums text-emerald-800 dark:text-emerald-400">₱0.00</strong>
                 </div>
-
             </div>
             
             <!-- FOOTER ACTIONS -->
-            <div class="p-3.5 sm:p-4 px-4 sm:px-6 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/90 dark:bg-[#1a201c] backdrop-blur-md shrink-0 flex items-center justify-end gap-3" id="chargeModalActions">
-                <button type="button" data-charge-close="true" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-all">Cancel</button>
-                <button type="button" id="proceedCheckout" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white transition-all hover:bg-hp-green-dark shadow-xs">Checkout</button>
+            <div class="flex shrink-0 items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.02]" id="chargeModalActions">
+                <button type="button" data-charge-close="true" class="cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-transparent dark:text-slate-300 dark:hover:bg-white/5">Cancel</button>
+                <button type="button" id="proceedCheckout" class="cursor-pointer rounded-lg border-0 bg-[#155e3c] px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#114b30]">Checkout</button>
             </div>
         </div>`;
 
@@ -311,12 +193,12 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
                 const formattedType = type === 'damage' ? 'Damage' : (type === 'cleaning' ? 'Cleaning' : (type === 'lost' ? 'Lost Item' : 'Others'));
                 activeTypes.push(`${formattedType} (₱${val.toFixed(2)})`);
 
-                card?.classList.add('border-emerald-600', 'shadow-xs', 'bg-emerald-50/20');
-                card?.classList.remove('border-glass-border', 'dark:border-white/10');
+                card?.classList.add('bg-emerald-50/40', 'dark:bg-emerald-950/20');
+                card?.classList.remove('bg-white', 'dark:bg-white/[0.03]');
                 if (pill) pill.classList.remove('hidden');
             } else {
-                card?.classList.remove('border-emerald-600', 'shadow-xs', 'bg-emerald-50/20');
-                card?.classList.add('border-glass-border', 'dark:border-white/10');
+                card?.classList.remove('bg-emerald-50/40', 'dark:bg-emerald-950/20');
+                card?.classList.add('bg-white', 'dark:bg-white/[0.03]');
                 if (pill) pill.classList.add('hidden');
             }
         });

@@ -159,145 +159,150 @@
 
                     <!-- Park Settings Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-settings">
-                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenu">
-                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
+                        <button type="button" class="admin-settings__back-btn mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]" id="backToMenu">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                             Back to Settings
                         </button>
-                        <section class="dash-panel p-8">
-                            <div class="mb-4 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4">
+                        <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                            <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
                                 <div>
-                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Configuration</h2>
-                                    <p class="admin-settings__card-text m-0 mb-4 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Manage park information, operating hours, and fees.</p>
+                                    <h2 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Park Configuration</h2>
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Manage operational status, contact info, operating hours, and entrance fees.</p>
                                 </div>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="editParkSettingsBtn">
-                                    <svg class="admin-settings__btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
+                                <button type="button" class="btn btn--primary inline-flex items-center gap-1.5" id="editParkSettingsBtn">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     Edit
                                 </button>
                             </div>
-                            <form method="POST" action="{{ route('admin.settings.park.update') }}" class="admin-settings__form" id="parkSettingsForm">
+                            <form method="POST" action="{{ route('admin.settings.park.update') }}" id="parkSettingsForm" class="space-y-6">
                                 @csrf
-                                <div class="admin-settings__form-grid">
-                                    <!-- Live Park Status & Closure Reason Card -->
-                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#242a26]">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
+                                {{-- Operational Status --}}
+                                <div class="space-y-3">
+                                    <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4">
+                                        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                             <div>
-                                                <label class="admin-settings__label text-sm font-bold text-[#0d2c1d] dark:text-[#f5f5f0] mb-0.5">Live Park Operational Status</label>
-                                                <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Set whether the park is currently open for visitors or temporarily closed.</p>
+                                                <p class="m-0 text-sm font-semibold text-[var(--ink)]">Live Park Operational Status</p>
+                                                <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Set whether the park is currently open for visitors or temporarily closed.</p>
                                             </div>
-                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#181b19] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29]">
-                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
-                                                    <input type="radio" name="park_status" value="open" id="park_status_open" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" {{ ($parkSettings->park_status ?? 'open') === 'open' ? 'checked' : '' }} disabled>
-                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                        Park Open
-                                                    </span>
+                                            <div class="inline-flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
+                                                <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                                    <input type="radio" name="park_status" value="open" id="park_status_open" class="h-4 w-4 accent-[#1b5e3a]" {{ ($parkSettings->park_status ?? 'open') === 'open' ? 'checked' : '' }} disabled>
+                                                    <span>Park Open</span>
                                                 </label>
-                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
-                                                    <input type="radio" name="park_status" value="closed" id="park_status_closed" class="w-4 h-4 text-red-600 focus:ring-red-500" {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'checked' : '' }} disabled>
-                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
-                                                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                                                        Park Closed
-                                                    </span>
+                                                <span class="h-4 w-px bg-[var(--border)]"></span>
+                                                <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300">
+                                                    <input type="radio" name="park_status" value="closed" id="park_status_closed" class="h-4 w-4 accent-rose-600" {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'checked' : '' }} disabled>
+                                                    <span>Park Closed</span>
                                                 </label>
                                             </div>
                                         </div>
 
-                                        <!-- Close Description (Reason for Closure) -->
-                                        <div id="closeDescriptionWrapper" class="{{ ($parkSettings->park_status ?? 'open') === 'closed' ? '' : 'hidden' }} mt-3 pt-3 border-t border-[#dbe3de] dark:border-[#242a26]">
-                                            <label for="close_description" class="admin-settings__label text-xs font-semibold text-red-700 dark:text-red-400">
-                                                Closure Reason / Description <span class="text-xs font-normal text-[#5a6b5c] dark:text-[#a8b8a8]">(Shows on hover in headers & guest website)</span>
+                                        <div id="closeDescriptionWrapper" class="{{ ($parkSettings->park_status ?? 'open') === 'closed' ? '' : 'hidden' }} mt-3 border-t border-[var(--border)] pt-3">
+                                            <label for="close_description" class="mb-1 block text-xs font-semibold text-rose-700 dark:text-rose-400">
+                                                Closure Reason <span class="font-normal text-[var(--ink-muted)]">(Shown on hover in headers &amp; guest site)</span>
                                             </label>
-                                            <textarea id="close_description" name="close_description" rows="2" class="admin-settings__input w-full mt-1" placeholder="e.g., Temporarily closed for scheduled river maintenance and pool water treatment. We will reopen tomorrow." disabled>{{ $parkSettings->close_description ?? '' }}</textarea>
-                                            <p class="m-0 mt-1 text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8]">When set to Open, this description will automatically be cleared.</p>
+                                            <textarea id="close_description" name="close_description" rows="2" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] disabled:opacity-60" placeholder="e.g., Temporarily closed for scheduled maintenance." disabled>{{ $parkSettings->close_description ?? '' }}</textarea>
                                         </div>
                                     </div>
 
-                                    <!-- Brenda's Park Availability Status Card -->
-                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#242a26]">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4">
+                                        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                             <div>
-                                                <label class="admin-settings__label text-sm font-bold text-[#0d2c1d] dark:text-[#f5f5f0] mb-0.5">Brenda's Park Availability</label>
-                                                <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Set whether Brenda (Brenda Mage) is currently in the park. When active, visitors will see this special status on the homepage.</p>
+                                                <p class="m-0 text-sm font-semibold text-[var(--ink)]">Brenda's Park Availability</p>
+                                                <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Show whether Brenda Mage is currently in the park on the homepage.</p>
                                             </div>
-                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#181b19] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29]">
-                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
-                                                    <input type="radio" name="brenda_available" value="1" id="brenda_available_yes" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" {{ ($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
-                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                        In the Park
-                                                    </span>
+                                            <div class="inline-flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">
+                                                <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                                    <input type="radio" name="brenda_available" value="1" id="brenda_available_yes" class="h-4 w-4 accent-[#1b5e3a]" {{ ($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
+                                                    <span>In the Park</span>
                                                 </label>
-                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
-                                                    <input type="radio" name="brenda_available" value="0" id="brenda_available_no" class="w-4 h-4 text-amber-600 focus:ring-amber-500" {{ !($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
-                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                                                        Not in the Park
-                                                    </span>
+                                                <span class="h-4 w-px bg-[var(--border)]"></span>
+                                                <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                                    <input type="radio" name="brenda_available" value="0" id="brenda_available_no" class="h-4 w-4 accent-amber-600" {{ !($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
+                                                    <span>Not in the Park</span>
                                                 </label>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div class="admin-settings__group">
-                                        <label for="contact_number" class="admin-settings__label">Contact Number</label>
-                                        <input type="tel" id="contact_number" name="contact_number" class="admin-settings__input" value="{{ $parkSettings->contact_number ?? '' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="email" class="admin-settings__label">Park Email</label>
-                                        <input type="email" id="email" name="email" class="admin-settings__input" value="{{ $parkSettings->email ?? '' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="daytime_start" class="admin-settings__label">Daytime Start</label>
-                                        <input type="time" id="daytime_start" name="daytime_start" class="admin-settings__input" value="{{ $parkSettings->daytime_start ?? '08:01' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="daytime_end" class="admin-settings__label">Daytime End</label>
-                                        <input type="time" id="daytime_end" name="daytime_end" class="admin-settings__input" value="{{ $parkSettings->daytime_end ?? '18:00' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="nighttime_start" class="admin-settings__label">Nighttime Start</label>
-                                        <input type="time" id="nighttime_start" name="nighttime_start" class="admin-settings__input" value="{{ $parkSettings->nighttime_start ?? '18:01' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="nighttime_end" class="admin-settings__label">Nighttime End</label>
-                                        <input type="time" id="nighttime_end" name="nighttime_end" class="admin-settings__input" value="{{ $parkSettings->nighttime_end ?? '08:00' }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="daytime_adult_entrance_fee" class="admin-settings__label">Daytime Adult Entrance Fee (₱)</label>
-                                        <input type="number" id="daytime_adult_entrance_fee" name="daytime_adult_entrance_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->daytime_adult_entrance_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="daytime_child_entrance_fee" class="admin-settings__label">Daytime Child Entrance Fee (₱)</label>
-                                        <input type="number" id="daytime_child_entrance_fee" name="daytime_child_entrance_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->daytime_child_entrance_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="nighttime_adult_entrance_fee" class="admin-settings__label">Nighttime Adult Entrance Fee (₱)</label>
-                                        <input type="number" id="nighttime_adult_entrance_fee" name="nighttime_adult_entrance_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->nighttime_adult_entrance_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="nighttime_child_entrance_fee" class="admin-settings__label">Nighttime Child Entrance Fee (₱)</label>
-                                        <input type="number" id="nighttime_child_entrance_fee" name="nighttime_child_entrance_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->nighttime_child_entrance_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="day_pool_fee" class="admin-settings__label">Day Pool Fee (₱)</label>
-                                        <input type="number" id="day_pool_fee" name="day_pool_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->day_pool_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="night_pool_fee" class="admin-settings__label">Night Pool Fee (₱)</label>
-                                        <input type="number" id="night_pool_fee" name="night_pool_fee" step="0.01" class="admin-settings__input" value="{{ $parkSettings->night_pool_fee ?? 0 }}" disabled>
-                                    </div>
-                                    <div class="admin-settings__group admin-settings__group--full">
-                                        <label for="facebook_link" class="admin-settings__label">Facebook Link</label>
-                                        <input type="url" id="facebook_link" name="facebook_link" class="admin-settings__input" value="{{ $parkSettings->facebook_link ?? '' }}" disabled>
                                     </div>
                                 </div>
-                                <div class="admin-settings__form-actions admin-settings__form-actions--hidden" id="parkSettingsFormActions">
-                                    <button type="submit" class="admin-settings__btn admin-settings__btn--primary">Save Changes</button>
-                                    <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelParkSettingsBtn">Cancel</button>
+
+                                {{-- Contact & Social --}}
+                                <div class="border-t border-[var(--border)] pt-5">
+                                    <h3 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">Contact &amp; Links</h3>
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                        <div>
+                                            <label for="contact_number" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Contact Number</label>
+                                            <input type="tel" id="contact_number" name="contact_number" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->contact_number ?? '' }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="email" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Park Email</label>
+                                            <input type="email" id="email" name="email" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->email ?? '' }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="facebook_link" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Facebook Link</label>
+                                            <input type="url" id="facebook_link" name="facebook_link" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->facebook_link ?? '' }}" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Operating Hours --}}
+                                <div class="border-t border-[var(--border)] pt-5">
+                                    <h3 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">Operating Hours</h3>
+                                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                        <div>
+                                            <label for="daytime_start" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Daytime Start</label>
+                                            <input type="time" id="daytime_start" name="daytime_start" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->daytime_start ?? '08:01' }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="daytime_end" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Daytime End</label>
+                                            <input type="time" id="daytime_end" name="daytime_end" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->daytime_end ?? '18:00' }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="nighttime_start" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Nighttime Start</label>
+                                            <input type="time" id="nighttime_start" name="nighttime_start" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->nighttime_start ?? '18:01' }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="nighttime_end" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Nighttime End</label>
+                                            <input type="time" id="nighttime_end" name="nighttime_end" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->nighttime_end ?? '08:00' }}" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Entrance & Pool Fees --}}
+                                <div class="border-t border-[var(--border)] pt-5">
+                                    <h3 class="m-0 mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">Entrance &amp; Pool Fees</h3>
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                        <div>
+                                            <label for="daytime_adult_entrance_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Daytime Adult Entrance (₱)</label>
+                                            <input type="number" id="daytime_adult_entrance_fee" name="daytime_adult_entrance_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->daytime_adult_entrance_fee ?? 0 }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="daytime_child_entrance_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Daytime Child Entrance (₱)</label>
+                                            <input type="number" id="daytime_child_entrance_fee" name="daytime_child_entrance_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->daytime_child_entrance_fee ?? 0 }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="day_pool_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Day Pool Fee (₱)</label>
+                                            <input type="number" id="day_pool_fee" name="day_pool_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->day_pool_fee ?? 0 }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="nighttime_adult_entrance_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Nighttime Adult Entrance (₱)</label>
+                                            <input type="number" id="nighttime_adult_entrance_fee" name="nighttime_adult_entrance_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->nighttime_adult_entrance_fee ?? 0 }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="nighttime_child_entrance_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Nighttime Child Entrance (₱)</label>
+                                            <input type="number" id="nighttime_child_entrance_fee" name="nighttime_child_entrance_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->nighttime_child_entrance_fee ?? 0 }}" disabled>
+                                        </div>
+                                        <div>
+                                            <label for="night_pool_fee" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Night Pool Fee (₱)</label>
+                                            <input type="number" id="night_pool_fee" name="night_pool_fee" step="0.01" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)] disabled:opacity-65" value="{{ $parkSettings->night_pool_fee ?? 0 }}" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="admin-settings__form-actions admin-settings__form-actions--hidden flex items-center justify-end gap-2.5 border-t border-[var(--border)] pt-4" id="parkSettingsFormActions">
+                                    <button type="button" class="btn btn--ghost" id="cancelParkSettingsBtn">Cancel</button>
+                                    <button type="submit" class="btn btn--primary">Save Changes</button>
                                 </div>
                             </form>
                         </section>
@@ -305,52 +310,43 @@
 
                     <!-- Park Rules Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-rules">
-                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromRules">
-                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
+                        <button type="button" class="admin-settings__back-btn mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]" id="backToMenuFromRules">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                             Back to Settings
                         </button>
 
-                        <section class="dash-panel p-6 sm:p-8">
-                            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                        <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                            <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
                                 <div>
-                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Rules &amp; Guidelines</h2>
-                                    <p class="admin-settings__card-text m-0 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Click on any rule to view its description, edit, or delete.</p>
+                                    <h2 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Park Rules &amp; Guidelines</h2>
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Click any rule to view, edit, or remove it.</p>
                                 </div>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="addRuleBtn">
-                                    <svg class="admin-settings__btn-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                    </svg>
+                                <button type="button" class="btn btn--primary inline-flex items-center gap-1.5" id="addRuleBtn">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                                     Add Rule
                                 </button>
                             </div>
 
-                            <!-- Compact Rules List -->
                             <div class="park-rules-list grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" id="parkRulesGrid">
                                 @forelse($parkRules as $rule)
-                                    <div class="park-rule-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]"
+                                    <div class="park-rule-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/50 px-4 py-3 transition-colors hover:border-emerald-500/50 hover:bg-[var(--surface)]"
                                          id="parkRuleCard_{{ $rule->id }}"
                                          data-rule-id="{{ $rule->id }}"
                                          data-rule-name="{{ $rule->rule_name }}"
                                          data-rule-desc="{{ $rule->rule_descriptions }}"
                                          data-rule-updated="{{ $rule->updated_at ? $rule->updated_at->diffForHumans() : 'Recently' }}">
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(26,58,31,0.08)] text-xs font-bold text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/12 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                                 #{{ $rule->id }}
                                             </span>
-                                            <span class="truncate text-sm font-semibold text-[var(--hp-text)] rule-name-display">
+                                            <span class="truncate text-sm font-semibold text-[var(--ink)] rule-name-display">
                                                 {{ $rule->rule_name }}
                                             </span>
                                         </div>
-                                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </div>
+                                        <svg class="h-4 w-4 shrink-0 text-[var(--ink-muted)] transition-colors group-hover:text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                     </div>
                                 @empty
-                                    <div class="col-span-full py-10 text-center text-sm text-[var(--hp-text-muted)]" id="emptyParkRulesState">
+                                    <div class="col-span-full py-10 text-center text-xs text-[var(--ink-muted)]" id="emptyParkRulesState">
                                         No park rules defined yet. Click "Add Rule" above to create one.
                                     </div>
                                 @endforelse
@@ -360,46 +356,55 @@
 
                     <!-- Park Activities Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-activities">
-                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromActivities">
-                            <i class="bi bi-arrow-left"></i> Back to Settings
+                        <button type="button" class="admin-settings__back-btn mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]" id="backToMenuFromActivities">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Back to Settings
                         </button>
-                        <section class="dash-panel p-6 sm:p-8">
-                            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                        <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                            <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
                                 <div>
-                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Activities</h2>
-                                    <p class="admin-settings__card-text m-0 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Manage the activities and experiences displayed on the homepage.</p>
+                                    <h2 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Park Activities</h2>
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Manage the activities and experiences displayed on the homepage.</p>
                                 </div>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="addActivityBtn"><i class="bi bi-plus-lg"></i> Add New Activity</button>
+                                <button type="button" class="btn btn--primary inline-flex items-center gap-1.5" id="addActivityBtn">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                    Add New Activity
+                                </button>
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2" id="parkActivitiesGrid">
                                 @forelse($parkActivities as $activity)
-                                    <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                                    <article class="rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/40 p-4 transition-colors hover:border-[var(--border-strong)]">
                                         <div class="flex gap-4">
                                             @if($activity->image)
-                                                <img class="h-24 w-28 rounded-lg object-cover" src="{{ str_starts_with($activity->image, 'images/') ? asset($activity->image) : asset('storage/' . $activity->image) }}" alt="{{ $activity->activity }}">
+                                                <img class="h-20 w-24 shrink-0 rounded-lg border border-[var(--border)] object-cover" src="{{ str_starts_with($activity->image, 'images/') ? asset($activity->image) : asset('storage/' . $activity->image) }}" alt="{{ $activity->activity }}">
                                             @else
-                                                <div class="flex h-24 w-28 items-center justify-center rounded-lg bg-[var(--hp-cream)] text-2xl text-[var(--hp-text-muted)]"><i class="bi bi-image"></i></div>
+                                                <div class="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-muted)]">
+                                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                                                </div>
                                             @endif
                                             <div class="min-w-0 flex-1">
-                                                <h3 class="truncate text-base font-semibold text-[var(--hp-text)]">{{ $activity->activity }}</h3>
-                                                <p class="mt-1 text-sm leading-relaxed text-[var(--hp-text-muted)]">{{ \Illuminate\Support\Str::limit($activity->description, 110) }}</p>
-                                                <button type="button" class="admin-settings__btn admin-settings__btn--secondary mt-3 px-3 py-1.5 text-xs" data-edit-activity="{{ $activity->id }}">Edit Activity</button>
+                                                <h3 class="m-0 truncate text-sm font-bold text-[var(--ink)]">{{ $activity->activity }}</h3>
+                                                <p class="m-0 mt-1 text-xs leading-relaxed text-[var(--ink-muted)]">{{ \Illuminate\Support\Str::limit($activity->description, 110) }}</p>
+                                                <button type="button" class="btn btn--ghost mt-2.5 px-3 py-1.5 text-xs" data-edit-activity="{{ $activity->id }}">Edit Activity</button>
                                             </div>
                                         </div>
-                                        <form method="POST" action="{{ route('admin.settings.activities.update', $activity) }}" enctype="multipart/form-data" class="mt-4 hidden" data-activity-form="{{ $activity->id }}">
+                                        <form method="POST" action="{{ route('admin.settings.activities.update', $activity) }}" enctype="multipart/form-data" class="mt-4 hidden border-t border-[var(--border)] pt-3" data-activity-form="{{ $activity->id }}">
                                             @csrf
                                             @method('PUT')
                                             <div class="grid gap-3">
-                                                <input class="admin-settings__input" name="activity" value="{{ $activity->activity }}" required>
-                                                <textarea class="admin-settings__input h-auto" name="description" rows="4" required>{{ $activity->description }}</textarea>
-                                                <input class="admin-settings__input" type="file" name="image" accept="image/*">
-                                                <div class="flex gap-2"><button class="admin-settings__btn admin-settings__btn--primary px-3 py-1.5 text-xs">Save Changes</button><button type="button" class="admin-settings__btn admin-settings__btn--secondary px-3 py-1.5 text-xs" data-cancel-activity="{{ $activity->id }}">Cancel</button></div>
+                                                <input class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]" name="activity" value="{{ $activity->activity }}" required>
+                                                <textarea class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]" name="description" rows="3" required>{{ $activity->description }}</textarea>
+                                                <input class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)]" type="file" name="image" accept="image/*">
+                                                <div class="flex justify-end gap-2">
+                                                    <button type="button" class="btn btn--ghost px-3 py-1.5 text-xs" data-cancel-activity="{{ $activity->id }}">Cancel</button>
+                                                    <button class="btn btn--primary px-3 py-1.5 text-xs">Save Changes</button>
+                                                </div>
                                             </div>
                                         </form>
                                     </article>
                                 @empty
-                                    <p class="col-span-full py-8 text-center text-sm text-[var(--hp-text-muted)]">No activities yet. Add the first activity above.</p>
+                                    <p class="col-span-full py-10 text-center text-xs text-[var(--ink-muted)]">No activities yet. Add the first activity above.</p>
                                 @endforelse
                             </div>
                         </section>
@@ -407,31 +412,26 @@
 
                     <!-- Event Settings Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="event-settings">
-                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromEvents">
-                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
+                        <button type="button" class="admin-settings__back-btn mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]" id="backToMenuFromEvents">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                             Back to Settings
                         </button>
 
-                        <section class="dash-panel p-6 sm:p-8">
-                            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                        <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                            <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
                                 <div>
-                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Events &amp; Experiences</h2>
-                                    <p class="admin-settings__card-text m-0 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Click on any event to view details, edit, or remove.</p>
+                                    <h2 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Park Events &amp; Experiences</h2>
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">Click any event to view details, edit, or remove it.</p>
                                 </div>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="addEventBtn">
-                                    <svg class="admin-settings__btn-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                    </svg>
+                                <button type="button" class="btn btn--primary inline-flex items-center gap-1.5" id="addEventBtn">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                                     Add Event
                                 </button>
                             </div>
 
-                            <!-- Events List Grid -->
                             <div class="park-events-list grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" id="parkEventsGrid">
                                 @forelse($parkEvents as $event)
-                                    <div class="park-event-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]"
+                                    <div class="park-event-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/50 px-4 py-3 transition-colors hover:border-emerald-500/50 hover:bg-[var(--surface)]"
                                          id="parkEventCard_{{ $event->id }}"
                                          data-event-id="{{ $event->id }}"
                                          data-event-title="{{ $event->title }}"
@@ -440,28 +440,24 @@
                                          data-event-time="{{ $event->time }}"
                                          data-event-desc="{{ $event->event }}"
                                          data-event-updated="{{ $event->updated_at ? $event->updated_at->diffForHumans() : 'Recently' }}">
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <div class="flex flex-col items-center justify-center shrink-0 w-12 py-1 rounded-lg bg-[rgba(26,58,31,0.08)] text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
-                                                <span class="text-[0.65rem] font-bold uppercase tracking-wider">{{ $event->date ? $event->date->format('M') : 'DATE' }}</span>
-                                                <span class="text-base font-extrabold leading-none">{{ $event->date ? $event->date->format('d') : '--' }}</span>
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <div class="flex w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-emerald-500/12 py-1 text-emerald-700 dark:text-emerald-300">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider">{{ $event->date ? $event->date->format('M') : 'DATE' }}</span>
+                                                <span class="text-sm font-extrabold leading-tight">{{ $event->date ? $event->date->format('d') : '--' }}</span>
                                             </div>
                                             <div class="min-w-0">
-                                                <span class="truncate block text-sm font-semibold text-[var(--hp-text)] event-title-display">
+                                                <span class="block truncate text-sm font-semibold text-[var(--ink)] event-title-display">
                                                     {{ $event->title }}
                                                 </span>
-                                                <span class="text-xs text-[var(--hp-text-muted)] block truncate">
+                                                <span class="block truncate text-xs text-[var(--ink-muted)]">
                                                     {{ $event->day }}{{ $event->time ? ' · ' . $event->time : '' }} &middot; {{ Str::limit($event->event, 35) }}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                                            </svg>
-                                        </div>
+                                        <svg class="h-4 w-4 shrink-0 text-[var(--ink-muted)] transition-colors group-hover:text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                     </div>
                                 @empty
-                                    <div class="col-span-full py-10 text-center text-sm text-[var(--hp-text-muted)]" id="emptyParkEventsState">
+                                    <div class="col-span-full py-10 text-center text-xs text-[var(--ink-muted)]" id="emptyParkEventsState">
                                         No park events created yet. Click "Add Event" above to create one.
                                     </div>
                                 @endforelse
@@ -471,89 +467,57 @@
 
                     <!-- Security Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="security">
-                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromSecurity">
-                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
+                        <button type="button" class="admin-settings__back-btn mb-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] shadow-xs transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]" id="backToMenuFromSecurity">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                             Back to Settings
                         </button>
-                        
-                        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                            <!-- Change Password Section -->
-                            <section class="dash-panel p-8">
-                                <div class="mb-6 flex items-center gap-4">
-                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-7 w-7">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                        </svg>
+
+                        <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                            <!-- Change Password Card -->
+                            <section class="flex flex-col justify-between rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                                <div>
+                                    <div class="mb-4 flex items-center gap-3.5 border-b border-[var(--border)] pb-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-700 dark:text-emerald-300">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        </div>
+                                        <div>
+                                            <h2 class="m-0 font-display text-base font-bold text-[var(--ink)]">Password</h2>
+                                            <p class="m-0 text-xs text-[var(--ink-muted)]">Update your account password with OTP verification</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Password</h2>
-                                        <p class="admin-settings__card-text m-0 text-[0.875rem] text-[var(--hp-text-muted)]">Update your account password</p>
-                                    </div>
+                                    <p class="m-0 mb-4 text-xs leading-relaxed text-[var(--ink-muted)]">
+                                        Keep your administrator account secure by updating your password periodically. An OTP code will be sent to your email before changes apply.
+                                    </p>
                                 </div>
-                                <form id="changePasswordForm" class="admin-settings__form admin-settings__form--hidden">
-                                    @csrf
-                                    <div class="admin-settings__form-grid">
-                                        <div class="admin-settings__group">
-                                            <label for="currentPassword" class="admin-settings__label">Current Password</label>
-                                            <input type="password" id="currentPassword" name="current_password" class="admin-settings__input" required>
-                                            <span class="admin-settings__error" id="currentPasswordError"></span>
-                                        </div>
-                                        <div class="admin-settings__group">
-                                            <label for="newPassword" class="admin-settings__label">New Password</label>
-                                            <input type="password" id="newPassword" name="new_password" class="admin-settings__input" required>
-                                            <span class="admin-settings__error" id="newPasswordError"></span>
-                                        </div>
-                                        <div class="admin-settings__group">
-                                            <label for="confirmPassword" class="admin-settings__label">Confirm Password</label>
-                                            <input type="password" id="confirmPassword" name="confirm_password" class="admin-settings__input" required>
-                                            <span class="admin-settings__error" id="confirmPasswordError"></span>
-                                        </div>
-                                    </div>
-                                    <div class="admin-settings__form-actions">
-                                        <button type="submit" class="admin-settings__btn admin-settings__btn--primary">Send OTP Code</button>
-                                        <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelPasswordBtn">Cancel</button>
-                                    </div>
-                                </form>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--outline" id="togglePasswordBtn">
-                                    Change Password
-                                </button>
+                                <div>
+                                    <button type="button" class="btn btn--primary" id="togglePasswordBtn">
+                                        Change Password
+                                    </button>
+                                </div>
                             </section>
 
-                            <!-- Change Email Section -->
-                            <section class="dash-panel p-8">
-                                <div class="mb-6 flex items-center gap-4">
-                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-7 w-7">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                        </svg>
+                            <!-- Change Email Card -->
+                            <section class="flex flex-col justify-between rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-[var(--shadow-sm)]">
+                                <div>
+                                    <div class="mb-4 flex items-center gap-3.5 border-b border-[var(--border)] pb-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-700 dark:text-emerald-300">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                        </div>
+                                        <div>
+                                            <h2 class="m-0 font-display text-base font-bold text-[var(--ink)]">Email</h2>
+                                            <p class="m-0 text-xs text-[var(--ink-muted)]">Update your administrator email address</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Email</h2>
-                                        <p class="admin-settings__card-text m-0 text-[0.875rem] text-[var(--hp-text-muted)]">Update your email address</p>
+                                    <div class="mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)]/60 px-3.5 py-2.5">
+                                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Current Email</p>
+                                        <p class="m-0 mt-0.5 text-sm font-semibold text-[var(--ink)]" id="currentEmailDisplay">{{ session('auth_user')['email'] ?? 'Not set' }}</p>
                                     </div>
                                 </div>
-                                <div class="admin-settings__email-display">
-                                    <p class="admin-settings__email-label">Current Email:</p>
-                                    <p class="admin-settings__email-value" id="currentEmailDisplay">{{ session('auth_user')['email'] ?? 'Not set' }}</p>
+                                <div>
+                                    <button type="button" class="btn btn--primary" id="toggleEmailBtn">
+                                        Change Email
+                                    </button>
                                 </div>
-                                <form id="changeEmailForm" class="admin-settings__form admin-settings__form--hidden">
-                                    @csrf
-                                    <div class="admin-settings__group">
-                                        <label for="newEmail" class="admin-settings__label">New Email Address</label>
-                                        <input type="email" id="newEmail" name="new_email" class="admin-settings__input" required>
-                                        <span class="admin-settings__error" id="newEmailError"></span>
-                                    </div>
-                                    <div class="admin-settings__info">You will receive an OTP code on your current email to verify the change.</div>
-                                    <div class="admin-settings__form-actions">
-                                        <button type="submit" class="admin-settings__btn admin-settings__btn--primary">Send OTP Code</button>
-                                        <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelEmailBtn">Cancel</button>
-                                    </div>
-                                </form>
-                                <button type="button" class="admin-settings__btn admin-settings__btn--outline" id="toggleEmailBtn">
-                                    Change Email
-                                </button>
                             </section>
                         </div>
                     </div>
@@ -626,30 +590,39 @@
     </div>
 
     <!-- Add / Edit Park Rule Modal -->
-    <div id="parkRuleModal" class="admin-settings__modal" style="display: none;">
-        <div class="admin-settings__modal-content max-w-lg">
-            <h3 class="admin-settings__modal-title text-left" id="parkRuleModalTitle">Add Park Rule</h3>
-            <p class="admin-settings__modal-text text-left" id="parkRuleModalSubtitle">Create a new operational rule or guideline for Hinaguan Nature Park.</p>
-            
-            <form id="parkRuleForm" class="mt-4 flex flex-col gap-4 text-left">
+    <div id="parkRuleModal" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <div>
+                    <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]" id="parkRuleModalTitle">Add Park Rule</h3>
+                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]" id="parkRuleModalSubtitle">Create a new operational rule or guideline for Hinaguan Nature Park.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('cancelRuleModalBtn')?.click()" aria-label="Close" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="parkRuleForm" class="text-left">
                 @csrf
                 <input type="hidden" id="ruleIdInput" name="rule_id" value="">
-                
-                <div class="admin-settings__group admin-settings__group--full">
-                    <label for="ruleNameInput" class="admin-settings__label font-semibold">Rule Name / Title</label>
-                    <input type="text" id="ruleNameInput" name="rule_name" class="admin-settings__input" placeholder="e.g. Proper Swimming Attire" required>
-                    <span class="admin-settings__error" id="ruleNameError"></span>
+
+                <div class="space-y-4 px-6 py-5">
+                    <div>
+                        <label for="ruleNameInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Rule Name / Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="ruleNameInput" name="rule_name" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="e.g. Proper Swimming Attire" required>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="ruleNameError"></span>
+                    </div>
+
+                    <div>
+                        <label for="ruleDescInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Rule Description / Guidelines <span class="text-red-500">*</span></label>
+                        <textarea id="ruleDescInput" name="rule_descriptions" rows="4" class="w-full resize-y rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="Describe the policy, requirements, or restrictions..." required></textarea>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="ruleDescError"></span>
+                    </div>
                 </div>
 
-                <div class="admin-settings__group admin-settings__group--full">
-                    <label for="ruleDescInput" class="admin-settings__label font-semibold">Rule Description / Guidelines</label>
-                    <textarea id="ruleDescInput" name="rule_descriptions" rows="4" class="admin-settings__input h-auto resize-y" placeholder="Describe the policy, requirements, or restrictions..." required></textarea>
-                    <span class="admin-settings__error" id="ruleDescError"></span>
-                </div>
-
-                <div class="admin-settings__form-actions mt-2 flex justify-end gap-3">
-                    <button type="submit" class="admin-settings__btn admin-settings__btn--primary" id="saveRuleSubmitBtn">Save Rule</button>
-                    <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelRuleModalBtn">Cancel</button>
+                <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                    <button type="button" class="btn btn--ghost" id="cancelRuleModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn--primary" id="saveRuleSubmitBtn">Save Rule</button>
                 </div>
             </form>
         </div>
@@ -770,57 +743,57 @@
     </div>
 
     <!-- Add / Edit Park Event Modal -->
-    <div id="parkEventModal" class="admin-settings__modal" style="display: none;">
-        <div class="admin-settings__modal-content max-w-lg text-left">
-            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+    <div id="parkEventModal" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[560px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
                 <div>
-                    <h3 class="admin-settings__modal-title text-left m-0 text-xl font-bold" id="parkEventModalTitle">Add Park Event</h3>
-                    <p class="admin-settings__modal-text text-left m-0 mt-1 text-xs text-[var(--hp-text-muted)]" id="parkEventModalSubtitle">Schedule a new event for Hinaguan Nature Park.</p>
+                    <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]" id="parkEventModalTitle">Add Park Event</h3>
+                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]" id="parkEventModalSubtitle">Schedule a new event for Hinaguan Nature Park.</p>
                 </div>
-                <button type="button" id="closeAddEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                <button type="button" id="closeAddEventModalXBtn" aria-label="Close" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            
-            <form id="parkEventForm" class="mt-4 flex flex-col gap-4 text-left">
+
+            <form id="parkEventForm" class="text-left">
                 @csrf
                 <input type="hidden" id="eventIdInput" name="event_id" value="">
 
-                <div class="admin-settings__group admin-settings__group--full">
-                    <label for="eventTitleInput" class="admin-settings__label font-semibold">Event Title</label>
-                    <input type="text" id="eventTitleInput" name="title" class="admin-settings__input w-full" placeholder="e.g. Riverside Acoustic Sunset Sessions" required maxlength="255">
-                    <span class="admin-settings__error" id="eventTitleError"></span>
+                <div class="space-y-4 px-6 py-5">
+                    <div>
+                        <label for="eventTitleInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Event Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="eventTitleInput" name="title" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="e.g. Riverside Acoustic Sunset Sessions" required maxlength="255">
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="eventTitleError"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                        <div>
+                            <label for="eventDateInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Date <span class="text-red-500">*</span></label>
+                            <input type="date" id="eventDateInput" name="date" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" required>
+                            <span class="admin-settings__error mt-1 block text-xs text-red-600" id="eventDateError"></span>
+                        </div>
+                        <div>
+                            <label for="eventDayInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">What Day</label>
+                            <input type="text" id="eventDayInput" name="day" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="Auto from date">
+                            <span class="admin-settings__error mt-1 block text-xs text-red-600" id="eventDayError"></span>
+                        </div>
+                        <div>
+                            <label for="eventTimeInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Time</label>
+                            <input type="text" id="eventTimeInput" name="time" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="e.g. 4:00 PM - 8:00 PM" maxlength="100">
+                            <span class="admin-settings__error mt-1 block text-xs text-red-600" id="eventTimeError"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="eventDescInput" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Event Description <span class="text-red-500">*</span></label>
+                        <textarea id="eventDescInput" name="event" rows="3" class="w-full resize-y rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="Describe what event or activity is taking place..." required maxlength="2000"></textarea>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="eventDescError"></span>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="admin-settings__group">
-                        <label for="eventDateInput" class="admin-settings__label font-semibold">Date</label>
-                        <input type="date" id="eventDateInput" name="date" class="admin-settings__input w-full" required>
-                        <span class="admin-settings__error" id="eventDateError"></span>
-                    </div>
-                    <div class="admin-settings__group">
-                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day</label>
-                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto from date">
-                        <span class="admin-settings__error" id="eventDayError"></span>
-                    </div>
-                    <div class="admin-settings__group">
-                        <label for="eventTimeInput" class="admin-settings__label font-semibold">Time</label>
-                        <input type="text" id="eventTimeInput" name="time" class="admin-settings__input w-full" placeholder="e.g. 4:00 PM - 8:00 PM" maxlength="100">
-                        <span class="admin-settings__error" id="eventTimeError"></span>
-                    </div>
-                </div>
-
-                <div class="admin-settings__group admin-settings__group--full">
-                    <label for="eventDescInput" class="admin-settings__label font-semibold">Event Description (What event)</label>
-                    <textarea id="eventDescInput" name="event" rows="4" class="admin-settings__input w-full h-auto resize-y" placeholder="Describe what event or activity is taking place..." required maxlength="2000"></textarea>
-                    <span class="admin-settings__error" id="eventDescError"></span>
-                </div>
-
-                <div class="admin-settings__modal-actions mt-2 flex justify-end gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
-                    <button type="button" id="cancelEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                    <button type="submit" id="saveEventSubmitBtn" class="admin-settings__btn admin-settings__btn--primary">Save Event</button>
+                <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                    <button type="button" id="cancelEventModalBtn" class="btn btn--ghost">Cancel</button>
+                    <button type="submit" id="saveEventSubmitBtn" class="btn btn--primary">Save Event</button>
                 </div>
             </form>
         </div>
@@ -846,30 +819,106 @@
         </div>
     </div>
 
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" aria-hidden="true" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[460px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <div>
+                    <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Change Password</h3>
+                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">An OTP code will be sent to verify this change.</p>
+                </div>
+                <button type="button" id="closePasswordModalXBtn" aria-label="Close" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="changePasswordForm" class="text-left">
+                @csrf
+                <div class="space-y-4 px-6 py-5">
+                    <div>
+                        <label for="currentPassword" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Current Password <span class="text-red-500">*</span></label>
+                        <input type="password" id="currentPassword" name="current_password" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" required>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="currentPasswordError"></span>
+                    </div>
+                    <div>
+                        <label for="newPassword" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">New Password <span class="text-red-500">*</span></label>
+                        <input type="password" id="newPassword" name="new_password" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" required>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="newPasswordError"></span>
+                    </div>
+                    <div>
+                        <label for="confirmPassword" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">Confirm Password <span class="text-red-500">*</span></label>
+                        <input type="password" id="confirmPassword" name="confirm_password" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" required>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="confirmPasswordError"></span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                    <button type="button" id="cancelPasswordBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-2)]">Cancel</button>
+                    <button type="submit" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-[#1b5e3a] px-4 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#14472c]">Send OTP Code</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Email Modal -->
+    <div id="changeEmailModal" aria-hidden="true" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[460px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                <div>
+                    <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Change Email Address</h3>
+                    <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">You will receive an OTP code on your current email.</p>
+                </div>
+                <button type="button" id="closeEmailModalXBtn" aria-label="Close" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-[var(--ink-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="changeEmailForm" class="text-left">
+                @csrf
+                <div class="space-y-4 px-6 py-5">
+                    <div>
+                        <label for="newEmail" class="mb-1.5 block text-xs font-semibold text-[var(--ink)]">New Email Address <span class="text-red-500">*</span></label>
+                        <input type="email" id="newEmail" name="new_email" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--green)] focus:bg-[var(--surface)]" required>
+                        <span class="admin-settings__error mt-1 block text-xs text-red-600" id="newEmailError"></span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                    <button type="button" id="cancelEmailBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-2)]">Cancel</button>
+                    <button type="submit" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-[#1b5e3a] px-4 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#14472c]">Send OTP Code</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- OTP Verification Modal for Password -->
-    <div id="otpPasswordModal" class="admin-settings__modal" style="display: none;">
-        <div class="admin-settings__modal-content">
-            <h3 class="admin-settings__modal-title">Verify OTP Code</h3>
-            <p class="admin-settings__modal-text">An OTP code has been sent to your email address.</p>
-            <input type="text" id="otpPasswordCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
-            <span class="admin-settings__error" id="otpPasswordError"></span>
-            <div class="admin-settings__modal-actions">
-                <button type="button" id="verifyPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Change Password</button>
-                <button type="button" id="cancelPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+    <div id="otpPasswordModal" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="border-b border-[var(--border)] px-6 py-4">
+                <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Verify OTP Code</h3>
+                <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">An OTP code has been sent to your email address.</p>
+            </div>
+            <div class="px-6 py-5">
+                <input type="text" id="otpPasswordCode" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2.5 text-center text-base font-bold tracking-[0.35em] text-[var(--ink)] outline-none focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="000000" maxlength="6">
+                <span class="admin-settings__error mt-1.5 block text-xs text-red-600" id="otpPasswordError"></span>
+            </div>
+            <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                <button type="button" id="cancelPasswordOtpBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-2)]">Cancel</button>
+                <button type="button" id="verifyPasswordOtpBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-[#1b5e3a] px-4 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#14472c]">Verify &amp; Change Password</button>
             </div>
         </div>
     </div>
 
     <!-- OTP Verification Modal for Email -->
-    <div id="otpEmailModal" class="admin-settings__modal" style="display: none;">
-        <div class="admin-settings__modal-content">
-            <h3 class="admin-settings__modal-title">Verify Email Change</h3>
-            <p class="admin-settings__modal-text">An OTP code has been sent to your current email address.</p>
-            <input type="text" id="otpEmailCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
-            <span class="admin-settings__error" id="otpEmailError"></span>
-            <div class="admin-settings__modal-actions">
-                <button type="button" id="verifyEmailOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Update Email</button>
-                <button type="button" id="cancelEmailOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+    <div id="otpEmailModal" class="admin-settings__modal !items-center !justify-center !p-4" style="display: none;">
+        <div class="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-xl text-left">
+            <div class="border-b border-[var(--border)] px-6 py-4">
+                <h3 class="m-0 font-display text-lg font-bold text-[var(--ink)]">Verify Email Change</h3>
+                <p class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]">An OTP code has been sent to your current email address.</p>
+            </div>
+            <div class="px-6 py-5">
+                <input type="text" id="otpEmailCode" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2.5 text-center text-base font-bold tracking-[0.35em] text-[var(--ink)] outline-none focus:border-[var(--green)] focus:bg-[var(--surface)]" placeholder="000000" maxlength="6">
+                <span class="admin-settings__error mt-1.5 block text-xs text-red-600" id="otpEmailError"></span>
+            </div>
+            <div class="flex items-center justify-end gap-2.5 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+                <button type="button" id="cancelEmailOtpBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-2)]">Cancel</button>
+                <button type="button" id="verifyEmailOtpBtn" class="!m-0 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-[#1b5e3a] px-4 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#14472c]">Verify &amp; Update Email</button>
             </div>
         </div>
     </div>

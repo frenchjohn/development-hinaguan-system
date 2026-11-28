@@ -320,35 +320,70 @@ window.AppPage['admin_usermanagement'] = function () {
         });
     });
 
-    // ---- Client-side search over name/email ----
+    // ---- Client-side search & filters (name/email, status, joined date range) ----
     const userSearch = document.getElementById('userSearch');
+    const userStatusFilter = document.getElementById('userStatusFilter');
+    const userJoinedFrom = document.getElementById('userJoinedFrom');
+    const userJoinedTo = document.getElementById('userJoinedTo');
+    const userFilterReset = document.getElementById('userFilterReset');
     const userCountText = document.getElementById('userCountText');
-    if (userSearch) {
-        const userTableBody = document.querySelector('.users-table tbody');
-        const totalUsers = rows.length;
-        userSearch.addEventListener('input', () => {
-            const q = userSearch.value.trim().toLowerCase();
-            let visible = 0;
-            rows.forEach((row) => {
-                const haystack = `${row.dataset.name || ''} ${row.dataset.email || ''}`.toLowerCase();
-                const show = !q || haystack.includes(q);
-                row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
-            });
-            if (userCountText) userCountText.textContent = `${visible} of ${totalUsers} staff account(s)`;
-            let emptyRow = userTableBody.querySelector('.user-search-empty');
-            if (visible === 0) {
-                if (!emptyRow) {
-                    emptyRow = document.createElement('tr');
-                    emptyRow.className = 'user-search-empty';
-                    emptyRow.innerHTML = '<td colspan="5" class="table-empty">No staff match your search.</td>';
-                    userTableBody.appendChild(emptyRow);
-                }
-            } else if (emptyRow) {
-                emptyRow.remove();
-            }
+    const userTableBody = document.querySelector('.users-table tbody');
+
+    const applyUserFilters = () => {
+        if (!userTableBody) return;
+        const q = (userSearch?.value || '').trim().toLowerCase();
+        const statusVal = userStatusFilter?.value || '';
+        const fromDate = userJoinedFrom?.value || '';
+        const toDate = userJoinedTo?.value || '';
+        const hasFilters = Boolean(q || statusVal || fromDate || toDate);
+
+        if (userFilterReset) {
+            userFilterReset.classList.toggle('hidden', !hasFilters);
+            userFilterReset.classList.toggle('inline-flex', hasFilters);
+        }
+
+        let visible = 0;
+        rows.forEach((row) => {
+            const haystack = `${row.dataset.name || ''} ${row.dataset.email || ''}`.toLowerCase();
+            const rowStatus = row.dataset.banStatus || '';
+            const rowJoined = row.dataset.joined || '';
+
+            const matchesSearch = !q || haystack.includes(q);
+            const matchesStatus = !statusVal || rowStatus === statusVal;
+            const matchesFrom = !fromDate || (rowJoined && rowJoined >= fromDate);
+            const matchesTo = !toDate || (rowJoined && rowJoined <= toDate);
+
+            const show = matchesSearch && matchesStatus && matchesFrom && matchesTo;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
         });
-    }
+
+        if (userCountText) userCountText.textContent = `${visible} of ${rows.length} staff account(s)`;
+
+        let emptyRow = userTableBody.querySelector('.user-search-empty');
+        if (visible === 0) {
+            if (!emptyRow) {
+                emptyRow = document.createElement('tr');
+                emptyRow.className = 'user-search-empty';
+                emptyRow.innerHTML = '<td colspan="5" class="table-empty">No staff accounts match your filters.</td>';
+                userTableBody.appendChild(emptyRow);
+            }
+        } else if (emptyRow) {
+            emptyRow.remove();
+        }
+    };
+
+    userSearch?.addEventListener('input', applyUserFilters);
+    userStatusFilter?.addEventListener('change', applyUserFilters);
+    userJoinedFrom?.addEventListener('change', applyUserFilters);
+    userJoinedTo?.addEventListener('change', applyUserFilters);
+    userFilterReset?.addEventListener('click', () => {
+        if (userSearch) userSearch.value = '';
+        if (userStatusFilter) userStatusFilter.value = '';
+        if (userJoinedFrom) userJoinedFrom.value = '';
+        if (userJoinedTo) userJoinedTo.value = '';
+        applyUserFilters();
+    });
 
     editButton?.addEventListener('click', (event) => {
         event.preventDefault();

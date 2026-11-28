@@ -41,12 +41,12 @@
         </div>
     </div>
 
-    <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-        <!-- Live Park Status Pill with Interactive Hover Tooltip -->
+    <div class="flex items-center gap-2 shrink-0">
+        <!-- Live Park Status Badge with Hover Tooltip -->
         <div class="relative group">
             @if ($headerParkStatus === 'closed')
-                <div class="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 text-xs font-semibold shadow-sm cursor-help" data-park-status-badge data-status="closed" tabindex="0">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                <div class="inline-flex h-9 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 cursor-help" data-park-status-badge data-status="closed" tabindex="0">
+                    <span class="h-2 w-2 rounded-full bg-red-600"></span>
                     <span>Park Closed</span>
                 </div>
                 <div class="dash-header__status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
@@ -59,8 +59,8 @@
                     </div>
                 </div>
             @else
-                <div class="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full border border-[#c8e6c9] bg-[#e8f5e9] text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784] text-xs font-semibold shadow-sm cursor-help" data-park-status-badge data-status="open" tabindex="0">
-                    <svg class="w-3.5 h-3.5 shrink-0 text-[#2e7d32] dark:text-[#81c784]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L6 8h3v4H7l-3 4h4v6h8v-6h4l-3-4h-2V8h3l-6-6z"/></svg>
+                <div class="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300 cursor-help" data-park-status-badge data-status="open" tabindex="0">
+                    <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
                     <span>Park Open</span>
                 </div>
                 <div class="dash-header__status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
@@ -78,19 +78,15 @@
         @if ($weatherNow)
         <!-- Live Weather Forecast Widget -->
         <div class="relative">
-            <button type="button" class="flex items-center justify-between gap-2.5 py-1.5 px-3.5 border border-[#dfe5e0] dark:border-white/15 rounded-full bg-white/90 dark:bg-white/10 text-[#183d28] dark:text-white cursor-pointer transition-all duration-200 ease-in-out shadow-sm hover:bg-white dark:hover:bg-white/20 [&.is-active]:bg-white dark:[&.is-active]:bg-white/20" id="weatherBtn" aria-label="Toggle weather forecast" aria-haspopup="true" aria-expanded="false" aria-controls="weatherDropdown">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <span class="text-xs">☁</span>
-                    <span class="text-xs font-bold text-[#183d28] dark:text-[#f5f5f0] truncate">{{ round($weatherNow['temp_c']) }}°C</span>
-                </div>
-                <div class="flex items-center gap-1 text-[#2a6a8f] dark:text-[#6ea9c9] shrink-0 text-xs font-semibold">
-                    <span class="text-[0.7rem]">♠</span>
-                    <span>{{ $weatherNow['chance_of_rain'] ?? 0 }}%</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8] border-l border-[#dfe5e0] dark:border-white/15 pl-2 shrink-0 text-xs font-medium">
+            <button type="button" class="inline-flex h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 shadow-xs transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 [&.is-active]:bg-slate-50 dark:[&.is-active]:bg-white/20 cursor-pointer" id="weatherBtn" aria-label="Toggle weather forecast" aria-haspopup="true" aria-expanded="false" aria-controls="weatherDropdown">
+                <span class="font-bold tabular-nums text-slate-900 dark:text-white">{{ round($weatherNow['temp_c']) }}°C</span>
+                <span class="text-slate-300 dark:text-white/20">&middot;</span>
+                <span class="font-medium tabular-nums text-sky-700 dark:text-sky-300">{{ $weatherNow['chance_of_rain'] ?? 0 }}% rain</span>
+                <span class="h-3.5 w-px bg-slate-200 dark:bg-white/15"></span>
+                <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-300 font-medium">
                     <span id="weatherClockDay">{{ now()->format('l') }}</span>
-                    <span class="font-bold text-[#183d28] dark:text-[#f5f5f0]" id="weatherClockTime">{{ now()->format('g:i A') }}</span>
-                </div>
+                    <span class="font-semibold tabular-nums text-slate-900 dark:text-white" id="weatherClockTime">{{ now()->format('g:i A') }}</span>
+                </span>
             </button>
 
             <div class="absolute top-[calc(100%+0.5rem)] right-0 w-[22.5rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[1rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] opacity-0 invisible -translate-y-2 transition-all duration-200 ease-in-out z-[120] overflow-hidden [&.is-open]:opacity-100 [&.is-open]:visible [&.is-open]:translate-y-0" id="weatherDropdown" aria-hidden="true">
@@ -163,11 +159,11 @@
 
         <!-- Notification Bell Dropdown (Live Activity Logs) -->
         <div class="relative" id="headerNotifContainer">
-            <button type="button" class="relative inline-flex items-center justify-center w-10 h-10 border border-[#dfe5e0] dark:border-white/15 rounded-full bg-white/90 dark:bg-white/10 text-[#183d28] dark:text-white cursor-pointer transition-all duration-200 ease-in-out shadow-sm hover:bg-white dark:hover:bg-white/20 [&.is-active]:bg-white dark:[&.is-active]:bg-white/20" id="notifBellBtn" aria-label="Activity Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-5 h-5">
+            <button type="button" class="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 [&.is-active]:bg-slate-50 dark:[&.is-active]:bg-white/20 cursor-pointer" id="notifBellBtn" aria-label="Activity Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
-                <span id="notifBadge" class="{{ $initialUnreadCount > 0 ? '' : 'hidden' }} absolute -top-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-600 text-white text-[0.62rem] font-extrabold flex items-center justify-center border-2 border-white dark:border-[#0d2116] shadow-sm animate-[badgeBounce_0.3s_ease]" style="{{ $initialUnreadCount > 0 ? 'display: flex;' : 'display: none;' }}">{{ $initialUnreadCount > 99 ? '99+' : $initialUnreadCount }}</span>
+                <span id="notifBadge" class="{{ $initialUnreadCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 min-w-[1.05rem] h-[1.05rem] px-1 rounded-full bg-red-600 text-white text-[0.6rem] font-bold flex items-center justify-center border-2 border-white dark:border-[#0d2116]" style="{{ $initialUnreadCount > 0 ? 'display: flex;' : 'display: none;' }}">{{ $initialUnreadCount > 99 ? '99+' : $initialUnreadCount }}</span>
             </button>
 
             <div class="absolute top-[calc(100%+0.5rem)] right-0 w-[24rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[1rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] opacity-0 invisible -translate-y-2 transition-all duration-200 ease-in-out z-[130] overflow-hidden [&.is-open]:opacity-100 [&.is-open]:visible [&.is-open]:translate-y-0" id="notifDropdown" aria-hidden="true" data-latest-id="{{ $latestActivityId }}" data-user-type="{{ $userRole }}" data-user-id="{{ $userId }}" data-last-seen-id="{{ $userLastSeenId }}">

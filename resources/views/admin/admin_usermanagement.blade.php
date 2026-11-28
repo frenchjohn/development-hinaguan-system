@@ -151,19 +151,37 @@
                 @endif
 
                 <section class="users-table-wrap">
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--surface)] px-[1.1rem] py-[0.9rem]">
-                        <div class="relative min-w-[14rem] max-w-[24rem] flex-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-[0.8rem] top-1/2 h-[0.95rem] w-[0.95rem] -translate-y-1/2 text-[var(--ink-faint)]"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                            <input id="userSearch" type="search" placeholder="Search by name or email..." autocomplete="off" class="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] py-[0.55rem] pl-[2.2rem] pr-[0.9rem] text-[0.84rem] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--green)] focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_rgba(23,138,82,0.12)]">
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <button type="button" class="btn btn--primary inline-flex items-center gap-2" data-open-user-modal>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-4 w-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                                <span>New Staff Account</span>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-[1.1rem] py-3.5">
+                        <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                            <div class="relative w-full sm:w-64">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                                <input id="userSearch" type="search" placeholder="Search by name or email..." autocomplete="off" class="h-10 w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] pl-9 pr-3 text-[0.84rem] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--green)] focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_rgba(23,138,82,0.12)]">
+                            </div>
+
+                            <select id="userStatusFilter" aria-label="Filter by status" class="h-10 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 text-[0.84rem] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--green)] focus:bg-[var(--surface)]">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="banned">Banned</option>
+                            </select>
+
+                            <div class="flex h-10 items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] px-2.5">
+                                <span class="text-[0.72rem] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Joined</span>
+                                <input id="userJoinedFrom" type="date" aria-label="Joined from date" class="h-7 bg-transparent text-[0.8rem] text-[var(--ink)] outline-none">
+                                <span class="text-xs text-[var(--ink-faint)]">–</span>
+                                <input id="userJoinedTo" type="date" aria-label="Joined to date" class="h-7 bg-transparent text-[0.8rem] text-[var(--ink)] outline-none">
+                            </div>
+
+                            <button type="button" id="userFilterReset" class="hidden h-10 cursor-pointer items-center rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-transparent px-3 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]">
+                                Clear
                             </button>
                         </div>
+
+                        <button type="button" class="btn btn--primary !m-0 inline-flex h-10 shrink-0 items-center gap-2" data-open-user-modal>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            <span>New Staff Account</span>
+                        </button>
                     </div>
                     <table class="users-table">
                         <thead>
@@ -183,6 +201,7 @@
                                     data-user-id="{{ $staff->id }}"
                                     data-name="{{ e($staff->name) }}"
                                     data-email="{{ e($staff->email) }}"
+                                    data-joined="{{ $staff->created_at ? \Carbon\Carbon::parse($staff->created_at)->format('Y-m-d') : '' }}"
                                     data-ban-status="{{ $staff->ban_status ? 'banned' : 'active' }}"
                                 >
                                     <td>

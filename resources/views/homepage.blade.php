@@ -243,12 +243,12 @@
                     </div>
                 </div>
 
-                {{-- Celebrity In The Park Card (Brenda Mage) - Only visible when Brenda's Park Availability is active in Admin Settings --}}
-                @if (!empty($parkSettings->brenda_available))
-                <div class="w-full max-w-sm sm:max-w-md bg-[#092215]/95 backdrop-blur-md border border-emerald-500/20 rounded-2xl sm:rounded-3xl flex items-stretch shadow-xl mt-3.5 relative overflow-hidden group h-[110px] sm:h-[118px]">
+                {{-- Celebrity In The Park Card (Brenda Mage) --}}
+                @php $brendaInPark = (bool) ($parkSettings->brenda_available ?? true); @endphp
+                <div class="w-full max-w-sm sm:max-w-md bg-[#092215]/95 backdrop-blur-md border {{ $brendaInPark ? 'border-emerald-500/20' : 'border-amber-500/20' }} rounded-2xl sm:rounded-3xl flex items-stretch shadow-xl mt-3.5 relative overflow-hidden group h-[110px] sm:h-[118px]">
                     {{-- Left: Brenda's Photo with smooth right fade --}}
                     <div class="relative w-24 sm:w-28 shrink-0 self-stretch overflow-hidden">
-                        <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="w-full h-full object-cover object-[center_18%] group-hover:scale-105 transition-transform duration-500 [mask-image:linear-gradient(to_right,black_45%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_45%,transparent_100%)]">
+                        <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage" class="w-full h-full object-cover object-[center_18%] {{ $brendaInPark ? '' : 'grayscale-[35%] opacity-85' }} group-hover:scale-105 transition-transform duration-500 [mask-image:linear-gradient(to_right,black_45%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_45%,transparent_100%)]">
                         <div class="absolute inset-y-0 right-0 w-8 sm:w-10 bg-gradient-to-r from-transparent to-[#092215] pointer-events-none"></div>
                     </div>
 
@@ -256,13 +256,22 @@
                     <div class="flex-1 min-w-0 py-2 px-3 sm:py-2.5 sm:px-3.5 flex flex-col justify-between">
                         {{-- Top row: Pill badge + Stars --}}
                         <div class="flex items-center justify-between gap-1.5 leading-none">
-                            {{-- Celebrity in park pill --}}
-                            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[#4d6645] bg-[#163422] shadow-sm">
-                                <span class="w-2.5 h-2.5 rounded-full bg-[#2ecc71] flex items-center justify-center shrink-0 shadow-[0_0_6px_rgba(46,204,113,0.6)]">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-[#48ea88]"></span>
-                                </span>
-                                <span class="text-[8px] sm:text-[9px] font-extrabold tracking-wider text-[#efe9dc] uppercase font-sans whitespace-nowrap">CELEBRITY IN PARK</span>
-                            </div>
+                            {{-- Celebrity status pill --}}
+                            @if ($brendaInPark)
+                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[#4d6645] bg-[#163422] shadow-sm">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-[#2ecc71] flex items-center justify-center shrink-0 shadow-[0_0_6px_rgba(46,204,113,0.6)]">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-[#48ea88]"></span>
+                                    </span>
+                                    <span class="text-[8px] sm:text-[9px] font-extrabold tracking-wider text-[#efe9dc] uppercase font-sans whitespace-nowrap">CELEBRITY IN PARK</span>
+                                </div>
+                            @else
+                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-950/50 shadow-sm">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex items-center justify-center shrink-0">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-300"></span>
+                                    </span>
+                                    <span class="text-[8px] sm:text-[9px] font-extrabold tracking-wider text-amber-200 uppercase font-sans whitespace-nowrap">NOT IN PARK</span>
+                                </div>
+                            @endif
 
                             {{-- Double sparkle stars --}}
                             <div class="relative w-4 h-4 text-[#deb669] shrink-0" aria-hidden="true">
@@ -278,10 +287,10 @@
                         {{-- Title & Description --}}
                         <div class="my-0.5 leading-tight">
                             <h4 class="font-['Playfair_Display',serif] font-bold text-[13px] sm:text-[15px] text-white tracking-tight leading-tight truncate">
-                                Brenda is in the park!
+                                {{ $brendaInPark ? 'Brenda is in the park!' : 'Brenda is not in the park' }}
                             </h4>
                             <p class="text-[#c1d0c5] text-[10px] sm:text-[11px] leading-tight font-sans mt-0.5 truncate">
-                                Celebrity owner Brenda Mage is on-site today
+                                {{ $brendaInPark ? 'Celebrity owner Brenda Mage is on-site today' : 'Celebrity owner Brenda Mage is currently away' }}
                             </p>
                         </div>
 
@@ -296,15 +305,21 @@
                                 <span class="truncate">Hinaguan Park</span>
                             </div>
 
-                            {{-- Meet & Greet Badge --}}
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-[#183928] border border-[#2d563d] text-white shadow-sm shrink-0">
-                                <i class="bi bi-camera-fill text-[#f3dfa2] text-[9.5px] sm:text-[10px]"></i>
-                                <span class="text-[9.5px] sm:text-[10.5px] font-semibold text-[#f8faf9] whitespace-nowrap">Meet & Greet</span>
-                            </div>
+                            {{-- Status Badge --}}
+                            @if ($brendaInPark)
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-[#183928] border border-[#2d563d] text-white shadow-sm shrink-0">
+                                    <i class="bi bi-camera-fill text-[#f3dfa2] text-[9.5px] sm:text-[10px]"></i>
+                                    <span class="text-[9.5px] sm:text-[10.5px] font-semibold text-[#f8faf9] whitespace-nowrap">Meet &amp; Greet</span>
+                                </div>
+                            @else
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-amber-950/50 border border-amber-500/30 text-amber-100 shadow-sm shrink-0">
+                                    <i class="bi bi-clock text-amber-300 text-[9.5px] sm:text-[10px]"></i>
+                                    <span class="text-[9.5px] sm:text-[10.5px] font-semibold whitespace-nowrap">Away Today</span>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
-                @endif
             </div>
         </div>
     </section>

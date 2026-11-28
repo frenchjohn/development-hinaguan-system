@@ -57,6 +57,7 @@ if (!window.__staffCheckInsGlobalClickBound) {
         if (quickAddCompanionGlobalBtn) {
             e.preventDefault();
             e.stopPropagation();
+            if (quickAddCompanionGlobalBtn.disabled) return;
             window.openResAddCompanionModal(quickAddCompanionGlobalBtn.dataset.reservationId);
             return;
         }
@@ -65,6 +66,7 @@ if (!window.__staffCheckInsGlobalClickBound) {
         if (resAddCompGlobalBtn) {
             e.preventDefault();
             e.stopPropagation();
+            if (resAddCompGlobalBtn.disabled) return;
             window.openResAddCompanionModal();
             return;
         }
@@ -371,35 +373,68 @@ window.AppPage['staff_check_ins'] = function () {
     // Initialize: show reservation table by default
     const dashboardSection = document.getElementById('dashboardSection');
 
-    // Tab switching
-    const switchTab = (target) => {
-        if (dashboardSection) dashboardSection.style.display = target === 'dashboard' ? '' : 'none';
-        if (reservationTableSection) reservationTableSection.style.display = target === 'reservation' ? '' : 'none';
+    // Tab switching (persists in URL + sessionStorage so refreshes stay on the active tab)
+    const CHECKINS_TAB_STORAGE_KEY = 'hpStaffCheckInsTab';
+    const switchTab = (target, persist = true) => {
+        const normalizedTarget = target === 'dashboard' ? 'dashboard' : 'reservation';
+        if (dashboardSection) dashboardSection.style.display = normalizedTarget === 'dashboard' ? '' : 'none';
+        if (reservationTableSection) reservationTableSection.style.display = normalizedTarget === 'reservation' ? '' : 'none';
 
         document.querySelectorAll('.checkins-tab').forEach(btn => {
             btn.classList.remove('is-active', 'bg-hp-green', 'text-white', 'shadow-sm');
             btn.classList.add('bg-transparent', 'text-hp-text-muted');
             btn.setAttribute('aria-selected', 'false');
         });
-        document.querySelectorAll(`.checkins-tab[data-tab-target="${target}"]`).forEach(btn => {
+        document.querySelectorAll(`.checkins-tab[data-tab-target="${normalizedTarget}"]`).forEach(btn => {
             btn.classList.add('is-active', 'bg-hp-green', 'text-white', 'shadow-sm');
             btn.classList.remove('bg-transparent', 'text-hp-text-muted');
             btn.setAttribute('aria-selected', 'true');
         });
+
+        if (persist) {
+            try {
+                sessionStorage.setItem(CHECKINS_TAB_STORAGE_KEY, normalizedTarget);
+            } catch (_) {}
+            try {
+                const url = new URL(window.location.href);
+                if (normalizedTarget === 'dashboard') {
+                    url.searchParams.set('tab', 'dashboard');
+                } else {
+                    url.searchParams.delete('tab');
+                }
+                const nextUrl = url.pathname + url.search + url.hash;
+                if (nextUrl !== window.location.pathname + window.location.search + window.location.hash) {
+                    window.history.replaceState({ ...(window.history.state || {}), spa: true, url: nextUrl }, '', nextUrl);
+                }
+            } catch (_) {}
+        }
     };
 
     document.querySelectorAll('.checkins-tab[data-tab-target]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const target = e.currentTarget.getAttribute('data-tab-target');
-            switchTab(target);
+            switchTab(target, true);
         });
     });
 
-    // Check if URL specifies dashboard tab or hash (e.g., redirected from Live Analytics)
+    // Restore active tab from URL, hash, or sessionStorage (e.g., after auto-refresh or reload)
     const initialCheckInParams = new URLSearchParams(window.location.search);
     const hashTarget = window.location.hash;
-    if (initialCheckInParams.get('tab') === 'dashboard' || hashTarget === '#dashboardSection' || hashTarget.startsWith('#widget')) {
-        switchTab('dashboard');
+    const savedCheckInTab = (() => {
+        try { return sessionStorage.getItem(CHECKINS_TAB_STORAGE_KEY); } catch (_) { return null; }
+    })();
+    const hasExplicitReservationTarget = Boolean(
+        initialCheckInParams.get('reservation_id') ||
+        initialCheckInParams.get('id') ||
+        initialCheckInParams.get('tab') === 'reservation'
+    );
+    if (
+        initialCheckInParams.get('tab') === 'dashboard' ||
+        hashTarget === '#dashboardSection' ||
+        hashTarget.startsWith('#widget') ||
+        (!hasExplicitReservationTarget && savedCheckInTab === 'dashboard')
+    ) {
+        switchTab('dashboard', true);
         if (hashTarget) {
             setTimeout(() => {
                 const targetEl = document.querySelector(hashTarget);
@@ -1137,9 +1172,11 @@ window.AppPage['staff_check_ins'] = function () {
             statusBadge.textContent = reservation.status || 'Active';
         }
 
-        // Only checked-in reservations can accept new companions mid-stay.
+        // Only checked-in reservations (not yet due for checkout) can accept new companions mid-stay.
         if (reservationAddCompanionBtn) {
             reservationAddCompanionBtn.classList.toggle('hidden', !isCheckedIn);
+            reservationAddCompanionBtn.disabled = isReservationStayDue;
+            reservationAddCompanionBtn.title = isReservationStayDue ? 'Cannot add companions when stay time has ended' : '';
         }
         if (reservationCompanionCheckoutHeaderBtn) {
             const hasActiveGuests = guestsList.some(g => !g.checked_out_at);
@@ -1154,7 +1191,7 @@ window.AppPage['staff_check_ins'] = function () {
         if (stickyButtonsContainer) {
             if (isCheckedIn) {
                 stickyButtonsContainer.innerHTML = `
-                    <button type="button" onclick="if (typeof window.openResAddCompanionModal === 'function') { window.openResAddCompanionModal('${reservation.id}'); }" class="resv-quick-add-companion-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-2 border-emerald-600 bg-emerald-600/10 hover:bg-emerald-600 hover:text-white px-3.5 py-1.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-200 transition-all shadow-xs" data-reservation-id="${reservation.id}">
+                    <button type="button" ${isReservationStayDue ? 'disabled title="Cannot add companions when stay time has ended"' : `onclick="if (typeof window.openResAddCompanionModal === 'function') { window.openResAddCompanionModal('${reservation.id}'); }"`} class="resv-quick-add-companion-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-2 border-emerald-600 bg-emerald-600/10 hover:bg-emerald-600 hover:text-white px-3.5 py-1.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-200 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none" data-reservation-id="${reservation.id}">
                         <svg class="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                         <span>Add Companion</span>
                     </button>
@@ -1176,6 +1213,7 @@ window.AppPage['staff_check_ins'] = function () {
                 const quickCheckoutAllBtn = stickyButtonsContainer.querySelector('.resv-quick-checkout-all-btn');
 
                 quickAddCompanionBtn?.addEventListener('click', () => {
+                    if (quickAddCompanionBtn.disabled || isReservationStayDue) return;
                     openResAddCompanionModal();
                 });
 

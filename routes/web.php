@@ -12481,8 +12481,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             \Log::error('OTP email failed: ' . $e->getMessage(), ['exception' => $e]);
             // Ensure we do not leave a pending change in session when send fails
             $request->session()->forget('staff_profile_change');
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unable to send OTP email right now.'], 500);
+            }
             $request->session()->flash('error', 'Unable to send OTP email right now.');
             return redirect()->route('staff.settings');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'A verification code has been sent to your email.',
+                'email' => $data['email'],
+                'name' => $data['name'],
+            ]);
         }
 
         return redirect()->route('staff.settings')->with('success', 'A verification code has been sent to your email.');
@@ -12491,6 +12502,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
     Route::post('/settings/verify', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Session expired. Please log in again.'], 401);
+            }
             return redirect()->route('login');
         }
 
@@ -12498,6 +12512,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $code = $request->validate(['code' => ['required', 'digits:6']])['code'];
 
         if (! $pending || (string) $pending['otp'] !== (string) $code) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'The verification code is invalid.'], 422);
+            }
             return redirect()->route('staff.settings')->with('error', 'The verification code is invalid.');
         }
 
@@ -12520,6 +12537,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'email' => $staffAccount->email,
             'role' => 'staff',
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Your account details were updated successfully.',
+                'user' => [
+                    'name' => $staffAccount->name,
+                    'email' => $staffAccount->email,
+                ],
+            ]);
+        }
 
         return redirect()->route('staff.settings')->with('success', 'Your account details were updated successfully.');
     })->name('settings.verify');

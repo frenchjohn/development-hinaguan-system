@@ -108,108 +108,75 @@
                 subtitle="Review, show, or hide visitor reviews"
             />
 
-            <main class="dash-content p-6">
+            <main class="dash-content p-6 space-y-5">
 
-                <div class="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
-                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
-                        </span>
-                        <div>
-                            <p id="fbStatTotal" class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $totalFeedbacks }}</p>
-                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Total Reviews</p>
-                        </div>
-                    </article>
-                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
-                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        </span>
-                        <div>
-                            <p id="fbStatShown" class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $shownFeedbacks }}</p>
-                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Shown</p>
-                        </div>
-                    </article>
-                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
-                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--warn-soft)] text-[var(--warn)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                        </span>
-                        <div>
-                            <p id="fbStatHidden" class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $hiddenFeedbacks }}</p>
-                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Hidden</p>
-                        </div>
-                    </article>
-                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
-                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[rgba(200,164,93,0.15)] text-[#c8a45d]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-[1.25rem] w-[1.25rem]"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                        </span>
-                        <div>
-                            <p id="fbStatAvg" class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $averageStars }}</p>
-                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Average Rating</p>
-                        </div>
-                    </article>
-                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
-                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[rgba(59,130,246,0.12)] text-[#3b82f6]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4.5 2.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
-                        <div>
-                            <p id="fbStatToday" class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $todayFeedbacks }}</p>
-                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Reviews Today</p>
-                        </div>
-                    </article>
+                {{-- Top KPI Strip --}}
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Reviews</span>
+                        <p id="fbStatTotal" class="m-0 mt-1.5 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{{ $totalFeedbacks }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Shown</span>
+                        <p id="fbStatShown" class="m-0 mt-1.5 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{{ $shownFeedbacks }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Hidden</span>
+                        <p id="fbStatHidden" class="m-0 mt-1.5 text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-400">{{ $hiddenFeedbacks }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Average Rating</span>
+                        <p id="fbStatAvg" class="m-0 mt-1.5 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{{ $averageStars }}</p>
+                    </div>
+                    <div class="col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-xs md:col-span-1 dark:border-white/10 dark:bg-[#181b19]">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Reviews Today</span>
+                        <p id="fbStatToday" class="m-0 mt-1.5 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{{ $todayFeedbacks }}</p>
+                    </div>
                 </div>
-                
-                {{-- AI Executive Feedback Intelligence Widget --}}
-                <section class="mb-6 rounded-[var(--radius-lg)] border border-[rgba(200,164,93,0.35)] bg-gradient-to-br from-[var(--surface)] via-[var(--surface)] to-[rgba(200,164,93,0.06)] p-5 shadow-[var(--shadow-sm)]">
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
-                        <div class="flex items-center gap-3">
-                            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#244A2D] to-[#17281c] text-[#c8a45d] shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
-                            </span>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="m-0 text-base font-bold text-[var(--ink)]">AI Feedback Intelligence</h3>
-                                    <span class="rounded-full bg-[rgba(200,164,93,0.2)] px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-[#c8a45d]">Automated Analysis</span>
-                                </div>
-                                <p class="m-0 text-xs text-[var(--ink-muted)]">Real-time sentiment detection from visitor reviews · <span id="fbAiAnalyzedAt">Analyzed {{ $aiInsights['analyzed_at'] }}</span></p>
-                            </div>
+
+                {{-- Review Insights Summary --}}
+                <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-white/10">
+                        <div>
+                            <h3 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Review Insights</h3>
+                            <p class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Sentiment summary across visitor reviews &middot; <span id="fbAiAnalyzedAt">Analyzed {{ $aiInsights['analyzed_at'] }}</span></p>
                         </div>
-                        <button type="button" id="fbAiRefreshBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition-colors hover:border-[#c8a45d] hover:text-[#c8a45d]">
+                        <button type="button" id="fbAiRefreshBtn" class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                            <span>Refresh AI Insights</span>
+                            <span>Refresh</span>
                         </button>
                     </div>
 
-                    {{-- Sentiment distribution progress bar & stat cards --}}
                     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
-                            <div class="mb-2 flex items-center justify-between text-xs font-semibold text-[var(--ink-muted)]">
-                                <span>Sentiment Distribution</span>
-                                <span id="fbAiPositivePctBadge" class="font-bold text-emerald-600 dark:text-emerald-400">{{ $aiInsights['positive_percent'] }}% Positive</span>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/10 dark:bg-white/[0.02]">
+                            <div class="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                <span>Sentiment Split</span>
+                                <span id="fbAiPositivePctBadge" class="font-bold text-emerald-700 dark:text-emerald-400">{{ $aiInsights['positive_percent'] }}% Positive</span>
                             </div>
-                            <div class="mb-3 flex h-3.5 w-full overflow-hidden rounded-full bg-[var(--surface-alt)] p-0.5">
-                                <div id="fbAiPosBar" class="h-full rounded-l-full bg-emerald-500 transition-all duration-500" style="width: {{ $aiInsights['positive_percent'] }}%;" title="Positive: {{ $aiInsights['positive_count'] }} ({{ $aiInsights['positive_percent'] }}%)"></div>
+                            <div class="mb-3 flex h-2.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-white/10">
+                                <div id="fbAiPosBar" class="h-full bg-emerald-600 transition-all duration-500" style="width: {{ $aiInsights['positive_percent'] }}%;" title="Positive: {{ $aiInsights['positive_count'] }} ({{ $aiInsights['positive_percent'] }}%)"></div>
                                 <div id="fbAiNeuBar" class="h-full bg-amber-400 transition-all duration-500" style="width: {{ $aiInsights['neutral_percent'] }}%;" title="Neutral: {{ $aiInsights['neutral_count'] }} ({{ $aiInsights['neutral_percent'] }}%)"></div>
-                                <div id="fbAiNegBar" class="h-full rounded-r-full bg-rose-500 transition-all duration-500" style="width: {{ $aiInsights['negative_percent'] }}%;" title="Negative: {{ $aiInsights['negative_count'] }} ({{ $aiInsights['negative_percent'] }}%)"></div>
+                                <div id="fbAiNegBar" class="h-full bg-rose-500 transition-all duration-500" style="width: {{ $aiInsights['negative_percent'] }}%;" title="Negative: {{ $aiInsights['negative_count'] }} ({{ $aiInsights['negative_percent'] }}%)"></div>
                             </div>
-                            <div class="flex items-center justify-between text-[0.72rem] text-[var(--ink-muted)]">
-                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Positive: <strong id="fbAiPosCount" class="text-[var(--ink)]">{{ $aiInsights['positive_count'] }}</strong></span>
-                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-400"></span> Neutral: <strong id="fbAiNeuCount" class="text-[var(--ink)]">{{ $aiInsights['neutral_count'] }}</strong></span>
-                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Negative: <strong id="fbAiNegCount" class="text-[var(--ink)]">{{ $aiInsights['negative_count'] }}</strong></span>
+                            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-xs bg-emerald-600"></span> Pos <strong id="fbAiPosCount" class="tabular-nums text-slate-900 dark:text-white">{{ $aiInsights['positive_count'] }}</strong></span>
+                                <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-xs bg-amber-400"></span> Neu <strong id="fbAiNeuCount" class="tabular-nums text-slate-900 dark:text-white">{{ $aiInsights['neutral_count'] }}</strong></span>
+                                <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-xs bg-rose-500"></span> Neg <strong id="fbAiNegCount" class="tabular-nums text-slate-900 dark:text-white">{{ $aiInsights['negative_count'] }}</strong></span>
                             </div>
                         </div>
 
-                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
-                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">✨ Key Highlights & Praises</p>
-                            <ul id="fbAiPraisesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-[var(--ink)]">
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/10 dark:bg-white/[0.02]">
+                            <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">Top Praises</p>
+                            <ul id="fbAiPraisesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
                                 @foreach ($aiInsights['top_praises'] as $praise)
                                     <li>{{ $praise }}</li>
                                 @endforeach
                             </ul>
                         </div>
 
-                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
-                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400"><i class="bi bi-exclamation-triangle-fill me-1"></i> Reported Concerns / Issues</p>
-                            <ul id="fbAiIssuesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-[var(--ink)]">
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/10 dark:bg-white/[0.02]">
+                            <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Reported Concerns</p>
+                            <ul id="fbAiIssuesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
                                 @foreach ($aiInsights['top_issues'] as $issue)
                                     <li>{{ $issue }}</li>
                                 @endforeach
@@ -218,24 +185,26 @@
                     </div>
                 </section>
 
-                <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden">
-                    <div class="flex flex-wrap items-end gap-4 border-b border-[var(--border)] p-4">
-                        <div class="min-w-[180px] flex-1">
-                            <label for="feedbackSearch" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Search by name</label>
-                            <input id="feedbackSearch" type="search" placeholder="Search guest name..." autocomplete="off" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                {{-- Feedback Table --}}
+                <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+                    <div class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-white/10">
+                        <div class="min-w-[200px] flex-1">
+                            <label for="feedbackSearch" class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Search Guest</label>
+                            <input id="feedbackSearch" type="search" placeholder="Search by guest name..." autocomplete="off"
+                                class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 dark:border-white/15 dark:bg-white/5 dark:text-white">
                         </div>
                         <div class="min-w-[130px]">
-                            <label for="feedbackSentimentFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">AI Sentiment</label>
-                            <select id="feedbackSentimentFilter" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
-                                <option value="all">All sentiments</option>
-                                <option value="positive">🟢 Positive (Good)</option>
-                                <option value="neutral">🟡 Neutral</option>
-                                <option value="negative">🔴 Negative (Bad)</option>
+                            <label for="feedbackSentimentFilter" class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sentiment</label>
+                            <select id="feedbackSentimentFilter" class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-700 dark:border-white/15 dark:bg-white/5 dark:text-white">
+                                <option value="all">All</option>
+                                <option value="positive">Positive</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="negative">Negative</option>
                             </select>
                         </div>
                         <div class="min-w-[120px]">
-                            <label for="feedbackStarFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Star rating</label>
-                            <select id="feedbackStarFilter" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                            <label for="feedbackStarFilter" class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Rating</label>
+                            <select id="feedbackStarFilter" class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-700 dark:border-white/15 dark:bg-white/5 dark:text-white">
                                 <option value="all">All stars</option>
                                 @for ($i = 5; $i >= 1; $i--)
                                     <option value="{{ $i }}">{{ $i }} star{{ $i > 1 ? 's' : '' }}</option>
@@ -243,36 +212,36 @@
                             </select>
                         </div>
                         <div class="min-w-[120px]">
-                            <label for="feedbackVisibilityFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Visibility</label>
-                            <select id="feedbackVisibilityFilter" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                            <label for="feedbackVisibilityFilter" class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Visibility</label>
+                            <select id="feedbackVisibilityFilter" class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-700 dark:border-white/15 dark:bg-white/5 dark:text-white">
                                 <option value="all">All</option>
                                 <option value="shown">Shown</option>
                                 <option value="hidden">Hidden</option>
                             </select>
                         </div>
                         <div class="min-w-[160px]">
-                            <label for="feedbackSortFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Sort by</label>
-                            <select id="feedbackSortFilter" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
-                                <option value="newest">Newest to oldest</option>
-                                <option value="oldest">Oldest to newest</option>
-                                <option value="stars_high">Stars: highest to lowest</option>
-                                <option value="stars_low">Stars: lowest to highest</option>
+                            <label for="feedbackSortFilter" class="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sort By</label>
+                            <select id="feedbackSortFilter" class="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-emerald-700 dark:border-white/15 dark:bg-white/5 dark:text-white">
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                                <option value="stars_high">Highest rating</option>
+                                <option value="stars_low">Lowest rating</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="max-h-[32rem] overflow-y-auto">
                         <table class="w-full min-w-[720px] border-collapse text-left">
-                            <thead class="sticky top-0 z-10 bg-[var(--surface-alt)] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">
+                            <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-white/10 dark:bg-[#141714] dark:text-slate-400">
                                 <tr>
                                     <th class="px-4 py-3">Guest</th>
                                     <th class="px-4 py-3">Rating</th>
-                                    <th class="px-4 py-3">AI Sentiment</th>
+                                    <th class="px-4 py-3">Sentiment</th>
                                     <th class="px-4 py-3">Date</th>
                                     <th class="px-4 py-3">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="feedbackTableBody">
+                            <tbody id="feedbackTableBody" class="divide-y divide-slate-100 dark:divide-white/10">
                                 @forelse ($feedbacks as $feedback)
                                     @php
                                         $imagesCount = $feedback->images ? $feedback->images->count() : 0;
@@ -289,7 +258,7 @@
                                         };
                                     @endphp
                                     <tr
-                                        class="feedback-row cursor-pointer border-t border-[var(--border)] transition-colors hover:bg-[var(--surface-alt)]/70"
+                                        class="feedback-row cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]"
                                         data-feedback-id="{{ $feedback->id }}"
                                         data-guest-name="{{ strtolower($feedback->full_name) }}"
                                         data-full-name="{{ $feedback->full_name }}"
@@ -327,24 +296,23 @@
                                             ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP) !!}
                                             </script>
                                             <div class="flex items-center gap-3">
-                                                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-xs font-bold text-white">{{ $feedback->initials }}</span>
+                                                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#155e3c] text-xs font-bold text-white">{{ $feedback->initials }}</span>
                                                 <div class="min-w-0">
                                                     <div class="flex items-center gap-2">
-                                                        <p class="m-0 text-sm font-semibold text-[var(--ink)]">{{ $feedback->full_name }}</p>
+                                                        <p class="m-0 text-sm font-semibold text-slate-900 dark:text-white">{{ $feedback->full_name }}</p>
                                                         @if ($imagesCount > 0)
-                                                            <span class="inline-flex items-center gap-1 rounded-full bg-[rgba(200,164,93,0.15)] px-2 py-0.5 text-[0.68rem] font-semibold text-[#c8a45d]" title="{{ $imagesCount }} photo(s) attached">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-                                                                {{ $imagesCount }}
+                                                            <span class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                                                                {{ $imagesCount }} photo{{ $imagesCount > 1 ? 's' : '' }}
                                                             </span>
                                                         @endif
                                                     </div>
                                                     @if ($feedback->description)
-                                                        <p class="m-0 mt-0.5 max-w-sm truncate text-xs text-[var(--ink-muted)]" title="{{ $feedback->description }}">
+                                                        <p class="m-0 mt-0.5 max-w-sm truncate text-xs text-slate-500 dark:text-slate-400" title="{{ $feedback->description }}">
                                                             {{ $feedback->description }}
                                                         </p>
                                                     @endif
                                                     @if ($feedback->is_anonymous)
-                                                        <p class="m-0 text-[0.72rem] text-[var(--ink-muted)]">Anonymous submission</p>
+                                                        <p class="m-0 text-[11px] text-slate-400">Anonymous submission</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -357,116 +325,116 @@
                                             </div>
                                         </td>
                                         <td class="px-4 py-3">
-                                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $sentimentBadgeClass }}">
-                                                <span>{{ $feedback->ai_sentiment_emoji }}</span>
-                                                <span>{{ $feedback->ai_sentiment_label }}</span>
+                                            <span class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold {{ $sentimentBadgeClass }}">
+                                                {{ $feedback->ai_sentiment_label }}
                                             </span>
                                         </td>
-                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-[var(--ink-muted)]">{{ $feedback->created_at->format('M j, Y') }}</td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{{ $feedback->created_at->format('M j, Y') }}</td>
                                         <td class="px-4 py-3">
-                                            <span class="fb-status-badge inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $feedback->is_shown ? 'bg-[var(--green-soft)] text-[var(--green)]' : 'bg-[var(--warn-soft)] text-[var(--warn)]' }}">
+                                            <span class="fb-status-badge inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold {{ $feedback->is_shown ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' }}">
                                                 {{ $feedback->is_shown ? 'Shown' : 'Hidden' }}
                                             </span>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr id="feedbackEmptyRow">
-                                        <td colspan="5" class="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">No guest feedback yet.</td>
+                                        <td colspan="5" class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No guest feedback yet.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3">
-                        <div class="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-white/10">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                             <span>Showing</span>
-                            <strong id="fbRangeText" class="font-semibold text-[var(--ink)]">0</strong>
+                            <strong id="fbRangeText" class="font-semibold text-slate-900 dark:text-white">0</strong>
                             <span id="fbOfText">of 0 reviews</span>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2.5">
                             <div class="flex items-center gap-2">
-                                <label for="feedbackPerPage" class="text-sm text-[var(--ink-muted)]">Rows per page</label>
-                                <select id="feedbackPerPage" class="rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-2 py-1.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                                <label for="feedbackPerPage" class="text-xs text-slate-500 dark:text-slate-400">Rows</label>
+                                <select id="feedbackPerPage" class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 outline-none focus:border-emerald-700 dark:border-white/15 dark:bg-white/5 dark:text-white">
                                     <option value="10" selected>10</option>
                                     <option value="15">15</option>
                                     <option value="20">20</option>
                                 </select>
                             </div>
-                            <button type="button" id="fbPrevPage" aria-label="Previous page" class="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--ink)] transition-colors hover:border-[var(--green)] disabled:cursor-not-allowed disabled:opacity-40">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                            <button type="button" id="fbPrevPage" aria-label="Previous page" class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:text-slate-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
                             </button>
-                            <span id="fbPageInfo" class="min-w-[5rem] text-center text-sm font-semibold text-[var(--ink)]">Page 1 of 1</span>
-                            <button type="button" id="fbNextPage" aria-label="Next page" class="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] text-[var(--ink)] transition-colors hover:border-[var(--green)] disabled:cursor-not-allowed disabled:opacity-40">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                            <span id="fbPageInfo" class="min-w-[4.5rem] text-center text-xs font-semibold text-slate-700 dark:text-slate-200">Page 1 of 1</span>
+                            <button type="button" id="fbNextPage" aria-label="Next page" class="grid h-8 w-8 cursor-pointer place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:text-slate-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                             </button>
                         </div>
                     </div>
-                    <p id="feedbackNoResults" class="hidden px-4 py-8 text-center text-sm text-[var(--ink-muted)]">No feedback matches your filters.</p>
+                    <p id="feedbackNoResults" class="hidden px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">No feedback matches your filters.</p>
                 </section>
             </main>
         </div>
     </div>
 
     {{-- Feedback detail modal --}}
-    <div class="fixed inset-0 z-[2000] hidden items-center justify-center p-5 [&.is-open]:flex" id="feedbackDetailModal" aria-hidden="true" role="dialog" aria-labelledby="feedbackDetailTitle">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-feedback-detail-cancel></div>
-        <div class="relative flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl">
-            <div class="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-5">
+    <div class="fixed inset-0 z-[2000] hidden items-center justify-center p-4 [&.is-open]:flex" id="feedbackDetailModal" aria-hidden="true" role="dialog" aria-labelledby="feedbackDetailName">
+        <div class="absolute inset-0 bg-black/50" data-feedback-detail-cancel></div>
+        <div class="relative flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#181b19]">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-white/10">
                 <div class="flex items-center gap-3">
-                    <span id="fbDetailAvatar" class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-sm font-bold text-white"></span>
+                    <span id="fbDetailAvatar" class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#155e3c] text-xs font-bold text-white"></span>
                     <div>
-                        <h3 id="fbDetailName" class="m-0 text-base font-bold text-[var(--ink)]"></h3>
-                        <p id="fbDetailMeta" class="m-0 mt-0.5 text-xs text-[var(--ink-muted)]"></p>
+                        <h3 id="fbDetailName" class="m-0 text-base font-bold text-slate-900 dark:text-white"></h3>
+                        <p id="fbDetailMeta" class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400"></p>
                     </div>
                 </div>
-                <button type="button" class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--surface-alt)] text-lg leading-none text-[var(--ink-muted)] transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]" data-feedback-detail-cancel aria-label="Close">&times;</button>
+                <button type="button" class="cursor-pointer rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-200" data-feedback-detail-cancel aria-label="Close">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-6 py-5">
+            <div class="flex-1 overflow-y-auto px-5 py-4">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5">
                         <div id="fbDetailStars" class="flex items-center gap-0.5 text-[#c8a45d]" aria-label="Rating"></div>
-                        <span id="fbDetailRatingLabel" class="text-sm font-bold text-[var(--ink)]"></span>
+                        <span id="fbDetailRatingLabel" class="text-sm font-bold text-slate-900 dark:text-white"></span>
                     </div>
-                    <span id="fbDetailAiSentimentBadge" class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold"></span>
+                    <span id="fbDetailAiSentimentBadge" class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold"></span>
                 </div>
 
-                {{-- Clean AI Sentiment Breakdown --}}
-                <div id="fbDetailAiSection" class="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface-alt)] p-3.5">
-                    <div class="mb-2 flex items-center gap-1.5 border-b border-[var(--border)] pb-2">
-                        <span class="text-sm">✨</span>
-                        <span class="text-[0.72rem] font-bold uppercase tracking-wider text-[#c8a45d]">AI Sentiment Breakdown</span>
+                {{-- Sentiment Breakdown --}}
+                <div id="fbDetailAiSection" class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+                    <div class="mb-2 border-b border-slate-200 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-white/10 dark:text-slate-400">
+                        Sentiment Breakdown
                     </div>
-                    <div id="fbDetailAiPointsList" class="space-y-2"></div>
+                    <div id="fbDetailAiPointsList" class="space-y-1.5"></div>
                 </div>
 
-                <p class="m-0 mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--ink-muted)]">Full Feedback</p>
-                <p id="fbDetailDescription" class="m-0 whitespace-pre-line rounded-xl bg-[var(--surface-alt)] p-4 text-sm leading-relaxed text-[var(--ink)]"></p>
+                <p class="m-0 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Full Feedback</p>
+                <p id="fbDetailDescription" class="m-0 whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-800 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200"></p>
 
                 {{-- Attached Photos Gallery in Admin Modal --}}
-                <div id="fbDetailImagesSection" class="mt-4 hidden border-t border-[var(--border)] pt-4">
+                <div id="fbDetailImagesSection" class="mt-4 hidden border-t border-slate-100 pt-4 dark:border-white/10">
                     <div class="mb-2 flex items-center justify-between">
-                        <p class="m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--ink-muted)]">Attached Photos</p>
-                        <span id="fbDetailImagesCount" class="text-xs font-semibold text-[#c8a45d]"></span>
+                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Attached Photos</p>
+                        <span id="fbDetailImagesCount" class="text-xs font-semibold text-slate-600 dark:text-slate-300"></span>
                     </div>
                     <div id="fbDetailImagesGrid" class="grid grid-cols-3 gap-2.5 sm:grid-cols-4"></div>
                 </div>
             </div>
 
-            <div class="border-t border-[var(--border)] px-6 py-4">
-                <div id="fbDeleteConfirmBox" class="mb-3 hidden rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-3">
-                    <p class="m-0 mb-2 text-sm font-semibold text-[var(--danger)]">Delete this review permanently? This cannot be undone.</p>
+            <div class="border-t border-slate-100 px-5 py-4 dark:border-white/10">
+                <div id="fbDeleteConfirmBox" class="mb-3 hidden rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-950/40">
+                    <p class="m-0 mb-2 text-xs font-semibold text-red-700 dark:text-red-300">Delete this review permanently? This cannot be undone.</p>
                     <div class="flex justify-end gap-2">
-                        <button type="button" id="fbCancelDelete" class="rounded-lg bg-[var(--surface-alt)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)]">Keep it</button>
-                        <button type="button" id="fbConfirmDelete" class="rounded-lg bg-[var(--danger)] px-3 py-1.5 text-xs font-semibold text-white">Yes, delete</button>
+                        <button type="button" id="fbCancelDelete" class="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Keep it</button>
+                        <button type="button" id="fbConfirmDelete" class="cursor-pointer rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white">Yes, delete</button>
                     </div>
                 </div>
                 <div class="flex justify-between gap-3">
                     <button
                         type="button"
                         id="fbDetailToggleBtn"
-                        class="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--green)]"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span id="fbDetailToggleLabel">Show on website</span>
@@ -474,7 +442,7 @@
                     <button
                         type="button"
                         id="fbDetailDeleteBtn"
-                        class="inline-flex items-center gap-2 rounded-lg bg-[var(--danger)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-700"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
                         Delete
@@ -486,10 +454,10 @@
 
     {{-- Admin Photo Inspection Lightbox --}}
     <div class="fixed inset-0 z-[2500] hidden items-center justify-center p-5 [&.is-open]:flex" id="adminPhotoLightbox" aria-hidden="true" role="dialog" aria-label="Photo Preview">
-        <div class="absolute inset-0 bg-black/85 backdrop-blur-sm" data-admin-lightbox-close></div>
+        <div class="absolute inset-0 bg-black/85" data-admin-lightbox-close></div>
         <div class="relative z-10 flex max-h-[90vh] max-w-4xl flex-col items-center justify-center">
-            <button type="button" class="absolute -top-10 right-0 grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white transition-colors hover:bg-red-600" data-admin-lightbox-close aria-label="Close">&times;</button>
-            <img id="adminLightboxImg" src="" alt="Full size preview" class="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl">
+            <button type="button" class="absolute -top-10 right-0 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-white/20 text-white transition-colors hover:bg-red-600" data-admin-lightbox-close aria-label="Close">&times;</button>
+            <img id="adminLightboxImg" src="" alt="Full size preview" class="max-h-[80vh] max-w-full rounded-lg object-contain shadow-2xl">
         </div>
     </div>
 </body>

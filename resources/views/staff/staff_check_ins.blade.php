@@ -405,378 +405,343 @@
 
 
 
-					<div id="dashboardSection" class="tab-content-section" style="{{ $currentCheckInTab === 'dashboard' ? '' : 'display: none;' }}">
-						<div class="premium-dashboard grid grid-cols-1 gap-6 xl:grid-cols-2">
-						<!-- Widget 1: Overview -->
-						<div id="widgetOverview" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
-							<div class="premium-widget__header mb-4 flex items-center gap-3">
-								<div class="widget-icon widget-icon--green flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-								</div>
-								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">OVERVIEW</h4>
-							</div>
-							<div class="premium-widget__grid cols-3 mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ACTIVE GUESTS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $activeCustomers->count() }}</strong>
+					<div id="dashboardSection" class="tab-content-section space-y-5" style="{{ $currentCheckInTab === 'dashboard' ? '' : 'display: none;' }}">
+						{{-- Top KPI Strip (Overview) --}}
+						<div id="widgetOverview" class="scroll-mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+							{{-- Active Guests --}}
+							<div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								<div class="flex items-center justify-between">
+									<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Guests</span>
 									@if ($guestTrendPct > 0)
-										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $guestTrendPct }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">+{{ $guestTrendPct }}% vs yesterday</span>
 									@elseif ($guestTrendPct < 0)
-										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($guestTrendPct) }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-red-600 dark:text-red-400">-{{ abs($guestTrendPct) }}% vs yesterday</span>
 									@else
-										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+										<span class="text-[11px] font-medium text-slate-400">0% vs yesterday</span>
 									@endif
 								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">RESERVATIONS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $totalActiveRes }}</strong>
+								<div class="mt-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{{ $activeCustomers->count() }}</div>
+								<div class="mt-2.5 flex items-center gap-3 border-t border-slate-100 pt-2 text-[11px] text-slate-500 dark:border-white/10 dark:text-slate-400">
+									<span>Main: <strong class="font-semibold text-slate-700 dark:text-slate-200">{{ $activeMainGuests }}</strong></span>
+									<span>Single: <strong class="font-semibold text-slate-700 dark:text-slate-200">{{ $activeSingleCompanions }}</strong></span>
+									<span>Comp: <strong class="font-semibold text-slate-700 dark:text-slate-200">{{ $activeBulkCompanions }}</strong></span>
+								</div>
+							</div>
+
+							{{-- Active Reservations --}}
+							<div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								<div class="flex items-center justify-between">
+									<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Reservations</span>
 									@if ($resTrendPct > 0)
-										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $resTrendPct }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">+{{ $resTrendPct }}% vs yesterday</span>
 									@elseif ($resTrendPct < 0)
-										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($resTrendPct) }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-red-600 dark:text-red-400">-{{ abs($resTrendPct) }}% vs yesterday</span>
 									@else
-										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+										<span class="text-[11px] font-medium text-slate-400">0% vs yesterday</span>
 									@endif
 								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL AMOUNT</span>
-									<strong class="text-gradient-green block bg-gradient-to-r from-[#16a34a] to-[#0e5c37] bg-clip-text font-display text-2xl font-bold text-transparent">₱{{ number_format($totalAmount, 0) }}</strong>
+								<div class="mt-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{{ $totalActiveRes }}</div>
+								<div class="mt-2.5 border-t border-slate-100 pt-2 text-[11px] dark:border-white/10">
+									@if ($resSummaryCheckoutDue > 0)
+										<span class="font-semibold text-red-600 dark:text-red-400">{{ $resSummaryCheckoutDue }} {{ $resSummaryCheckoutDue === 1 ? 'reservation' : 'reservations' }} due for checkout</span>
+									@else
+										<span class="text-slate-500 dark:text-slate-400">All active stays within schedule</span>
+									@endif
+								</div>
+							</div>
+
+							{{-- Active Stay Total --}}
+							<div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								<div class="flex items-center justify-between">
+									<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Stay Total</span>
 									@if ($amountTrendPct > 0)
-										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $amountTrendPct }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">+{{ $amountTrendPct }}% vs yesterday</span>
 									@elseif ($amountTrendPct < 0)
-										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($amountTrendPct) }}% vs yesterday</div>
+										<span class="text-[11px] font-semibold text-red-600 dark:text-red-400">-{{ abs($amountTrendPct) }}% vs yesterday</span>
 									@else
-										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+										<span class="text-[11px] font-medium text-slate-400">0% vs yesterday</span>
 									@endif
 								</div>
-							</div>
-							<!-- Role breakdown -->
-							<div class="premium-widget__grid cols-3 grid grid-cols-1 gap-4 border-t border-dashed border-black/10 pt-4 sm:grid-cols-3 dark:border-white/10">
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MAIN GUESTS</span>
-									<strong class="block text-xl text-hp-text-muted">{{ $activeMainGuests }}</strong>
-								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">SINGLE COMP.</span>
-									<strong class="block text-xl text-hp-text-muted">{{ $activeSingleCompanions }}</strong>
-								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">COMPANIONS</span>
-									<strong class="block text-xl text-hp-text-muted">{{ $activeBulkCompanions }}</strong>
+								<div class="mt-2 text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-400">₱{{ number_format($totalAmount, 0) }}</div>
+								<div class="mt-2.5 border-t border-slate-100 pt-2 text-[11px] text-slate-500 dark:border-white/10 dark:text-slate-400">
+									Combined total of checked-in stays
 								</div>
 							</div>
 
-							<div class="revenue-this-month mt-6 flex items-end justify-between rounded-lg bg-[rgba(34,197,94,0.05)] px-4 py-3">
-								<div>
-									<div class="mb-0.5 text-xs font-medium text-[#166534]">Revenue this month</div>
-									<strong class="text-xl text-[#15803d]">₱{{ number_format($thisMonthRev, 2) }}</strong>
+							{{-- Revenue This Month --}}
+							<div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								<div class="flex items-center justify-between">
+									<span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Revenue This Month</span>
+									@if ($monthTrendPct > 0)
+										<span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">+{{ $monthTrendPct }}% vs last mo</span>
+									@elseif ($monthTrendPct < 0)
+										<span class="text-[11px] font-semibold text-red-600 dark:text-red-400">-{{ abs($monthTrendPct) }}% vs last mo</span>
+									@else
+										<span class="text-[11px] font-medium text-slate-400">0% vs last mo</span>
+									@endif
 								</div>
-								@if ($monthTrendPct > 0)
-									<div class="stat-trend trend-up text-xs font-semibold text-[#16a34a]">▲ {{ $monthTrendPct }}% vs last month</div>
-								@elseif ($monthTrendPct < 0)
-									<div class="stat-trend trend-down text-xs font-semibold text-[#dc2626]">▼ {{ abs($monthTrendPct) }}% vs last month</div>
-								@else
-									<div class="stat-trend text-xs font-semibold text-hp-text-muted">0% vs last month</div>
-								@endif
-							</div>
-						</div>
-
-						<!-- Widget 2: Demographics -->
-						<div id="widgetDemographics" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
-							<div class="premium-widget__header mb-4 flex items-center gap-3">
-								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
-									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-								</div>
-								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">DEMOGRAPHICS</h4>
-							</div>
-							@php
-								$totalGuests = $activeCustomers->count();
-								$pctMale = $totalGuests > 0 ? round(($guestSummaryMale / $totalGuests) * 100) : 0;
-								$pctFem = $totalGuests > 0 ? round(($guestSummaryFemale / $totalGuests) * 100) : 0;
-								$pctFor = $totalGuests > 0 ? round(($guestSummaryForeign / $totalGuests) * 100) : 0;
-								$pctFil = $totalGuests > 0 ? round(($guestSummaryFilipino / $totalGuests) * 100) : 0;
-
-								if ($totalGuests === 0) {
-									$conicGradient = "rgba(100, 116, 139, 0.15) 0deg 360deg";
-								} else {
-									$degMale = $pctMale * 3.6;
-									$degFem = $degMale + ($pctFem * 3.6);
-									$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
-								}
-							@endphp
-							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
-								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MALE</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryMale }}</strong>
-									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctMale }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFemFil }}&#xa;Foreigner: {{ $demoFemFor }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FEMALE</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryFemale }}</strong>
-									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFem }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $demoForFil ?? 0 }}&#xa;Foreigner: {{ $demoForFor ?? 0 }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FOREIGNER</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryForeign }}</strong>
-									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFor }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFilFil ?? 0 }}&#xa;Foreigner: {{ $demoFilFor ?? 0 }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FILIPINO</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryFilipino }}</strong>
-									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFil }}%</div>
-								</div>
-							</div>
-
-							<!-- Donut Chart Area -->
-							<div class="demographics-chart-area mt-6 flex items-center justify-center gap-8 px-2 py-4">
-								<div class="donut-chart-container relative h-[120px] w-[120px]">
-									<div class="donut-chart h-full w-full rounded-full transition-all duration-500" style="background: conic-gradient({{ $conicGradient }});"></div>
-									<div class="donut-chart-inner absolute left-5 right-5 top-5 bottom-5 flex flex-col items-center justify-center rounded-full bg-glass shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
-										<strong class="text-xl leading-none text-hp-text">{{ $totalGuests }}</strong>
-										<span class="text-[0.65rem] text-hp-text-muted">Total</span>
-									</div>
-								</div>
-								<div class="donut-legend flex min-w-[140px] flex-col gap-2.5 text-[0.8rem] text-hp-text">
-									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#22c55e]"></span>Male</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
-									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#ec4899]"></span>Female</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
-									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#f59e0b]"></span>Foreigner</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
-									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#8b5cf6]"></span>Filipino</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
+								<div class="mt-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">₱{{ number_format($thisMonthRev, 2) }}</div>
+								<div class="mt-2.5 border-t border-slate-100 pt-2 text-[11px] text-slate-500 dark:border-white/10 dark:text-slate-400">
+									Month-to-date collected revenue
 								</div>
 							</div>
 						</div>
 
-						<!-- Widget 4: Age Groups -->
-						<div id="widgetAgeGroups" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
-							<div class="premium-widget__header mb-4 flex items-center gap-3">
-								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
-									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+						{{-- Middle Breakdown Row: Demographics, Age Groups, Pool Activity --}}
+						<div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+							{{-- Demographics --}}
+							<div id="widgetDemographics" class="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								@php
+									$totalGuests = $activeCustomers->count();
+									$pctMale = $totalGuests > 0 ? round(($guestSummaryMale / $totalGuests) * 100) : 0;
+									$pctFem = $totalGuests > 0 ? round(($guestSummaryFemale / $totalGuests) * 100) : 0;
+									$pctFor = $totalGuests > 0 ? round(($guestSummaryForeign / $totalGuests) * 100) : 0;
+									$pctFil = $totalGuests > 0 ? round(($guestSummaryFilipino / $totalGuests) * 100) : 0;
+								@endphp
+								<div class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
+									<h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Demographics</h4>
+									<span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $totalGuests }} active</span>
 								</div>
-								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">AGE GROUPS</h4>
-							</div>
-							@php
-								$pctKids = $totalGuests > 0 ? round(($ageKids / $totalGuests) * 100) : 0;
-								$pctTeen = $totalGuests > 0 ? round(($ageTeen / $totalGuests) * 100) : 0;
-								$pctAdult = $totalGuests > 0 ? round(($ageAdult / $totalGuests) * 100) : 0;
-								$pctSenior = $totalGuests > 0 ? round(($ageSenior / $totalGuests) * 100) : 0;
-							@endphp
-							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
-								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilKids }}&#xa;Foreigner: {{ $ageForKids }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageKids }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctKids }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilTeen }}&#xa;Foreigner: {{ $ageForTeen }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TEENS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageTeen }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctTeen }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilAdult }}&#xa;Foreigner: {{ $ageForAdult }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ADULTS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageAdult }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctAdult }}%</div>
-								</div>
-								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilSenior }}&#xa;Foreigner: {{ $ageForSenior }}">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">SENIORS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageSenior }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctSenior }}%</div>
-								</div>
-							</div>
 
-							<!-- Progress Bars Area -->
-							<div class="age-progress-area mt-6 flex flex-col gap-4">
-								<div class="progress-row">
-									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
-										<span>Kids (0 - 12 yrs)</span>
-										<span>{{ $pctKids }}%</span>
+								{{-- Gender Split --}}
+								<div class="mt-4">
+									<div class="mb-1.5 flex items-center justify-between text-xs">
+										<span class="font-semibold text-slate-700 dark:text-slate-200">Gender Split</span>
+										<span class="tabular-nums text-slate-500 dark:text-slate-400">{{ $guestSummaryMale }}M / {{ $guestSummaryFemale }}F</span>
 									</div>
-									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
-										<div class="h-full rounded bg-[#22c55e]" style="width: {{ $pctKids }}%;"></div>
+									<div class="flex h-2.5 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+										<div class="h-full bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctMale }}%;"></div>
+										<div class="h-full bg-amber-500" style="width: {{ $pctFem }}%;"></div>
 									</div>
-								</div>
-								<div class="progress-row">
-									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
-										<span>Teens (13 - 17 yrs)</span>
-										<span>{{ $pctTeen }}%</span>
-									</div>
-									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
-										<div class="h-full rounded bg-[#3b82f6]" style="width: {{ $pctTeen }}%;"></div>
-									</div>
-								</div>
-								<div class="progress-row">
-									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
-										<span>Adults (18 - 59 yrs)</span>
-										<span>{{ $pctAdult }}%</span>
-									</div>
-									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
-										<div class="h-full rounded bg-[#a855f7]" style="width: {{ $pctAdult }}%;"></div>
-									</div>
-								</div>
-								<div class="progress-row">
-									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
-										<span>Seniors (60+ yrs)</span>
-										<span>{{ $pctSenior }}%</span>
-									</div>
-									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
-										<div class="h-full rounded bg-[#f59e0b]" style="width: {{ $pctSenior }}%;"></div>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Widget 5: Pool & Swimming Activity -->
-						<div id="widgetPool" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
-							<div class="premium-widget__header mb-4 flex items-center justify-between">
-								<div class="flex items-center gap-3">
-									<div class="widget-icon flex h-9 w-9 items-center justify-center rounded-lg bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">
-										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" />
-											<circle cx="12" cy="6" r="2.5" />
-											<path stroke-linecap="round" stroke-linejoin="round" d="M8.5 11l2-2 3.5 1.5 2.5-1.5" />
-										</svg>
-									</div>
-									<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">POOL ACTIVITY & ACCESS</h4>
-								</div>
-								<span class="inline-flex items-center gap-1.5 rounded-full bg-[#0284c7]/10 px-2.5 py-1 text-xs font-bold text-[#0284c7] dark:bg-[#38bdf8]/10 dark:text-[#38bdf8]">
-									<i class="h-2 w-2 animate-pulse rounded-full bg-[#0284c7] dark:bg-[#38bdf8]"></i>
-									{{ $activeGuestsWithPool }} Active Swimmer{{ $activeGuestsWithPool === 1 ? '' : 's' }}
-								</span>
-							</div>
-
-							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">POOL PASSES</span>
-									<strong class="block font-display text-2xl font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeGuestsWithPool }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-[#0284c7] dark:text-[#38bdf8]">{{ $poolAccessPct }}% of guests</div>
-								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">NO POOL PASS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-text-muted">{{ $activeGuestsNoPool }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $noPoolAccessPct }}% sightseeing</div>
-								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">POOL REVENUE</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">₱{{ number_format($poolRevenueToday, 0) }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-green">Active stay fees</div>
-								</div>
-								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS IN POOL</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $activeKidsWithPool }}</strong>
-									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $ageKids > 0 ? round(($activeKidsWithPool / $ageKids) * 100) : 0 }}% of kids</div>
-								</div>
-							</div>
-
-							<!-- Pool Access Breakdown & Progress -->
-							<div class="pool-progress-area mt-6 flex flex-col gap-4">
-								<div class="progress-row">
-									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
-										<span class="font-medium text-hp-text">Pool Access Rate vs General Admission</span>
-										<span>{{ $poolAccessPct }}% with Pool</span>
-									</div>
-									<div class="flex h-2.5 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
-										<div class="h-full rounded-l-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8]" style="width: {{ $poolAccessPct }}%;"></div>
-										<div class="h-full rounded-r-full bg-slate-300 dark:bg-slate-700" style="width: {{ $noPoolAccessPct }}%;"></div>
+									<div class="mt-2 grid grid-cols-2 gap-3 text-xs">
+										<div class="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="flex items-center justify-between">
+												<span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-xs bg-emerald-700 dark:bg-emerald-500"></span>Male</span>
+												<strong class="tabular-nums text-slate-900 dark:text-white">{{ $guestSummaryMale }} ({{ $pctMale }}%)</strong>
+											</div>
+											<div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Fil: {{ $demoMaleFil }} &middot; For: {{ $demoMaleFor }}</div>
+										</div>
+										<div class="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="flex items-center justify-between">
+												<span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-xs bg-amber-500"></span>Female</span>
+												<strong class="tabular-nums text-slate-900 dark:text-white">{{ $guestSummaryFemale }} ({{ $pctFem }}%)</strong>
+											</div>
+											<div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Fil: {{ $demoFemFil }} &middot; For: {{ $demoFemFor }}</div>
+										</div>
 									</div>
 								</div>
 
-								<!-- Swimmer demographic pills -->
-								<div class="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
-									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
-										<span class="text-hp-text-muted">Kids:</span>
-										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeKidsWithPool }}</strong>
+								{{-- Nationality Split --}}
+								<div class="mt-5 border-t border-slate-100 pt-4 dark:border-white/10">
+									<div class="mb-1.5 flex items-center justify-between text-xs">
+										<span class="font-semibold text-slate-700 dark:text-slate-200">Nationality</span>
+										<span class="tabular-nums text-slate-500 dark:text-slate-400">{{ $pctFil }}% Local</span>
 									</div>
-									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
-										<span class="text-hp-text-muted">Teens:</span>
-										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeTeensWithPool }}</strong>
+									<div class="flex h-2.5 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+										<div class="h-full bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctFil }}%;"></div>
+										<div class="h-full bg-sky-600" style="width: {{ $pctFor }}%;"></div>
 									</div>
-									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
-										<span class="text-hp-text-muted">Adults:</span>
-										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeAdultsWithPool }}</strong>
+									<div class="mt-2 grid grid-cols-2 gap-3 text-xs">
+										<div class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+											<span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-xs bg-emerald-700 dark:bg-emerald-500"></span>Filipino</span>
+											<strong class="tabular-nums text-slate-900 dark:text-white">{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</strong>
+										</div>
+										<div class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
+											<span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-xs bg-sky-600"></span>Foreigner</span>
+											<strong class="tabular-nums text-slate-900 dark:text-white">{{ $guestSummaryForeign }} ({{ $pctFor }}%)</strong>
+										</div>
 									</div>
-									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
-										<span class="text-hp-text-muted">Seniors:</span>
-										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeSeniorsWithPool }}</strong>
+								</div>
+							</div>
+
+							{{-- Age Groups --}}
+							<div id="widgetAgeGroups" class="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								@php
+									$pctKids = $totalGuests > 0 ? round(($ageKids / $totalGuests) * 100) : 0;
+									$pctTeen = $totalGuests > 0 ? round(($ageTeen / $totalGuests) * 100) : 0;
+									$pctAdult = $totalGuests > 0 ? round(($ageAdult / $totalGuests) * 100) : 0;
+									$pctSenior = $totalGuests > 0 ? round(($ageSenior / $totalGuests) * 100) : 0;
+								@endphp
+								<div class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
+									<h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Age Groups</h4>
+									<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Share of {{ $totalGuests }} guests</span>
+								</div>
+
+								<div class="mt-4 space-y-3.5">
+									<div>
+										<div class="mb-1 flex items-baseline justify-between text-xs">
+											<span class="font-semibold text-slate-700 dark:text-slate-200">Kids <span class="font-normal text-slate-400">(0–12 yrs)</span></span>
+											<span class="tabular-nums font-semibold text-slate-900 dark:text-white">{{ $ageKids }} <span class="font-normal text-slate-400">({{ $pctKids }}%)</span></span>
+										</div>
+										<div class="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+											<div class="h-full rounded bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctKids }}%;"></div>
+										</div>
+										<div class="mt-0.5 text-[11px] text-slate-400">Fil: {{ $ageFilKids }} &middot; For: {{ $ageForKids }}</div>
+									</div>
+
+									<div>
+										<div class="mb-1 flex items-baseline justify-between text-xs">
+											<span class="font-semibold text-slate-700 dark:text-slate-200">Teens <span class="font-normal text-slate-400">(13–17 yrs)</span></span>
+											<span class="tabular-nums font-semibold text-slate-900 dark:text-white">{{ $ageTeen }} <span class="font-normal text-slate-400">({{ $pctTeen }}%)</span></span>
+										</div>
+										<div class="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+											<div class="h-full rounded bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctTeen }}%;"></div>
+										</div>
+										<div class="mt-0.5 text-[11px] text-slate-400">Fil: {{ $ageFilTeen }} &middot; For: {{ $ageForTeen }}</div>
+									</div>
+
+									<div>
+										<div class="mb-1 flex items-baseline justify-between text-xs">
+											<span class="font-semibold text-slate-700 dark:text-slate-200">Adults <span class="font-normal text-slate-400">(18–59 yrs)</span></span>
+											<span class="tabular-nums font-semibold text-slate-900 dark:text-white">{{ $ageAdult }} <span class="font-normal text-slate-400">({{ $pctAdult }}%)</span></span>
+										</div>
+										<div class="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+											<div class="h-full rounded bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctAdult }}%;"></div>
+										</div>
+										<div class="mt-0.5 text-[11px] text-slate-400">Fil: {{ $ageFilAdult }} &middot; For: {{ $ageForAdult }}</div>
+									</div>
+
+									<div>
+										<div class="mb-1 flex items-baseline justify-between text-xs">
+											<span class="font-semibold text-slate-700 dark:text-slate-200">Seniors <span class="font-normal text-slate-400">(60+ yrs)</span></span>
+											<span class="tabular-nums font-semibold text-slate-900 dark:text-white">{{ $ageSenior }} <span class="font-normal text-slate-400">({{ $pctSenior }}%)</span></span>
+										</div>
+										<div class="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+											<div class="h-full rounded bg-emerald-700 dark:bg-emerald-500" style="width: {{ $pctSenior }}%;"></div>
+										</div>
+										<div class="mt-0.5 text-[11px] text-slate-400">Fil: {{ $ageFilSenior }} &middot; For: {{ $ageForSenior }}</div>
+									</div>
+								</div>
+							</div>
+
+							{{-- Pool Activity --}}
+							<div id="widgetPool" class="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+								<div class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
+									<h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Pool Activity</h4>
+									<span class="text-xs font-semibold text-sky-700 dark:text-sky-400">{{ $activeGuestsWithPool }} {{ $activeGuestsWithPool === 1 ? 'swimmer' : 'swimmers' }}</span>
+								</div>
+
+								<div class="mt-4 grid grid-cols-3 gap-2.5">
+									<div class="rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+										<div class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pool Pass</div>
+										<div class="mt-1 text-lg font-bold tabular-nums text-sky-700 dark:text-sky-400">{{ $activeGuestsWithPool }}</div>
+										<div class="text-[11px] text-slate-400">{{ $poolAccessPct }}%</div>
+									</div>
+									<div class="rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+										<div class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">No Pool</div>
+										<div class="mt-1 text-lg font-bold tabular-nums text-slate-700 dark:text-slate-200">{{ $activeGuestsNoPool }}</div>
+										<div class="text-[11px] text-slate-400">{{ $noPoolAccessPct }}%</div>
+									</div>
+									<div class="rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+										<div class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pool Fees</div>
+										<div class="mt-1 text-lg font-bold tabular-nums text-emerald-800 dark:text-emerald-400">₱{{ number_format($poolRevenueToday, 0) }}</div>
+										<div class="text-[11px] text-slate-400">Active</div>
+									</div>
+								</div>
+
+								<div class="mt-4">
+									<div class="mb-1.5 flex items-center justify-between text-xs">
+										<span class="font-medium text-slate-600 dark:text-slate-300">Pool vs Sightseeing</span>
+										<span class="tabular-nums text-slate-500 dark:text-slate-400">{{ $poolAccessPct }}% with pool</span>
+									</div>
+									<div class="flex h-2.5 w-full overflow-hidden rounded bg-slate-100 dark:bg-white/10">
+										<div class="h-full bg-sky-600" style="width: {{ $poolAccessPct }}%;"></div>
+										<div class="h-full bg-slate-300 dark:bg-slate-600" style="width: {{ $noPoolAccessPct }}%;"></div>
+									</div>
+								</div>
+
+								<div class="mt-5">
+									<div class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Swimmers by Age Group</div>
+									<div class="grid grid-cols-4 divide-x divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/50 text-center dark:divide-white/10 dark:border-white/10 dark:bg-white/[0.02]">
+										<div class="px-2 py-2">
+											<div class="text-[11px] text-slate-500 dark:text-slate-400">Kids</div>
+											<div class="mt-0.5 text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ $activeKidsWithPool }}</div>
+										</div>
+										<div class="px-2 py-2">
+											<div class="text-[11px] text-slate-500 dark:text-slate-400">Teens</div>
+											<div class="mt-0.5 text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ $activeTeensWithPool }}</div>
+										</div>
+										<div class="px-2 py-2">
+											<div class="text-[11px] text-slate-500 dark:text-slate-400">Adults</div>
+											<div class="mt-0.5 text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ $activeAdultsWithPool }}</div>
+										</div>
+										<div class="px-2 py-2">
+											<div class="text-[11px] text-slate-500 dark:text-slate-400">Seniors</div>
+											<div class="mt-0.5 text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ $activeSeniorsWithPool }}</div>
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
 
-						<!-- Widget 3: Checkout Alerts -->
-						<div id="widgetCheckoutAlerts" class="premium-widget premium-widget--alert flex flex-wrap gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass xl:col-span-2 scroll-mt-6">
-							<div class="min-w-[300px] flex-1">
-								<div class="premium-widget__header mb-4 flex items-center gap-3">
-									<div class="widget-icon widget-icon--orange flex h-9 w-9 items-center justify-center rounded-lg bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">
-										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+						{{-- Bottom Row: Checkout Alerts & Upcoming Check-outs --}}
+						<div id="widgetCheckoutAlerts" class="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-white/10 dark:bg-[#181b19]">
+							<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+								{{-- Checkout Alerts --}}
+								<div class="lg:col-span-5">
+									<div class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
+										<h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Checkout Alerts</h4>
+										<span class="text-xs font-semibold {{ $resSummaryCheckoutDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400' }}">
+											{{ $resSummaryCheckoutDue }} {{ $resSummaryCheckoutDue === 1 ? 'reservation' : 'reservations' }} due
+										</span>
 									</div>
-									<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">CHECKOUT ALERTS</h4>
-								</div>
-								<div class="premium-widget__grid cols-4 mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-									<div class="premium-stat stat-due bg-transparent p-0 shadow-none">
-										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL DUE</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $guestSummaryCheckoutDue }}</strong>
-										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
-										<strong class="block text-xl font-bold text-[#f59e0b] dark:text-[#fcd34d]">{{ $resSummaryCheckoutDue }}</strong>
-										<div class="text-xs text-hp-text-muted">Reservations due</div>
+									<div class="mt-4 grid grid-cols-2 gap-3">
+										<div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Guests Due</div>
+											<div class="mt-1 text-2xl font-bold tabular-nums {{ $guestSummaryCheckoutDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ $guestSummaryCheckoutDue }}</div>
+										</div>
+										<div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Main Guests Due</div>
+											<div class="mt-1 text-2xl font-bold tabular-nums {{ $dueMainGuests > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ $dueMainGuests }}</div>
+										</div>
+										<div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Single Comp. Due</div>
+											<div class="mt-1 text-2xl font-bold tabular-nums {{ $dueSingleCompanions > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ $dueSingleCompanions }}</div>
+										</div>
+										<div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+											<div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Companions Due</div>
+											<div class="mt-1 text-2xl font-bold tabular-nums {{ $dueBulkCompanions > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }}">{{ $dueBulkCompanions }}</div>
+										</div>
 									</div>
-									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
-										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">MAIN DUE</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueMainGuests }}</strong>
-										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
-									</div>
-									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
-										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">SINGLE COMP.</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueSingleCompanions }}</strong>
-										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
-									</div>
-									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
-										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">COMPANIONS</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueBulkCompanions }}</strong>
-										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
-									</div>
-								</div>
-							</div>
-
-							<div class="upcoming-checkouts-panel min-w-[300px] flex-1 border-l border-dashed border-black/10 pl-8 dark:border-white/10">
-								<div class="mb-6 flex items-center justify-between">
-									<h4 class="m-0 text-sm font-semibold text-hp-text">Upcoming Check-outs</h4>
-									<a href="#" class="flex items-center gap-1 text-[0.8rem] font-medium text-[#f97316] no-underline">
-										View all alerts <span class="text-[1.1rem]">&rarr;</span>
-									</a>
 								</div>
 
-								<div class="upcoming-checkouts-list flex flex-col gap-3">
-									@forelse (collect($activeReservations ?? [])->take(3) as $res)
-						@php
-							$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
-							$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
-							$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
-							$entranceLabel = $res->entranceFee
-								? 'Entrance' . ($res->entranceFee->pricing_type ? ' · ' . $res->entranceFee->pricing_type : '')
-								: '';
-						@endphp
-										<div class="upcoming-item flex items-center justify-between rounded-lg bg-[rgba(34,197,94,0.05)] p-3">
-											<div class="flex items-center gap-4">
-												<div class="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e]">
-													<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+								{{-- Upcoming Check-outs --}}
+								<div class="lg:col-span-7 lg:border-l lg:border-slate-200 lg:pl-6 dark:lg:border-white/10">
+									<div class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
+										<h4 class="m-0 text-sm font-bold text-slate-900 dark:text-white">Active Stay Timers</h4>
+										<button type="button" onclick="document.querySelector('[data-tab-target=&quot;reservation&quot;]')?.click();" class="cursor-pointer bg-transparent p-0 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400">
+											View in Reservations &rarr;
+										</button>
+									</div>
+
+									<div class="mt-4 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 dark:divide-white/10 dark:border-white/10">
+										@forelse (collect($activeReservations ?? [])->take(4) as $res)
+											@php
+												$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+												$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
+												$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+												$entranceLabel = $res->entranceFee
+													? 'Entrance' . ($res->entranceFee->pricing_type ? ' · ' . $res->entranceFee->pricing_type : '')
+													: '';
+											@endphp
+											<div class="flex items-center justify-between gap-3 bg-white px-3.5 py-2.5 dark:bg-transparent">
+												<div class="min-w-0">
+													<div class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ $amenityNames ?: ($entranceLabel ?: 'Entrance') }}</div>
+													<div class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $guestName }}</div>
 												</div>
-												<div>
-													<div class="text-sm font-semibold text-hp-text">{{ $amenityNames ?: ($entranceLabel ?: 'Entrance') }}</div>
-													<div class="text-xs text-hp-text-muted">Reserved by {{ $guestName }}</div>
+												<div class="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+													<span class="table-time-left" data-checkout-at="{{ $reservationData[$res->id]['checkout_at'] ?? '' }}"></span>
 												</div>
 											</div>
-											<div class="time-left-pill flex items-center gap-1.5 rounded-full bg-[rgba(249,115,22,0.1)] px-3 py-1 text-xs font-semibold text-[#c2410c]">
-												<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-												<span class="table-time-left" data-checkout-at="{{ $reservationData[$res->id]['checkout_at'] ?? '' }}"></span>
+										@empty
+											<div class="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+												No active check-outs scheduled
 											</div>
-										</div>
-									@empty
-										<div class="rounded-xl border border-dashed border-black/10 py-6 text-center text-xs text-hp-text-muted dark:border-white/10">
-											No active check-outs scheduled
-										</div>
-									@endforelse
+										@endforelse
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
 					</div>
 
 					{{-- RESERVATION TABLE --}}
@@ -2859,216 +2824,181 @@
 				</div>
 
 				{{-- Add Companion to Active Reservation Modal --}}
-				<div class="guest-modal guest-modal--add guest-modal--wide fixed inset-0 hidden items-center justify-center is-open:flex" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
-					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(90vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
-						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all duration-200 z-10" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
-						
+				<div class="guest-modal guest-modal--add guest-modal--wide fixed inset-0 hidden items-center justify-center p-4" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 backdrop-blur-[2px]" data-close-reservation-add-companion="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[980px] max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161917] shadow-2xl" style="padding: 0 !important;" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
 						<!-- MODAL HEADER -->
-						<div class="guest-modal__header mb-3 flex items-center justify-between border-b border-glass-border pb-2.5">
+						<div class="flex shrink-0 items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-6 py-4">
 							<div class="flex items-center gap-2.5">
-								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
-									<i class="bi bi-people-fill text-lg"></i>
-								</div>
-								<div>
-									<div class="flex items-center gap-2">
-										<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
-										<span id="reservationAddCompanionFor" class="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300"></span>
-									</div>
-									<p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to check-in</p>
-								</div>
+								<h3 id="reservationAddCompanionTitle" class="m-0 font-display text-lg font-bold text-neutral-900 dark:text-white">Add Companions</h3>
+								<span id="reservationAddCompanionFor" class="inline-flex items-center rounded-md bg-emerald-800 px-2 py-0.5 font-mono text-xs font-bold text-white"></span>
 							</div>
+							<button type="button" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-xl text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
 						</div>
 
-						<!-- TWO COLUMN LAYOUT: CREATOR (LEFT) & PREVIEW (RIGHT) -->
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
-							<!-- LEFT SIDE: COMPANION CREATOR (6 cols) -->
-							<div class="lg:col-span-6 flex flex-col gap-2.5">
-								<form id="reservationAddSingleForm" class="hidden" aria-hidden="true"></form>
+						<!-- SCROLLABLE TWO COLUMN BODY -->
+						<div class="flex-1 overflow-y-auto px-6 py-5">
+							<div class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+								<!-- LEFT SIDE: COMPANION GROUP FORM -->
+								<div class="lg:col-span-6 min-w-0">
+									<form id="reservationAddSingleForm" class="hidden" aria-hidden="true"></form>
 
-								<!-- Bulk Companion Form -->
-								<form id="reservationAddBulkForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-2.5" action="#">
-									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-3 sm:p-3.5 grid gap-2.5">
-										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-											<div class="guest-form__field-group grid gap-1">
-												<label class="guest-form__label text-xs font-semibold text-hp-text">Gender</label>
-												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
-													<label class="flex-1 text-center cursor-pointer">
+									<form id="reservationAddBulkForm" class="space-y-4" action="#">
+										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<div>
+												<label class="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-300">Gender</label>
+												<div class="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
+													<label class="cursor-pointer text-center border-r border-neutral-300 dark:border-neutral-700">
 														<input type="radio" name="gender" value="Male" checked class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span>
+														<span class="block py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Male</span>
 													</label>
-													<label class="flex-1 text-center cursor-pointer">
+													<label class="cursor-pointer text-center">
 														<input type="radio" name="gender" value="Female" class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span>
+														<span class="block py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Female</span>
 													</label>
 												</div>
 											</div>
-											<div class="guest-form__field-group grid gap-1">
-												<label class="guest-form__label text-xs font-semibold text-hp-text">Nationality</label>
-												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
-													<label class="flex-1 text-center cursor-pointer">
+
+											<div>
+												<label class="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-300">Nationality</label>
+												<div class="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900">
+													<label class="cursor-pointer text-center border-r border-neutral-300 dark:border-neutral-700">
 														<input type="radio" name="is_foreigner" value="0" checked class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span>
+														<span class="block py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Filipino</span>
 													</label>
-													<label class="flex-1 text-center cursor-pointer">
+													<label class="cursor-pointer text-center">
 														<input type="radio" name="is_foreigner" value="1" class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span>
+														<span class="block py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Foreigner</span>
 													</label>
 												</div>
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-											<div class="guest-form__field-group grid gap-1">
-												<label class="guest-form__label text-xs font-semibold text-hp-text">Age Group</label>
-												<div class="grid grid-cols-2 overflow-hidden rounded-xl border border-glass-border bg-glass text-center">
-													<label class="cursor-pointer border-b border-r border-glass-border">
+										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<div>
+												<label class="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-300">Age Group</label>
+												<div class="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-center">
+													<label class="cursor-pointer border-b border-r border-neutral-300 dark:border-neutral-700">
 														<input type="radio" name="age_group" value="0-12" class="peer sr-only">
-														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span>
+														<span class="block px-1.5 py-1.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Kids (0-12)</span>
 													</label>
-													<label class="cursor-pointer border-b border-glass-border">
+													<label class="cursor-pointer border-b border-neutral-300 dark:border-neutral-700">
 														<input type="radio" name="age_group" value="13-17" class="peer sr-only">
-														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span>
+														<span class="block px-1.5 py-1.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Teens (13-17)</span>
 													</label>
-													<label class="cursor-pointer border-r border-glass-border">
+													<label class="cursor-pointer border-r border-neutral-300 dark:border-neutral-700">
 														<input type="radio" name="age_group" value="18-59" checked class="peer sr-only">
-														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span>
+														<span class="block px-1.5 py-1.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Adults (18-59)</span>
 													</label>
 													<label class="cursor-pointer">
 														<input type="radio" name="age_group" value="60+" class="peer sr-only">
-														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span>
+														<span class="block px-1.5 py-1.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 transition-colors peer-checked:bg-emerald-800 peer-checked:text-white">Seniors (60+)</span>
 													</label>
 												</div>
 											</div>
 
-											<div class="guest-form__field-group grid gap-1">
-												<label class="guest-form__label text-xs font-semibold text-hp-text" for="resadd_bulk_quantity">Group Quantity</label>
-												<div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass p-1">
-													<button type="button" id="resAddBulkQtyMinus" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">−</button>
-													<input type="number" name="quantity" id="resadd_bulk_quantity" value="1" min="1" max="500" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-													<button type="button" id="resAddBulkQtyPlus" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">+</button>
+											<div>
+												<label class="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-300" for="resadd_bulk_quantity">Quantity</label>
+												<div class="flex h-10 items-center rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-1">
+													<button type="button" id="resAddBulkQtyMinus" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-white dark:bg-neutral-800 text-sm font-bold text-neutral-700 dark:text-neutral-200 shadow-2xs hover:bg-neutral-100">−</button>
+													<input type="number" name="quantity" id="resadd_bulk_quantity" value="1" min="1" max="500" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-mono text-sm font-bold text-neutral-900 dark:text-white focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="resAddBulkQtyPlus" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-white dark:bg-neutral-800 text-sm font-bold text-neutral-700 dark:text-neutral-200 shadow-2xs hover:bg-neutral-100">+</button>
 												</div>
 											</div>
 										</div>
 
-										<div class="guest-form__field-group grid gap-1" id="resaddBulkAmenityWrap" style="display: none;">
-											<div class="flex items-center justify-between">
-												<label class="guest-form__label text-xs font-semibold text-hp-text m-0" for="resadd_bulk_amenity">Assign to Amenity</label>
-												<span class="text-[0.68rem] text-hp-text-muted">Optional</span>
+										<div id="resaddBulkAmenityWrap" style="display: none;">
+											<div class="mb-1.5 flex items-center justify-between">
+												<label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300 m-0" for="resadd_bulk_amenity">Assign to Amenity</label>
+												<span class="text-[11px] text-neutral-400">Optional</span>
 											</div>
-											<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<select name="amenity_id" id="resadd_bulk_amenity" class="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-xs font-semibold text-neutral-900 dark:text-white focus:border-emerald-700 focus:outline-none">
 												<option value="" selected>No amenity</option>
 											</select>
-											<div id="resaddBulkAmenityBenefitBadge" class="hidden mt-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[0.72rem] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-												<i class="bi bi-gift-fill text-emerald-600 dark:text-emerald-400 text-xs shrink-0"></i>
-												<span id="resaddBulkAmenityBenefitText">Includes Free Entrance & Free Pool Access</span>
+											<div id="resaddBulkAmenityBenefitBadge" class="hidden mt-1.5 rounded-md border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+												<span id="resaddBulkAmenityBenefitText">Includes Free Entrance &amp; Free Pool Access</span>
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 gap-2" id="resAddBulkAccessRow">
-											<!-- Free Entrance Compact Stepper Card (Hidden: Entrance fee is automated) -->
+										<div id="resAddBulkAccessRow">
 											<div class="hidden" id="resAddBulkFreeEntranceWrap" style="display: none !important;">
-												<div class="flex items-center justify-between gap-1">
-													<label class="text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_free_passes">
-														<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free <span id="resAddBulkFreeHint">0 of 1 with free entrance</span>
-													</label>
-												</div>
-												<div class="flex items-center gap-1 rounded-lg border border-amber-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
-													<button type="button" id="resAddBulkFreeMinus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease free entrance">−</button>
-													<input type="number" name="free_passes" id="resadd_bulk_free_passes" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-amber-950 dark:text-amber-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-													<button type="button" id="resAddBulkFreePlus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase free entrance">+</button>
-												</div>
+												<span id="resAddBulkFreeHint">0 of 1 with free entrance</span>
+												<button type="button" id="resAddBulkFreeMinus">−</button>
+												<input type="number" name="free_passes" id="resadd_bulk_free_passes" min="0" max="1" value="0">
+												<button type="button" id="resAddBulkFreePlus">+</button>
 											</div>
 
-											<!-- Pool Access Checkbox Card -->
-											<div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2.5 dark:border-sky-500/20 w-full" id="resAddBulkPoolWrap">
-												<div class="flex items-center gap-2 min-w-0">
-													<i class="bi bi-water text-base text-sky-600 dark:text-sky-400 shrink-0"></i>
-													<div class="min-w-0">
-														<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Access Pass</p>
-														<p class="m-0 text-[0.68rem] text-hp-text-muted truncate" id="resAddBulkPoolSubtext">Grant pool access for these companions</p>
-													</div>
+											<div class="flex items-center justify-between rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 px-3.5 py-2.5" id="resAddBulkPoolWrap">
+												<div class="min-w-0 pr-3">
+													<p class="m-0 text-xs font-semibold text-neutral-900 dark:text-white truncate">Pool Access Pass</p>
+													<p class="m-0 text-[11px] text-neutral-500 truncate" id="resAddBulkPoolSubtext">Grant pool access for these companions</p>
 												</div>
 												<div class="flex items-center gap-2 shrink-0">
-													<span id="resAddBulkPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
-													<label class="relative inline-flex cursor-pointer items-center shrink-0">
-														<input type="checkbox" name="bulk_has_pool_access" id="resadd_bulk_has_pool" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
-													</label>
+													<span id="resAddBulkPoolBenefitBadge" class="hidden rounded bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">Free Benefit</span>
+													<input type="checkbox" name="bulk_has_pool_access" id="resadd_bulk_has_pool" value="1" class="h-4 w-4 accent-emerald-700 rounded cursor-pointer">
 												</div>
 												<input type="hidden" name="pool_passes" id="resadd_bulk_pool_passes" value="0">
 											</div>
 										</div>
-									</div>
 
-									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
-										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
-											<i class="bi bi-people-fill"></i>
-											<span>Add Companions</span>
-										</button>
-									</div>
-								</form>
-							</div>
-
-							<!-- RIGHT SIDE: COMPANION PREVIEW (6 cols) -->
-							<div class="lg:col-span-6 flex flex-col gap-2.5">
-								<div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-3 sm:p-3.5 shadow-xs flex flex-col">
-									<div class="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/40 pb-2">
-										<div class="flex items-center gap-2">
-											<i class="bi bi-person-lines-fill text-hp-green text-base"></i>
-											<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Staged Companions</h4>
-										</div>
-										<div class="flex items-center gap-2">
-											<span id="reservationAddCompanionPreviewCount" class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
-											<button type="button" id="resAddCompanionClearBtn" class="hidden text-xs font-semibold text-red-500 hover:text-red-700 transition-colors cursor-pointer">
-												Clear
+										<div class="flex justify-end pt-1">
+											<button type="submit" class="inline-flex h-9 items-center gap-1.5 cursor-pointer rounded-lg border-0 bg-emerald-800 px-4 text-xs font-semibold text-white transition-colors hover:bg-emerald-900">
+												<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+												<span>Add Companions</span>
 											</button>
 										</div>
-									</div>
+									</form>
+								</div>
 
-									<!-- Scrollable Staged List Container -->
-									<div id="reservationAddCompanionPreviewList" class="grid gap-2 max-h-[170px] sm:max-h-[190px] overflow-y-auto pr-1.5 [scrollbar-width:thin]">
-										<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted py-6">Fill the form on the left to preview companions.</p>
-									</div>
-
-									<!-- Live Payment Calculation Card -->
-									<div class="mt-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 dark:bg-emerald-500/10 p-3 flex flex-col gap-1.5 transition-all">
-										<div class="flex items-center justify-between border-b border-emerald-500/20 pb-1.5">
-											<span class="text-[0.7rem] font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-												<i class="bi bi-calculator text-hp-green"></i>
-												Payment Calculation
-											</span>
-											<span id="resAddCalcPeriodBadge" class="rounded-full bg-hp-green/15 px-2 py-0.5 text-[0.68rem] font-bold text-hp-green">
-												Daytime
-											</span>
+								<!-- RIGHT SIDE: STAGED LIST & FEE LEDGER -->
+								<div class="lg:col-span-6 min-w-0 space-y-4">
+									<div class="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/40 p-4">
+										<div class="mb-3 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-2.5">
+											<h4 class="m-0 text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">Staged Companions</h4>
+											<div class="flex items-center gap-2">
+												<span id="reservationAddCompanionPreviewCount" class="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">0 companions</span>
+												<button type="button" id="resAddCompanionClearBtn" class="hidden text-xs font-semibold text-red-600 hover:text-red-700 cursor-pointer border-0 bg-transparent p-0">Clear</button>
+											</div>
 										</div>
-										<div class="grid gap-1 text-xs text-hp-text">
-											<div class="flex justify-between items-center text-[0.75rem]">
-												<span class="text-hp-text-muted">Adult Entrance (<span id="resAddCalcAdultCount">0</span>):</span>
-												<span id="resAddCalcAdultSubtotal" class="font-semibold">₱0.00</span>
+
+										<div id="reservationAddCompanionPreviewList" class="grid gap-2 max-h-[260px] overflow-auto pr-1 [scrollbar-width:thin]">
+											<p class="m-auto max-w-[240px] text-center text-xs text-neutral-400 py-5">Fill the form on the left to add companions.</p>
+										</div>
+									</div>
+
+									<div class="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 p-4">
+										<div class="mb-2.5 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-2">
+											<span class="text-[11px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Payment Calculation</span>
+											<span id="resAddCalcPeriodBadge" class="rounded bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">Daytime</span>
+										</div>
+										<div class="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300">
+											<div class="flex justify-between items-center">
+												<span class="text-neutral-500">Adult Entrance (<span id="resAddCalcAdultCount">0</span>)</span>
+												<span id="resAddCalcAdultSubtotal" class="font-mono font-medium">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center text-[0.75rem]">
-												<span class="text-hp-text-muted">Child Entrance (<span id="resAddCalcChildCount">0</span>):</span>
-												<span id="resAddCalcChildSubtotal" class="font-semibold">₱0.00</span>
+											<div class="flex justify-between items-center">
+												<span class="text-neutral-500">Child Entrance (<span id="resAddCalcChildCount">0</span>)</span>
+												<span id="resAddCalcChildSubtotal" class="font-mono font-medium">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcFreeRow" style="display: none;">
-												<span class="text-amber-800 dark:text-amber-300">Free Passes (<span id="resAddCalcFreeCount">0</span>):</span>
-												<span class="font-semibold text-amber-800 dark:text-amber-300">₱0.00 (Free)</span>
+											<div class="flex justify-between items-center" id="resAddCalcFreeRow" style="display: none;">
+												<span class="text-amber-700 dark:text-amber-300">Free Passes (<span id="resAddCalcFreeCount">0</span>)</span>
+												<span class="font-mono font-medium text-amber-700 dark:text-amber-300">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center text-[0.75rem]">
-												<span class="text-hp-text-muted">Pool Access (<span id="resAddCalcPoolCount">0</span>):</span>
-												<span id="resAddCalcPoolSubtotal" class="font-semibold">₱0.00</span>
+											<div class="flex justify-between items-center">
+												<span class="text-neutral-500">Pool Access (<span id="resAddCalcPoolCount">0</span>)</span>
+												<span id="resAddCalcPoolSubtotal" class="font-mono font-medium">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcFreePoolRow" style="display: none;">
-												<span class="text-sky-800 dark:text-sky-300">Free Pool Passes (<span id="resAddCalcFreePoolCount">0</span>):</span>
-												<span class="font-semibold text-sky-800 dark:text-sky-300">₱0.00 (Benefit)</span>
+											<div class="flex justify-between items-center" id="resAddCalcFreePoolRow" style="display: none;">
+												<span class="text-emerald-700 dark:text-emerald-300">Free Pool Passes (<span id="resAddCalcFreePoolCount">0</span>)</span>
+												<span class="font-mono font-medium text-emerald-700 dark:text-emerald-300">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcExtraHeadRow" style="display: none;">
-												<span class="text-amber-800 dark:text-amber-300">Extra Capacity (<span id="resAddCalcExtraHeadCount">0</span>):</span>
-												<span id="resAddCalcExtraHeadSubtotal" class="font-semibold text-amber-800 dark:text-amber-300">₱0.00</span>
+											<div class="flex justify-between items-center" id="resAddCalcExtraHeadRow" style="display: none;">
+												<span class="text-amber-700 dark:text-amber-300">Extra Capacity (<span id="resAddCalcExtraHeadCount">0</span>)</span>
+												<span id="resAddCalcExtraHeadSubtotal" class="font-mono font-medium text-amber-700 dark:text-amber-300">₱0.00</span>
 											</div>
-											<div class="flex justify-between items-center border-t border-emerald-500/20 pt-1.5 font-bold">
-												<span class="text-xs text-hp-text">Total Calculated:</span>
-												<span id="resAddCalcGrandTotal" class="text-sm font-extrabold text-hp-green-dark dark:text-emerald-400">₱0.00</span>
+											<div class="flex justify-between items-center border-t border-neutral-200 dark:border-neutral-800 pt-2 mt-2 font-bold">
+												<span class="text-neutral-900 dark:text-white">Total Calculated</span>
+												<span id="resAddCalcGrandTotal" class="font-mono text-sm font-bold text-emerald-800 dark:text-emerald-400">₱0.00</span>
 											</div>
 										</div>
 									</div>
@@ -3076,18 +3006,17 @@
 							</div>
 						</div>
 
-						<!-- MODAL FOOTER ACTIONS -->
-						<div class="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-3">
-							<div class="text-xs font-semibold text-hp-text-muted flex items-center gap-2">
+						<!-- PINNED MODAL FOOTER -->
+						<div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#1a1e1b] px-6 py-3.5">
+							<div class="text-xs font-medium text-neutral-500 flex items-center gap-2">
 								<span id="resAddCompanionFooterSummary">0 companions added so far</span>
-								<span class="text-hp-text-muted/40">•</span>
-								<span>Total: <strong id="resAddFooterTotalPayment" class="text-hp-green-dark dark:text-emerald-400 font-extrabold text-sm">₱0.00</strong></span>
+								<span>&bull;</span>
+								<span>Total: <strong id="resAddFooterTotalPayment" class="font-mono text-sm font-bold text-neutral-900 dark:text-white">₱0.00</strong></span>
 							</div>
-							<div class="flex flex-wrap items-center gap-2.5">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
-								<button type="button" id="reservationAddAllCompanionsBtn" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2 text-xs sm:text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50" disabled>
-									<i class="bi bi-receipt text-base"></i>
-									<span>Review & Confirm</span>
+							<div class="flex items-center gap-2">
+								<button type="button" class="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 text-xs font-semibold text-neutral-700 dark:text-neutral-200 transition-colors hover:bg-neutral-100" data-close-reservation-add-companion="true">Cancel</button>
+								<button type="button" id="reservationAddAllCompanionsBtn" class="inline-flex h-9 items-center gap-1.5 cursor-pointer rounded-lg border-0 bg-emerald-800 px-4 text-xs font-semibold text-white transition-colors hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50" disabled>
+									<span>Review &amp; Confirm</span>
 								</button>
 							</div>
 						</div>

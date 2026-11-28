@@ -2404,44 +2404,39 @@ export function initStaffCheckInsExtras(ctx) {
                 if (group.has_free_entrance_benefit) ben.push('Free Entrance');
                 if (group.has_free_pool_benefit) ben.push('Free Pool');
                 amenityBenefitBadge = `
-                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-800 dark:text-emerald-300" title="${escapeHtml(ben.join(' & '))} Included with Amenity">
-                        <i class="bi bi-gift-fill text-[0.65rem]"></i> ${escapeHtml(ben.join(' & '))}
+                    <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300" title="${escapeHtml(ben.join(' & '))} Included with Amenity">
+                        <i class="bi bi-gift-fill text-[10px]"></i> ${escapeHtml(ben.join(' & '))}
                     </span>
                 `;
             }
 
             const amenityHtml = group.amenity_name ? `
-                <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(group.amenity_name)}"><i class="bi bi-geo-alt-fill text-xs"></i> <span>${escapeHtml(group.amenity_name)}</span></span>
-                ${amenityBenefitBadge}
+                <span class="text-neutral-300 dark:text-neutral-600 shrink-0">&bull;</span>
+                <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-emerald-700 dark:text-emerald-400" title="${escapeHtml(group.amenity_name)}"><i class="bi bi-geo-alt-fill shrink-0 text-[10px]"></i> <span>${escapeHtml(group.amenity_name)}</span></span>
             ` : '';
 
             return `
-                <div class="group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass">
-                    <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none">
-                        <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
-                            <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
-                            <span>${qty} ${qty === 1 ? 'guest' : 'guests'}</span>
-                        </div>
-                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                        ${genderBadge}
-                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                        <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
-                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                        <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                <div class="flex min-w-full w-max items-center justify-between gap-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2.5 py-2 transition-colors hover:border-emerald-600/40">
+                    <div class="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] text-neutral-700 dark:text-neutral-200">
+                        <span class="shrink-0 font-bold text-neutral-900 dark:text-white">${qty} ${qty === 1 ? 'guest' : 'guests'}</span>
+                        <span class="shrink-0 text-neutral-300 dark:text-neutral-600">&bull;</span>
+                        <span class="shrink-0">${genderBadge}</span>
+                        <span class="shrink-0 text-neutral-300 dark:text-neutral-600">&bull;</span>
+                        <span class="shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                        <span class="shrink-0 text-neutral-300 dark:text-neutral-600">&bull;</span>
+                        <span class="shrink-0">${nationality}</span>
                         ${amenityHtml}
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <div class="flex items-center gap-1.5">
-                            ${freeBadgeHtml}
-                            ${poolBadgeHtml}
-                        </div>
-                        <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
-                            <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-res-add-open-group-edit="${groupIndex}" title="Edit group">
-                                <i class="bi bi-pencil-fill text-xs"></i>
+                    <div class="flex shrink-0 items-center gap-1.5">
+                        ${amenityBenefitBadge}
+                        ${freeBadgeHtml}
+                        ${poolBadgeHtml}
+                        <div class="flex items-center gap-1 border-l border-neutral-200 dark:border-neutral-800 pl-1.5">
+                            <button type="button" class="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:border-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer text-xs" data-res-add-open-group-edit="${groupIndex}" title="Edit group">
+                                <i class="bi bi-pencil-fill text-[11px]"></i>
                             </button>
-                            <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-res-add-remove-index="${groupIndex}" title="Remove companion group">
-                                <i class="bi bi-trash3 text-xs"></i>
+                            <button type="button" class="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer text-xs" data-res-add-remove-index="${groupIndex}" title="Remove companion group">
+                                <i class="bi bi-trash3 text-[11px]"></i>
                             </button>
                         </div>
                     </div>

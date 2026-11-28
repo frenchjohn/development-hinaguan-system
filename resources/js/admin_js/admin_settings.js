@@ -330,21 +330,57 @@ window.AppPage['admin_settings'] = function () {
 
     // ===== PASSWORD SECTION =====
 
-    // Toggle password form visibility
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const changeEmailModal = document.getElementById('changeEmailModal');
+    const closePasswordModalXBtn = document.getElementById('closePasswordModalXBtn');
+    const closeEmailModalXBtn = document.getElementById('closeEmailModalXBtn');
+
+    const setModalButtonsDisabled = (buttons, disabled) => {
+        buttons.forEach((btn) => {
+            if (!btn) return;
+            btn.disabled = disabled;
+            btn.classList.toggle('opacity-50', disabled);
+            btn.classList.toggle('cursor-not-allowed', disabled);
+        });
+    };
+
+    const closePasswordModal = () => {
+        if (isPasswordLoading) return;
+        if (changePasswordModal) {
+            changePasswordModal.style.display = 'none';
+            changePasswordModal.setAttribute('aria-hidden', 'true');
+        }
+        changePasswordForm?.reset();
+        clearErrors(['currentPasswordError', 'newPasswordError', 'confirmPasswordError']);
+    };
+
+    const closeEmailModal = () => {
+        if (isEmailLoading) return;
+        if (changeEmailModal) {
+            changeEmailModal.style.display = 'none';
+            changeEmailModal.setAttribute('aria-hidden', 'true');
+        }
+        changeEmailForm?.reset();
+        const errEl = document.getElementById('newEmailError');
+        if (errEl) errEl.textContent = '';
+    };
+
+    // Open password modal
     if (togglePasswordBtn) {
         togglePasswordBtn.addEventListener('click', function () {
-            changePasswordForm?.classList.toggle('admin-settings__form--hidden');
-            togglePasswordBtn.classList.toggle('active');
+            if (changePasswordModal) {
+                changePasswordModal.style.display = 'flex';
+                changePasswordModal.setAttribute('aria-hidden', 'false');
+            }
         });
     }
 
-    // Cancel password form
-    if (cancelPasswordBtn) {
-        cancelPasswordBtn.addEventListener('click', function () {
-            changePasswordForm?.classList.add('admin-settings__form--hidden');
-            togglePasswordBtn?.classList.remove('active');
-            changePasswordForm?.reset();
-            clearErrors(['currentPasswordError', 'newPasswordError', 'confirmPasswordError']);
+    // Cancel / close password modal
+    if (cancelPasswordBtn) cancelPasswordBtn.addEventListener('click', closePasswordModal);
+    if (closePasswordModalXBtn) closePasswordModalXBtn.addEventListener('click', closePasswordModal);
+    if (changePasswordModal) {
+        changePasswordModal.addEventListener('click', (e) => {
+            if (e.target === changePasswordModal) closePasswordModal();
         });
     }
 
@@ -379,6 +415,7 @@ window.AppPage['admin_settings'] = function () {
             // Send OTP
             try {
                 isPasswordLoading = true;
+                setModalButtonsDisabled([cancelPasswordBtn, closePasswordModalXBtn], true);
                 if (passwordSubmitBtn) {
                     passwordSubmitBtn.disabled = true;
                     passwordSubmitBtn.classList.add('loading');
@@ -389,6 +426,7 @@ window.AppPage['admin_settings'] = function () {
                 const response = await fetch('/admin/send-password-otp', {
                     method: 'POST',
                     headers: {
+                        'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
@@ -401,14 +439,21 @@ window.AppPage['admin_settings'] = function () {
                 const data = await response.json();
 
                 if (!response.ok) {
+                    const errorFieldMap = {
+                        current_password: 'currentPasswordError',
+                        new_password: 'newPasswordError',
+                        confirm_password: 'confirmPasswordError',
+                    };
                     if (data.errors) {
                         Object.keys(data.errors).forEach((key) => {
-                            showError(key + 'Error', data.errors[key][0]);
+                            const targetId = errorFieldMap[key] || (key + 'Error');
+                            showError(targetId, data.errors[key][0]);
                         });
                     } else {
                         showError('currentPasswordError', data.message || 'Failed to send OTP');
                     }
                     isPasswordLoading = false;
+                    setModalButtonsDisabled([cancelPasswordBtn, closePasswordModalXBtn], false);
                     if (passwordSubmitBtn) {
                         passwordSubmitBtn.disabled = false;
                         passwordSubmitBtn.classList.remove('loading');
@@ -427,6 +472,7 @@ window.AppPage['admin_settings'] = function () {
                 if (otpPasswordModal) otpPasswordModal.style.display = 'flex';
                 if (otpPasswordCodeInput) otpPasswordCodeInput.focus();
                 isPasswordLoading = false;
+                setModalButtonsDisabled([cancelPasswordBtn, closePasswordModalXBtn], false);
                 if (passwordSubmitBtn) {
                     passwordSubmitBtn.disabled = false;
                     passwordSubmitBtn.classList.remove('loading');
@@ -436,6 +482,7 @@ window.AppPage['admin_settings'] = function () {
                 console.error('Error:', error);
                 showError('currentPasswordError', 'An error occurred. Please try again.');
                 isPasswordLoading = false;
+                setModalButtonsDisabled([cancelPasswordBtn, closePasswordModalXBtn], false);
                 if (passwordSubmitBtn) {
                     passwordSubmitBtn.disabled = false;
                     passwordSubmitBtn.classList.remove('loading');
@@ -486,9 +533,7 @@ window.AppPage['admin_settings'] = function () {
 
                 // Success
                 if (otpPasswordModal) otpPasswordModal.style.display = 'none';
-                changePasswordForm?.reset();
-                changePasswordForm?.classList.add('admin-settings__form--hidden');
-                togglePasswordBtn?.classList.remove('active');
+                closePasswordModal();
                 pendingPasswordData = null;
                 if (otpPasswordCodeInput) otpPasswordCodeInput.value = '';
                 verifyPasswordOtpBtn.disabled = false;
@@ -516,22 +561,22 @@ window.AppPage['admin_settings'] = function () {
 
     // ===== EMAIL SECTION =====
 
-    // Toggle email form visibility
+    // Open email modal
     if (toggleEmailBtn) {
         toggleEmailBtn.addEventListener('click', function () {
-            changeEmailForm?.classList.toggle('admin-settings__form--hidden');
-            toggleEmailBtn.classList.toggle('active');
+            if (changeEmailModal) {
+                changeEmailModal.style.display = 'flex';
+                changeEmailModal.setAttribute('aria-hidden', 'false');
+            }
         });
     }
 
-    // Cancel email form
-    if (cancelEmailBtn) {
-        cancelEmailBtn.addEventListener('click', function () {
-            changeEmailForm?.classList.add('admin-settings__form--hidden');
-            toggleEmailBtn?.classList.remove('active');
-            changeEmailForm?.reset();
-            const errEl = document.getElementById('newEmailError');
-            if (errEl) errEl.textContent = '';
+    // Cancel / close email modal
+    if (cancelEmailBtn) cancelEmailBtn.addEventListener('click', closeEmailModal);
+    if (closeEmailModalXBtn) closeEmailModalXBtn.addEventListener('click', closeEmailModal);
+    if (changeEmailModal) {
+        changeEmailModal.addEventListener('click', (e) => {
+            if (e.target === changeEmailModal) closeEmailModal();
         });
     }
 
@@ -560,6 +605,7 @@ window.AppPage['admin_settings'] = function () {
             // Send OTP
             try {
                 isEmailLoading = true;
+                setModalButtonsDisabled([cancelEmailBtn, closeEmailModalXBtn], true);
                 if (emailSubmitBtn) {
                     emailSubmitBtn.disabled = true;
                     emailSubmitBtn.classList.add('loading');
@@ -570,6 +616,7 @@ window.AppPage['admin_settings'] = function () {
                 const response = await fetch('/admin/send-email-otp', {
                     method: 'POST',
                     headers: {
+                        'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
@@ -581,8 +628,10 @@ window.AppPage['admin_settings'] = function () {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    showError('newEmailError', data.message || 'Failed to send OTP');
+                    const emailErr = data.errors?.new_email?.[0] || data.message || 'Failed to send OTP';
+                    showError('newEmailError', emailErr);
                     isEmailLoading = false;
+                    setModalButtonsDisabled([cancelEmailBtn, closeEmailModalXBtn], false);
                     if (emailSubmitBtn) {
                         emailSubmitBtn.disabled = false;
                         emailSubmitBtn.classList.remove('loading');
@@ -600,6 +649,7 @@ window.AppPage['admin_settings'] = function () {
                 if (otpEmailModal) otpEmailModal.style.display = 'flex';
                 if (otpEmailCodeInput) otpEmailCodeInput.focus();
                 isEmailLoading = false;
+                setModalButtonsDisabled([cancelEmailBtn, closeEmailModalXBtn], false);
                 if (emailSubmitBtn) {
                     emailSubmitBtn.disabled = false;
                     emailSubmitBtn.classList.remove('loading');
@@ -609,6 +659,7 @@ window.AppPage['admin_settings'] = function () {
                 console.error('Error:', error);
                 showError('newEmailError', 'An error occurred. Please try again.');
                 isEmailLoading = false;
+                setModalButtonsDisabled([cancelEmailBtn, closeEmailModalXBtn], false);
                 if (emailSubmitBtn) {
                     emailSubmitBtn.disabled = false;
                     emailSubmitBtn.classList.remove('loading');
@@ -661,9 +712,7 @@ window.AppPage['admin_settings'] = function () {
                 if (otpEmailModal) otpEmailModal.style.display = 'none';
                 const curDisplay = document.getElementById('currentEmailDisplay');
                 if (curDisplay) curDisplay.textContent = pendingEmailData.new_email;
-                changeEmailForm?.reset();
-                changeEmailForm?.classList.add('admin-settings__form--hidden');
-                toggleEmailBtn?.classList.remove('active');
+                closeEmailModal();
                 pendingEmailData = null;
                 if (otpEmailCodeInput) otpEmailCodeInput.value = '';
                 verifyEmailOtpBtn.disabled = false;

@@ -180,32 +180,66 @@ class FeedbackAiService
      * Negative keywords and their operational context.
      */
     protected const NEGATIVE_MAPPINGS = [
+        // Bisaya negative terms & shortcuts
         'hugaw' => ['topic' => 'Cleanliness', 'reason' => 'Noted dirty or unsanitary conditions'],
-        'marumi' => ['topic' => 'Cleanliness', 'reason' => 'Noted dirty or unkempt park grounds'],
-        'dirty' => ['topic' => 'Cleanliness', 'reason' => 'Reported dirty facilities or environment'],
-        'filthy' => ['topic' => 'Cleanliness', 'reason' => 'Reported severe cleanliness issue'],
-        'baho' => ['topic' => 'Hygiene', 'reason' => 'Reported foul odor or unhygienic smell'],
-        'mabaho' => ['topic' => 'Hygiene', 'reason' => 'Complained about unpleasant smell/odor'],
-        'smelly' => ['topic' => 'Hygiene', 'reason' => 'Reported bad smell around the area'],
-        'stinky' => ['topic' => 'Hygiene', 'reason' => 'Reported foul odors'],
-        'kasilyas' => ['topic' => 'Restrooms', 'reason' => 'Mentioned restroom / toilet concerns'],
-        'banyo' => ['topic' => 'Restrooms', 'reason' => 'Mentioned restroom / bathroom facilities'],
-        'toilet' => ['topic' => 'Restrooms', 'reason' => 'Reported issue with toilet facilities'],
-        'restroom' => ['topic' => 'Restrooms', 'reason' => 'Reported restroom maintenance issue'],
-        'dugay' => ['topic' => 'Service Speed', 'reason' => 'Complained of slow response or long waiting times'],
-        'matagal' => ['topic' => 'Service Speed', 'reason' => 'Noted excessive delays or slow service'],
-        'slow' => ['topic' => 'Service Speed', 'reason' => 'Complained about sluggish service'],
-        'mahal' => ['topic' => 'Pricing', 'reason' => 'Expressed that entrance fees or amenities are expensive'],
-        'expensive' => ['topic' => 'Pricing', 'reason' => 'Expressed dissatisfaction with high pricing'],
-        'overpriced' => ['topic' => 'Pricing', 'reason' => 'Felt rates were too high for the experience'],
+        'hgaw' => ['topic' => 'Cleanliness', 'reason' => 'Noted dirty or unsanitary conditions'],
+        'bati' => ['topic' => 'General Quality', 'reason' => 'Described the experience or facility as poor/unpleasant'],
+        'bati kaayo' => ['topic' => 'General Quality', 'reason' => 'Strongly disliked the experience or facility'],
+        'way lami' => ['topic' => 'Food / Experience', 'reason' => 'Expressed that food or experience was unsatisfying'],
+        'walay lami' => ['topic' => 'Food / Experience', 'reason' => 'Expressed that food or experience was unsatisfying'],
+        'walay ayo' => ['topic' => 'Service', 'reason' => 'Expressed that service or setup was unacceptable'],
+        'way ayo' => ['topic' => 'Service', 'reason' => 'Expressed that service or setup was unacceptable'],
+        'dili nindot' => ['topic' => 'General Experience', 'reason' => 'Stated the place or experience was not nice'],
+        'di nindot' => ['topic' => 'General Experience', 'reason' => 'Stated the place or experience was not nice'],
+        'dli nindot' => ['topic' => 'General Experience', 'reason' => 'Stated the place or experience was not nice'],
+        'alimuot' => ['topic' => 'Ventilation / Heat', 'reason' => 'Complained that the area felt hot or stuffy'],
+        'init kaayo' => ['topic' => 'Ventilation / Heat', 'reason' => 'Complained about excessive heat'],
         'guba' => ['topic' => 'Maintenance', 'reason' => 'Reported broken or damaged park amenities'],
-        'broken' => ['topic' => 'Maintenance', 'reason' => 'Reported broken facility or fixture'],
         'samok' => ['topic' => 'Crowd / Noise', 'reason' => 'Expressed frustration with chaotic crowding or disturbances'],
         'saba' => ['topic' => 'Noise', 'reason' => 'Complained of excessive noise disturbing the peace'],
+        'dugay' => ['topic' => 'Service Speed', 'reason' => 'Complained of slow response or long waiting times'],
+        'dgy' => ['topic' => 'Service Speed', 'reason' => 'Complained of slow response or long waiting times'],
+        'baho' => ['topic' => 'Hygiene', 'reason' => 'Reported foul odor or unhygienic smell'],
+        'kasilyas' => ['topic' => 'Restrooms', 'reason' => 'Mentioned restroom / toilet concerns'],
+        'mahal' => ['topic' => 'Pricing', 'reason' => 'Expressed that entrance fees or amenities are expensive'],
+
+        // Tagalog negative terms & shortcuts
+        'marumi' => ['topic' => 'Cleanliness', 'reason' => 'Noted dirty or unkempt park grounds'],
+        'madumi' => ['topic' => 'Cleanliness', 'reason' => 'Noted dirty or unkempt park grounds'],
+        'mabaho' => ['topic' => 'Hygiene', 'reason' => 'Complained about unpleasant smell/odor'],
+        'pangit' => ['topic' => 'General Quality', 'reason' => 'Described the appearance or experience as unpleasant'],
+        'pngit' => ['topic' => 'General Quality', 'reason' => 'Described the appearance or experience as unpleasant'],
+        'hindi maganda' => ['topic' => 'General Quality', 'reason' => 'Stated the experience or facility was not good'],
+        'di maganda' => ['topic' => 'General Quality', 'reason' => 'Stated the experience or facility was not good'],
+        'hnd maganda' => ['topic' => 'General Quality', 'reason' => 'Stated the experience or facility was not good'],
+        'sira' => ['topic' => 'Maintenance', 'reason' => 'Reported broken or non-working facility'],
+        'banyo' => ['topic' => 'Restrooms', 'reason' => 'Mentioned restroom / bathroom facilities'],
+        'matagal' => ['topic' => 'Service Speed', 'reason' => 'Noted excessive delays or slow service'],
+        'mabagal' => ['topic' => 'Service Speed', 'reason' => 'Complained about slow service'],
+        'masungit' => ['topic' => 'Staff Behavior', 'reason' => 'Reported unfriendly or irritable staff behavior'],
+        'suplado' => ['topic' => 'Staff Behavior', 'reason' => 'Reported unapproachable or rude staff behavior'],
+        'suplada' => ['topic' => 'Staff Behavior', 'reason' => 'Reported unapproachable or rude staff behavior'],
+        'bastos' => ['topic' => 'Staff Behavior', 'reason' => 'Complained about discourteous behavior'],
+        'kulang' => ['topic' => 'Amenities / Service', 'reason' => 'Noted missing or insufficient supplies/service'],
+        'malabo' => ['topic' => 'Water / Clarity', 'reason' => 'Noted murky water or unclear communication'],
+        'mainit' => ['topic' => 'Ventilation / Heat', 'reason' => 'Complained about warm or uncomfortable temperature'],
+        'walang kwenta' => ['topic' => 'Value', 'reason' => 'Felt the experience had poor value'],
+        'sayang' => ['topic' => 'Value', 'reason' => 'Felt money or time spent was wasted'],
+
+        // English negative terms & shortcuts
+        'dirty' => ['topic' => 'Cleanliness', 'reason' => 'Reported dirty facilities or environment'],
+        'filthy' => ['topic' => 'Cleanliness', 'reason' => 'Reported severe cleanliness issue'],
+        'smelly' => ['topic' => 'Hygiene', 'reason' => 'Reported bad smell around the area'],
+        'stinky' => ['topic' => 'Hygiene', 'reason' => 'Reported foul odors'],
+        'toilet' => ['topic' => 'Restrooms', 'reason' => 'Reported issue with toilet facilities'],
+        'restroom' => ['topic' => 'Restrooms', 'reason' => 'Reported restroom maintenance issue'],
+        'slow' => ['topic' => 'Service Speed', 'reason' => 'Complained about sluggish service'],
+        'expensive' => ['topic' => 'Pricing', 'reason' => 'Expressed dissatisfaction with high pricing'],
+        'overpriced' => ['topic' => 'Pricing', 'reason' => 'Felt rates were too high for the experience'],
+        'broken' => ['topic' => 'Maintenance', 'reason' => 'Reported broken facility or fixture'],
         'noisy' => ['topic' => 'Noise', 'reason' => 'Reported disturbance from loud surroundings'],
         'crowded' => ['topic' => 'Crowding', 'reason' => 'Expressed dissatisfaction with overcrowding'],
         'rude' => ['topic' => 'Staff Behavior', 'reason' => 'Reported disrespectful or impolite staff behavior'],
-        'bastos' => ['topic' => 'Staff Behavior', 'reason' => 'Complained about discourteous behavior'],
         'bad' => ['topic' => 'General Experience', 'reason' => 'Expressed negative sentiment about experience'],
         'terrible' => ['topic' => 'General Experience', 'reason' => 'Strong dissatisfaction with visit'],
         'horrible' => ['topic' => 'General Experience', 'reason' => 'Severe negative impression'],
@@ -213,17 +247,43 @@ class FeedbackAiService
         'poor' => ['topic' => 'General Quality', 'reason' => 'Felt quality was below expectations'],
         'disappointed' => ['topic' => 'Expectations', 'reason' => 'Stated expectations were not met'],
         'disappointing' => ['topic' => 'Expectations', 'reason' => 'Felt the visit was unsatisfactory'],
-        'walang kwenta' => ['topic' => 'Value', 'reason' => 'Felt the experience had poor value'],
-        'walay ayo' => ['topic' => 'Service', 'reason' => 'Expressed that service was unacceptable'],
-        'sayang' => ['topic' => 'Value', 'reason' => 'Felt money or time spent was wasted'],
+        'not good' => ['topic' => 'General Experience', 'reason' => 'Expressed that the experience was not good'],
     ];
 
     /**
      * Positive keywords and their operational context.
      */
     protected const POSITIVE_MAPPINGS = [
+        // Gratitude & SMS/chat shortcuts
+        'thx' => ['topic' => 'Gratitude', 'reason' => 'Thanked the park team for a pleasant visit'],
+        'ty' => ['topic' => 'Gratitude', 'reason' => 'Thanked the park team for a pleasant visit'],
+        'tysm' => ['topic' => 'Gratitude', 'reason' => 'Expressed warm gratitude to the park team'],
+        'tyvm' => ['topic' => 'Gratitude', 'reason' => 'Expressed warm gratitude to the park team'],
+        'thanks' => ['topic' => 'Gratitude', 'reason' => 'Thanked the park staff for the experience'],
+        'thank you' => ['topic' => 'Gratitude', 'reason' => 'Thanked the park staff for the experience'],
+        'salamat' => ['topic' => 'Gratitude', 'reason' => 'Expressed heartfelt thanks in Filipino/Bisaya'],
+        'slmt' => ['topic' => 'Gratitude', 'reason' => 'Expressed thanks in Filipino/Bisaya shortcut'],
+        'daghang salamat' => ['topic' => 'Gratitude', 'reason' => 'Expressed deep gratitude in Bisaya'],
+        'oks' => ['topic' => 'Satisfaction', 'reason' => 'Confirmed everything went smoothly and satisfactorily'],
+        'goods' => ['topic' => 'Satisfaction', 'reason' => 'Confirmed the visit was good and satisfactory'],
+        'solid' => ['topic' => 'High Quality', 'reason' => 'Praised the experience as solid and memorable'],
+        'legit' => ['topic' => 'Trust & Quality', 'reason' => 'Confirmed the park lived up to expectations'],
+        'ayos' => ['topic' => 'Satisfaction', 'reason' => 'Expressed satisfaction that everything was great'],
+        'ganda' => ['topic' => 'Scenery & Aesthetics', 'reason' => 'Praised the beauty of the park'],
+        'sarap' => ['topic' => 'Food & Experience', 'reason' => 'Enjoyed the food or relaxing experience'],
+        'malinis' => ['topic' => 'Cleanliness', 'reason' => 'Commended the clean and well-kept surroundings'],
+        'mabait' => ['topic' => 'Staff Hospitality', 'reason' => 'Praised the kind and welcoming staff'],
+        'nice' => ['topic' => 'Satisfaction', 'reason' => 'Found the park pleasant and enjoyable'],
+        'awesome' => ['topic' => 'High Quality', 'reason' => 'Had an awesome and memorable stay'],
+        'best' => ['topic' => 'Excellence', 'reason' => 'Rated the park among the best'],
+        'superb' => ['topic' => 'Excellence', 'reason' => 'Praised the outstanding quality of the park'],
+        'worth it' => ['topic' => 'Value for Money', 'reason' => 'Felt the visit was well worth the price'],
+
+        // Bisaya / Tagalog / English positive terms
         'nindot' => ['topic' => 'Scenery & Aesthetics', 'reason' => 'Admired the beauty and scenic views of the park'],
+        'nndot' => ['topic' => 'Scenery & Aesthetics', 'reason' => 'Admired the beauty and scenic views of the park'],
         'maganda' => ['topic' => 'Scenery & Aesthetics', 'reason' => 'Praised the pleasant and attractive environment'],
+        'mgnda' => ['topic' => 'Scenery & Aesthetics', 'reason' => 'Praised the pleasant and attractive environment'],
         'beautiful' => ['topic' => 'Scenery', 'reason' => 'Complimented the park aesthetics and natural visual appeal'],
         'scenic' => ['topic' => 'Scenery', 'reason' => 'Loved the picturesque natural landscapes'],
         'gwapa' => ['topic' => 'Aesthetics', 'reason' => 'Appreciated the attractive surroundings'],
@@ -493,27 +553,50 @@ class FeedbackAiService
             ];
         }
 
-        // 3. Extract Granular Positive & Negative Clues from Text
+        // 3. Extract Granular Positive & Negative Clues from Text (word-boundary & negation-aware)
         $posMatches = [];
         $negMatches = [];
+        $collapsedText = preg_replace('/(.)\1{2,}/u', '$1', $lowerText);
+        $negationPattern = '/\b(?:dili|dli|di|wa|way|wala|walay|hindi|hnd|not|no|never)\s+(?:kaayo\s+|jud\s+|gyud\s+|sobra\s+|masyado\s+|that\s+|very\s+)?';
 
         foreach (self::POSITIVE_MAPPINGS as $word => $meta) {
-            if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $lowerText) || str_contains($lowerText, $word)) {
+            $quoted = preg_quote($word, '/');
+            $matched = preg_match('/\b' . $quoted . '\b/iu', $lowerText)
+                || preg_match('/\b' . $quoted . '\b/iu', $collapsedText);
+            if ($matched) {
                 $snippet = $this->extractSentenceWithWord($text, $word);
-                $posMatches[] = [
-                    'type' => 'positive',
-                    'snippet' => $snippet,
-                    'keyword' => $word,
-                    'topic' => $meta['topic'],
-                    'reason' => $meta['reason'],
-                    'how' => "Positive because the guest highlighted {$meta['topic']}: \"{$meta['reason']}\".",
-                    'emoji' => '🟢',
-                ];
+                $isNegated = preg_match($negationPattern . $quoted . '\b/iu', $lowerText)
+                    || preg_match($negationPattern . $quoted . '\b/iu', $collapsedText);
+
+                if ($isNegated) {
+                    $negMatches[] = [
+                        'type' => 'negative',
+                        'snippet' => $snippet,
+                        'keyword' => $word,
+                        'topic' => $meta['topic'],
+                        'reason' => "Negated positive remark regarding {$meta['topic']}",
+                        'how' => "Negative because the guest negated '{$word}' ({$meta['topic']}).",
+                        'emoji' => '🔴',
+                    ];
+                } else {
+                    $posMatches[] = [
+                        'type' => 'positive',
+                        'snippet' => $snippet,
+                        'keyword' => $word,
+                        'topic' => $meta['topic'],
+                        'reason' => $meta['reason'],
+                        'how' => "Positive because the guest highlighted {$meta['topic']}: \"{$meta['reason']}\".",
+                        'emoji' => '🟢',
+                    ];
+                }
             }
         }
 
         foreach (self::NEGATIVE_MAPPINGS as $word => $meta) {
-            if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $lowerText) || str_contains($lowerText, $word)) {
+            $quoted = preg_quote($word, '/');
+            $matched = preg_match('/\b' . $quoted . '\b/iu', $lowerText)
+                || preg_match('/\b' . $quoted . '\b/iu', $collapsedText);
+            if ($matched) {
                 $snippet = $this->extractSentenceWithWord($text, $word);
                 $negMatches[] = [
                     'type' => 'negative',
@@ -936,18 +1019,11 @@ class FeedbackAiService
     }
 
     /**
-     * OpenRouter LLM Auto-Reply Generation.
-     */
-    /**
-     * OpenRouter LLM Auto-Reply Generation with deep Bisaya, Tagalog, and English comprehension.
+     * Primary: OpenAI (gpt-6-luna) Auto-Reply Generation.
+     * Backup: OpenRouter Free (openrouter/free) if OpenAI has no credits or fails.
      */
     protected function attemptLlmAutoReply(Feedback $feedback): ?string
     {
-        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
-        if (!$apiKey) {
-            return null;
-        }
-
         $isAnonymous = $feedback->is_anonymous || strcasecmp($feedback->full_name, Feedback::ANONYMOUS_NAME) === 0;
         $guestName = $isAnonymous
             ? 'Anonymous'
@@ -966,17 +1042,23 @@ class FeedbackAiService
             . "Rating: {$stars} out of 5 stars\n"
             . "Guest Review: \"{$description}\"\n\n"
             . "CRITICAL RULES:\n"
-            . "1. UNDERSTAND BISAYA / CEBUANO AND TAGALOG:\n"
-            . "   - 'chada' / 'tsada' / 'nindot' = nice, great, beautiful\n"
-            . "   - 'hugaw' / 'dumi' / 'marumi' = dirty\n"
-            . "   - 'limpyohan' / 'linisin' = clean it / to be cleaned\n"
+            . "1. UNDERSTAND BISAYA / CEBUANO, TAGALOG, AND FILIPINO TEXT SHORTCUTS:\n"
+            . "   - 'thx' / 'ty' / 'tysm' / 'tyvm' / 'slmt' / 'salamat' = thank you\n"
+            . "   - 'oks' / 'okie' / 'ayos' / 'goods' / 'solid' / 'sulit' = good, great, worth it\n"
+            . "   - 'dli' / 'dili' / 'di' / 'wa' / 'way' / 'hnd' / 'hindi' = not / no (negation)\n"
+            . "   - 'chada' / 'tsada' / 'nindot' / 'nndot' / 'ganda' / 'mgnda' = nice, great, beautiful\n"
+            . "   - 'bati' / 'pangit' / 'pngit' / 'walay ayo' / 'way lami' = poor, unpleasant, disappointing\n"
+            . "   - 'hugaw' / 'hgaw' / 'dumi' / 'marumi' / 'madumi' = dirty\n"
+            . "   - 'limpyo' / 'malinis' / 'limpyohan' / 'linisin' = clean / to be cleaned\n"
             . "   - 'didto sa cottage nga among na avail' = there in the cottage that we availed / rented\n"
             . "   - 'kasilyas' / 'cr' / 'banyo' = comfort room / restroom\n"
-            . "   - 'bugnaw' / 'malamig' = cold (referring to cold spring water pool)\n"
+            . "   - 'bugnaw' / 'malamig' / 'presko' = cold, refreshing (pool or air)\n"
+            . "   - 'alimuot' / 'mainit' / 'init kaayo' = hot, stuffy\n"
             . "   - 'buotan' / 'mabait' = kind, friendly staff\n"
-            . "   - 'sungit' / 'bastos' / 'dugay' = rude, slow service\n"
-            . "   - 'mahal' = expensive, high entrance or cottage fee\n"
+            . "   - 'sungit' / 'masungit' / 'suplado' / 'bastos' / 'dugay' / 'mabagal' = rude or slow service\n"
+            . "   - 'mahal' / 'barato' / 'mura' = expensive / affordable\n"
             . "   - 'lami' / 'masarap' = delicious food\n"
+            . "   - 'kc' / 'kse' = because, 'nmn' = also/please, 'tlga' = really, 'grabe' = very/intense\n"
             . "2. DIRECTLY CONNECT TO THE EXACT POINTS MENTIONED:\n"
             . "   - If the guest mentioned dirty cottages, apologize directly for the dirty cottage and state that the cleaning team has been ordered to wash, clean, and inspect all cottages.\n"
             . "   - If they mentioned comfort rooms / CR, specifically address the comfort rooms.\n"
@@ -989,9 +1071,46 @@ class FeedbackAiService
             . "   - Use simple, everyday basic English that any Filipino can easily understand.\n"
             . "   - Keep the reply between 2 and 3 complete sentences. Ensure the final sentence ends with a period (.) or exclamation mark (!). Do not use quotes around the response.";
 
+        // 1. Try OpenAI GPT Luna first when key is available and has credits
+        $openAiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
+        if ($openAiKey && OpenAiKeyService::isAvailable()) {
+            $baseUrl = rtrim(config('services.openai.base_url') ?: env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/');
+            $openAiModel = config('services.openai.model') ?: env('OPENAI_MODEL', 'gpt-6-luna');
+
+            try {
+                $response = Http::timeout(15)->withToken($openAiKey)->post("{$baseUrl}/chat/completions", [
+                    'model' => $openAiModel,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => 0.6,
+                    'max_tokens' => 350,
+                ]);
+
+                if ($response->successful()) {
+                    $cleaned = $this->sanitizeLlmAutoReply((string) $response->json('choices.0.message.content'));
+                    if ($cleaned !== null) {
+                        return $cleaned;
+                    }
+                } else {
+                    Log::info('[FeedbackAiService] OpenAI GPT Luna failed (HTTP ' . $response->status() . '), falling back to OpenRouter Free.');
+                }
+            } catch (\Throwable $e) {
+                Log::info('[FeedbackAiService] OpenAI GPT Luna error, falling back to OpenRouter Free: ' . $e->getMessage());
+            }
+        } else {
+            Log::info('[FeedbackAiService] OpenAI GPT Luna unavailable or out of credits, using OpenRouter Free backup.');
+        }
+
+        // 2. Backup: OpenRouter Free
+        $openRouterKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
+        if (!$openRouterKey) {
+            return null;
+        }
+
         try {
             $response = Http::timeout(15)->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer ' . $openRouterKey,
                 'Content-Type' => 'application/json',
                 'HTTP-Referer' => request()->getHttpHost() ?: 'http://localhost',
                 'X-Title' => 'Hinaguan Nature Park Management',
@@ -1005,27 +1124,37 @@ class FeedbackAiService
             ]);
 
             if ($response->successful()) {
-                $text = (string) $response->json('choices.0.message.content');
-                if (!empty($text)) {
-                    // Remove reasoning tags if model output <think>...</think>
-                    $text = preg_replace('/<think>.*?<\/think>/is', '', $text);
-                    $clean = trim($text, " \"'\n\r");
-
-                    // Normalize any accidental "Dear our guest"
-                    $clean = preg_replace('/^Dear our guest,?\s*/i', 'Dear guest, ', $clean);
-
-                    // Filter out unwanted chain of thought leaks or generic filler phrases
-                    $isReasoningLeak = preg_match('/^(We need to|The user|I should|Review analysis|Thought:|Here is)/i', $clean);
-                    $hasGenericMention = stripos($clean, 'things you mentioned') !== false || stripos($clean, 'what you mentioned') !== false;
-                    $endsCompleteSentence = preg_match('/[.!?]$/', $clean);
-
-                    if (!$isReasoningLeak && !$hasGenericMention && $endsCompleteSentence && strlen($clean) > 25) {
-                        return $clean;
-                    }
+                $cleaned = $this->sanitizeLlmAutoReply((string) $response->json('choices.0.message.content'));
+                if ($cleaned !== null) {
+                    return $cleaned;
                 }
             }
         } catch (\Throwable $e) {
-            Log::info('[FeedbackAiService] LLM auto-reply fallback engaged: ' . $e->getMessage());
+            Log::info('[FeedbackAiService] OpenRouter Free backup fallback engaged: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate and clean LLM auto-reply output before saving.
+     */
+    protected function sanitizeLlmAutoReply(string $text): ?string
+    {
+        if (empty($text)) {
+            return null;
+        }
+
+        $text = preg_replace('/<think>.*?<\/think>/is', '', $text);
+        $clean = trim($text, " \"'\n\r");
+        $clean = preg_replace('/^Dear our guest,?\s*/i', 'Dear guest, ', $clean);
+
+        $isReasoningLeak = preg_match('/^(We need to|The user|I should|Review analysis|Thought:|Here is)/i', $clean);
+        $hasGenericMention = stripos($clean, 'things you mentioned') !== false || stripos($clean, 'what you mentioned') !== false;
+        $endsCompleteSentence = preg_match('/[.!?]$/', $clean);
+
+        if (!$isReasoningLeak && !$hasGenericMention && $endsCompleteSentence && strlen($clean) > 25) {
+            return $clean;
         }
 
         return null;

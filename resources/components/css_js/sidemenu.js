@@ -139,6 +139,20 @@ window.addEventListener('DOMContentLoaded', function () {
             closeUserDropdown();
             const modal = document.getElementById('logoutModal');
             if (modal) {
+                modal.dataset.loggingOut = 'false';
+                modal.querySelectorAll('[data-logout-cancel]').forEach((el) => {
+                    if (el.tagName === 'BUTTON') {
+                        el.disabled = false;
+                        el.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                    } else {
+                        el.classList.remove('pointer-events-none');
+                    }
+                });
+                const submitBtn = modal.querySelector('.logout-modal__btn--confirm');
+                if (submitBtn) {
+                    submitBtn.classList.remove('is-loading');
+                    submitBtn.disabled = false;
+                }
                 modal.classList.add('is-open');
                 modal.setAttribute('aria-hidden', 'false');
             }
@@ -150,17 +164,35 @@ window.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             e.stopPropagation();
             const modal = document.getElementById('logoutModal');
-            if (modal) {
+            if (modal && modal.dataset.loggingOut !== 'true') {
                 modal.classList.remove('is-open');
                 modal.setAttribute('aria-hidden', 'true');
             }
             return;
         }
 
-        // Logout confirm submit button loading state
+        // Logout confirm submit button loading state (lock cancel/backdrop/escape)
         const confirmSubmitBtn = e.target.closest('.logout-modal__btn--confirm');
         if (confirmSubmitBtn) {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                if (modal.dataset.loggingOut === 'true') {
+                    e.preventDefault();
+                    return;
+                }
+                modal.dataset.loggingOut = 'true';
+                modal.querySelectorAll('[data-logout-cancel]').forEach((el) => {
+                    if (el.tagName === 'BUTTON') {
+                        el.disabled = true;
+                        el.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                    } else {
+                        el.classList.add('pointer-events-none');
+                    }
+                });
+            }
             confirmSubmitBtn.classList.add('is-loading');
+            const label = confirmSubmitBtn.querySelector('span');
+            if (label) label.textContent = 'Signing out...';
         }
 
         // Auto-close user profile dropdown when clicking outside
@@ -182,7 +214,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 closeSidebar();
             }
             const modal = document.getElementById('logoutModal');
-            if (modal && modal.classList.contains('is-open')) {
+            if (modal && modal.classList.contains('is-open') && modal.dataset.loggingOut !== 'true') {
                 modal.classList.remove('is-open');
                 modal.setAttribute('aria-hidden', 'true');
             }
