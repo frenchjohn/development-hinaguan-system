@@ -263,25 +263,16 @@
     @endphp
 
     <!-- Header -->
-    <header class="bg-white/95 backdrop-blur-md border-b border-emerald-950/10 sticky top-0 z-40">
-        <div class="max-w-5xl mx-auto px-3 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shadow-sm border border-emerald-800/20 shrink-0">
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <div class="flex min-w-0 items-center gap-3">
+                <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park" class="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-cover">
                 <div class="min-w-0">
-                    <h1 class="font-display font-bold text-xs sm:text-base md:text-lg text-emerald-950 leading-tight truncate">Hinaguan Nature Park</h1>
-                    <p class="text-[0.62rem] sm:text-[0.7rem] uppercase tracking-wider text-emerald-700 font-semibold truncate">Reservation Portal</p>
+                    <h1 class="m-0 truncate font-display text-sm font-bold leading-tight text-[#123322] sm:text-base">Hinaguan Nature Park</h1>
+                    <p class="m-0 truncate text-[11px] font-medium text-slate-500">Reservation Reschedule &amp; Refund Portal</p>
                 </div>
             </div>
-            <div class="text-right shrink-0">
-                <!-- Mobile compact badge -->
-                <span class="inline-flex sm:hidden items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <i class="bi bi-shield-check text-[10px] text-emerald-600"></i> Portal
-                </span>
-                <!-- Desktop full badge -->
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <i class="bi bi-shield-check text-xs text-emerald-600"></i> Secure Reschedule &amp; Refund Portal
-                </span>
-            </div>
+            <span class="hidden shrink-0 text-xs font-medium text-slate-500 sm:inline">Single-use 24h link</span>
         </div>
     </header>
 
@@ -302,231 +293,193 @@
 
         @if ($state === 'invalid')
             <!-- Invalid Token State -->
-            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-red-100 text-center max-w-lg mx-auto">
-                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-xl sm:text-2xl">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-                <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 mb-2">Invalid Rescheduling Link</h2>
-                <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+            <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-red-700">Invalid Link</span>
+                <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Invalid Rescheduling Link</h2>
+                <p class="mt-2 mb-0 text-sm leading-relaxed text-slate-600">
                     The link you followed is not valid or may have been typed incorrectly. If you received this link via SMS, please check the message again or contact Hinaguan Nature Park.
                 </p>
                 @if (!empty($parkContact))
-                    <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
-                        <i class="bi bi-telephone-fill text-emerald-700"></i> Contact Us: {{ $parkContact }}
+                    <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700">
+                        Contact Park Support: <strong class="text-slate-900">{{ $parkContact }}</strong>
                     </div>
                 @endif
+                <div class="mt-6">
+                    <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
+                        Back to Homepage
+                    </a>
+                </div>
             </div>
 
         @elseif ($state === 'used')
             <!-- Already Used State -->
             @if ($rescheduleRequest && $rescheduleRequest->isRefund())
-                <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
-                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100/80 text-emerald-500 flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="m9 12 2 2 4-4"/>
-                        </svg>
+                <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                    <div class="border-b border-slate-100 pb-4">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Refund Request Recorded</span>
+                        <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Refund Request Submitted</h2>
+                        <p class="mt-1.5 mb-0 text-sm leading-relaxed text-slate-600">
+                            Thank you, <strong class="text-slate-900">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your 50% downpayment refund request has been logged for review.
+                        </p>
                     </div>
-                    <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Refund Request Submitted!</h2>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-5 leading-relaxed max-w-md mx-auto">
-                        Thank you, <strong class="text-slate-900 font-bold">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
-                    </p>
 
-                    <div class="bg-[#eef8f2] border border-[#cbe8d5] rounded-2xl p-4 sm:p-5 mb-4 text-left text-xs sm:text-sm space-y-3">
-                        <div class="flex items-center justify-between text-slate-600">
-                            <span class="font-medium">Reservation ID</span>
-                            <span class="font-bold text-slate-900 font-mono text-sm sm:text-base">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</span>
+                    <dl class="m-0 mt-5 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/70 px-4 text-xs sm:text-sm">
+                        <div class="flex items-center justify-between py-3">
+                            <dt class="text-slate-500">Reservation ID</dt>
+                            <dd class="m-0 font-mono font-bold text-slate-900">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</dd>
                         </div>
-                        <div class="flex items-center justify-between text-slate-600">
-                            <span class="font-medium">Total Downpayment Paid</span>
-                            <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
+                        <div class="flex items-center justify-between py-3">
+                            <dt class="text-slate-500">Total Downpayment Paid</dt>
+                            <dd class="m-0 font-semibold tabular-nums text-slate-900">₱{{ number_format($origPaid, 2) }}</dd>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-slate-900 uppercase text-[11px] sm:text-xs tracking-wider">50% REFUND TO RECEIVE</span>
-                            <span class="font-bold text-emerald-700 text-base sm:text-lg">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
+                        <div class="flex items-center justify-between py-3">
+                            <dt class="font-bold text-slate-900">50% Refund to Receive</dt>
+                            <dd class="m-0 text-base font-bold tabular-nums text-emerald-800">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</dd>
                         </div>
-                        <div class="flex items-center justify-between text-slate-600">
-                            <span class="font-medium">Receiving E-Wallet</span>
-                            <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &bull; {{ $rescheduleRequest->ewallet_account_number }}</span>
+                        <div class="flex items-center justify-between py-3">
+                            <dt class="text-slate-500">Receiving E-Wallet</dt>
+                            <dd class="m-0 font-semibold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &middot; {{ $rescheduleRequest->ewallet_account_number }}</dd>
                         </div>
-                        <div class="flex items-center justify-between text-slate-600">
-                            <span class="font-medium">Account Name</span>
-                            <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</span>
+                        <div class="flex items-center justify-between py-3">
+                            <dt class="text-slate-500">Account Name</dt>
+                            <dd class="m-0 font-semibold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</dd>
                         </div>
-                    </div>
+                    </dl>
 
                     @if ($rescheduleRequest->status === 'approved')
-                        <div class="mb-5 p-3.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs text-left">
-                            <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
-                                <i class="bi bi-check-circle-fill text-emerald-600"></i> Refund Completed
-                            </div>
-                            <p>Disbursed via <strong>{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }}</strong> on {{ $rescheduleRequest->refunded_at?->format('M d, Y · g:i A') ?? 'recently' }}.
-                                @if ($rescheduleRequest->refund_reference_number)
-                                    &middot; Reference #: <strong class="font-mono text-slate-900">{{ $rescheduleRequest->refund_reference_number }}</strong>
-                                @endif
-                            </p>
+                        <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50/70 p-4 text-xs leading-relaxed text-emerald-900">
+                            <strong class="block text-emerald-950">Refund Completed</strong>
+                            Disbursed via <strong>{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }}</strong> on {{ $rescheduleRequest->refunded_at?->format('M d, Y · g:i A') ?? 'recently' }}.
+                            @if ($rescheduleRequest->refund_reference_number)
+                                Reference #: <strong class="font-mono">{{ $rescheduleRequest->refund_reference_number }}</strong>
+                            @endif
                         </div>
                     @elseif ($rescheduleRequest->status === 'declined')
-                        <div class="mb-5 p-3.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs text-left">
-                            <div class="font-bold flex items-center gap-1.5 text-rose-700 mb-1">
-                                <i class="bi bi-x-circle-fill text-rose-600"></i> Refund Request Declined
-                            </div>
-                            <p>{{ $rescheduleRequest->decline_reason ?? 'Please contact Hinaguan Nature Park staff for inquiries.' }}</p>
+                        <div class="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-xs leading-relaxed text-red-800">
+                            <strong class="block">Refund Request Declined</strong>
+                            {{ $rescheduleRequest->decline_reason ?? 'Please contact Hinaguan Nature Park staff for inquiries.' }}
                         </div>
                     @else
-                        <div class="bg-[#f4faf6] border border-[#d3eee0] rounded-2xl p-4 sm:p-5 mb-6 text-left">
-                            <div class="flex items-center gap-2 mb-2.5">
-                                <i class="bi bi-info-circle-fill text-emerald-600 text-base sm:text-lg shrink-0"></i>
-                                <h3 class="font-bold text-slate-900 text-sm sm:text-base">Refund Request Under Review</h3>
-                            </div>
-                            <div class="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2.5">
-                                <p>The submitted refund request will be reviewed by the park management. Please allow up to 24 hours for the confirmation and completion of your request.</p>
-                                <p>Once the review is done, the refund will be <strong class="text-slate-900 font-bold">automatically</strong> sent to your e-wallet, and you will receive a confirmation through <strong class="text-slate-900 font-bold">SMS</strong>.</p>
-                                <p>If you have any questions, just call <span class="font-bold text-emerald-800">📞 {{ $parkContact ?: '09938373838' }}</span>.</p>
-                                <p>Thank you for your patience.</p>
-                            </div>
+                        <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+                            <strong class="block text-slate-900">Under Review</strong>
+                            Please allow up to 24 hours for management review. Once approved, the refund will be sent to your e-wallet and confirmed via SMS. For questions, call <strong class="text-slate-900">{{ $parkContact ?: '09938373838' }}</strong>.
                         </div>
                     @endif
 
-                    <div class="text-center">
-                        <a href="{{ url('/') }}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#0c5132] hover:bg-[#083e26] text-white font-semibold text-xs sm:text-sm shadow-md transition-all">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
+                    <div class="mt-6">
+                        <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
                             Back to Homepage
                         </a>
                     </div>
                 </div>
             @else
-                <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-amber-100 text-center max-w-lg mx-auto">
-                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-xl sm:text-2xl">
-                        <i class="bi bi-link-45deg"></i>
-                    </div>
-                    <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 mb-2">Link Already Used</h2>
-                    <p class="text-slate-600 text-xs sm:text-sm mb-4 leading-relaxed">
+                <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Single-Use Link</span>
+                    <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Link Already Used</h2>
+                    <p class="mt-2 mb-0 text-sm leading-relaxed text-slate-600">
                         This single-use rescheduling link has already been submitted and cannot be reused.
                     </p>
+
                     @if ($rescheduleRequest->requested_date)
-                        <div class="bg-emerald-50 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border border-emerald-200 mb-4 sm:mb-6 text-left">
-                            <div class="text-[0.68rem] sm:text-xs uppercase font-bold text-emerald-800 tracking-wider mb-2.5 sm:mb-3">Your Submitted Request</div>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3 text-xs">
-                                <div class="bg-white/80 p-2.5 sm:p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 block">Check-In</span>
-                                    <div class="font-bold text-emerald-950 text-xs sm:text-sm mt-0.5">
-                                        {{ $reqCheckInAt?->format('F j, Y') }}
-                                    </div>
-                                    <div class="text-[11px] sm:text-xs font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                                        <i class="bi bi-clock"></i> {{ $reqCheckInAt?->format('g:i A') }}
-                                    </div>
+                        <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4 text-xs">
+                            <div class="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
+                                <span class="font-bold uppercase tracking-wider text-slate-700">Submitted Request</span>
+                                <span class="rounded border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold uppercase text-slate-800">{{ $rescheduleRequest->status }}</span>
+                            </div>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div class="rounded-lg border border-slate-200 bg-white p-3">
+                                    <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Check-In</span>
+                                    <div class="mt-0.5 font-bold text-slate-900">{{ $reqCheckInAt?->format('F j, Y') }}</div>
+                                    <div class="mt-0.5 text-slate-500">{{ $reqCheckInAt?->format('g:i A') }}</div>
                                 </div>
-
-                                <div class="bg-white/80 p-2.5 sm:p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 block">Check-Out</span>
-                                    <div class="font-bold text-emerald-950 text-xs sm:text-sm mt-0.5">
-                                        {{ $reqCheckOutAt?->format('F j, Y') }}
-                                    </div>
-                                    <div class="text-[11px] sm:text-xs font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                                        <i class="bi bi-clock"></i> {{ $reqCheckOutAt?->format('g:i A') }}
-                                    </div>
+                                <div class="rounded-lg border border-slate-200 bg-white p-3">
+                                    <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Check-Out</span>
+                                    <div class="mt-0.5 font-bold text-slate-900">{{ $reqCheckOutAt?->format('F j, Y') }}</div>
+                                    <div class="mt-0.5 text-slate-500">{{ $reqCheckOutAt?->format('g:i A') }}</div>
                                 </div>
                             </div>
-
-                            <div class="pt-2 border-t border-emerald-200/60 flex items-center justify-between text-xs">
-                                <span class="text-slate-500 font-medium text-[11px] sm:text-xs">Stay: <strong class="text-slate-800">{{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Stay</strong></span>
-                                <span class="font-bold uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md text-[10px] sm:text-xs">{{ $rescheduleRequest->status }}</span>
+                            <div class="mt-3 text-slate-600">
+                                Stay Duration: <strong class="text-slate-900">{{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Stay</strong>
                             </div>
                         </div>
                     @endif
-                    <p class="text-slate-500 text-[11px] sm:text-xs mb-4 sm:mb-6">
-                        Our staff will review your submitted dates and notify you via SMS. If you need further assistance, please contact us.
+
+                    <p class="mt-4 mb-0 text-xs leading-relaxed text-slate-500">
+                        Our staff will review your requested dates and notify you via SMS.
+                        @if (!empty($parkContact))
+                            Inquiries: <strong class="text-slate-800">{{ $parkContact }}</strong>
+                        @endif
                     </p>
-                    @if (!empty($parkContact))
-                        <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
-                            <i class="bi bi-telephone-fill text-emerald-700"></i> Inquiries: {{ $parkContact }}
-                        </div>
-                    @endif
+                    <div class="mt-6">
+                        <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
+                            Back to Homepage
+                        </a>
+                    </div>
                 </div>
             @endif
 
         @elseif ($state === 'expired')
             <!-- Expired State -->
-            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-rose-100 text-center max-w-lg mx-auto">
-                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-xl sm:text-2xl">
-                    <i class="bi bi-hourglass-bottom"></i>
-                </div>
-                <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-800 mb-2">Link Has Expired</h2>
-                <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                    For your security, rescheduling and refund links expire after 24 hours. The 24-hour window for this link has passed.
+            <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Invitation Expired</span>
+                <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Link Has Expired</h2>
+                <p class="mt-2 mb-0 text-sm leading-relaxed text-slate-600">
+                    For security, rescheduling and refund links expire after 24 hours. Please contact Hinaguan Nature Park staff to request a new link.
                 </p>
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-slate-200 mb-4 sm:mb-6 text-[11px] sm:text-xs text-slate-600">
-                    Expired on: <span class="font-bold text-slate-800">{{ $rescheduleRequest->expires_at->format('M d, Y · g:i A') }}</span>
+                <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+                    Expired on: <strong class="text-slate-900">{{ $rescheduleRequest->expires_at->format('M d, Y · g:i A') }}</strong>
+                    @if (!empty($parkContact))
+                        &middot; Contact: <strong class="text-slate-900">{{ $parkContact }}</strong>
+                    @endif
                 </div>
-                <p class="text-slate-500 text-[11px] sm:text-xs mb-4 sm:mb-6">
-                    Please contact Hinaguan Nature Park staff to request a fresh rescheduling or refund link.
-                </p>
-                @if (!empty($parkContact))
-                    <div class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
-                        <i class="bi bi-telephone-fill text-emerald-700"></i> Call: {{ $parkContact }}
-                    </div>
-                @endif
+                <div class="mt-6">
+                    <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
+                        Back to Homepage
+                    </a>
+                </div>
             </div>
 
         @elseif ($state === 'submitted_refund_success')
             <!-- Refund Submission Success Confirmation -->
-            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
-                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100/80 text-emerald-500 flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="m9 12 2 2 4-4"/>
-                    </svg>
-                </div>
-                <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Refund Request Submitted!</h2>
-                <p class="text-slate-600 text-xs sm:text-sm mb-5 leading-relaxed max-w-md mx-auto">
-                    Thank you, <strong class="text-slate-900 font-bold">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
-                </p>
-
-                <div class="bg-[#eef8f2] border border-[#cbe8d5] rounded-2xl p-4 sm:p-5 mb-4 text-left text-xs sm:text-sm space-y-3">
-                    <div class="flex items-center justify-between text-slate-600">
-                        <span class="font-medium">Reservation ID</span>
-                        <span class="font-bold text-slate-900 font-mono text-sm sm:text-base">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-600">
-                        <span class="font-medium">Total Downpayment Paid</span>
-                        <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="font-bold text-slate-900 uppercase text-[11px] sm:text-xs tracking-wider">50% REFUND TO RECEIVE</span>
-                        <span class="font-bold text-emerald-700 text-base sm:text-lg">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-600">
-                        <span class="font-medium">Receiving E-Wallet</span>
-                        <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &bull; {{ $rescheduleRequest->ewallet_account_number }}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-600">
-                        <span class="font-medium">Account Name</span>
-                        <span class="font-bold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</span>
-                    </div>
+            <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                <div class="border-b border-slate-100 pb-4">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Refund Request Recorded</span>
+                    <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Refund Request Submitted</h2>
+                    <p class="mt-1.5 mb-0 text-sm leading-relaxed text-slate-600">
+                        Thank you, <strong class="text-slate-900">{{ $reservation?->booker_name ?: ($rescheduleRequest->ewallet_account_name ?: 'Guest') }}</strong>. Your request for a 50% downpayment refund has been submitted to Hinaguan Nature Park staff.
+                    </p>
                 </div>
 
-                <div class="bg-[#f4faf6] border border-[#d3eee0] rounded-2xl p-4 sm:p-5 mb-6 text-left">
-                    <div class="flex items-center gap-2 mb-2.5">
-                        <i class="bi bi-info-circle-fill text-emerald-600 text-base sm:text-lg shrink-0"></i>
-                        <h3 class="font-bold text-slate-900 text-sm sm:text-base">Refund Request Under Review</h3>
+                <dl class="m-0 mt-5 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/70 px-4 text-xs sm:text-sm">
+                    <div class="flex items-center justify-between py-3">
+                        <dt class="text-slate-500">Reservation ID</dt>
+                        <dd class="m-0 font-mono font-bold text-slate-900">#{{ $reservation?->formatted_id ?? sprintf('%03d', $rescheduleRequest->reservation_id) }}</dd>
                     </div>
-                    <div class="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2.5">
-                        <p>The submitted refund request will be reviewed by the park management. Please allow up to 24 hours for the confirmation and completion of your request.</p>
-                        <p>Once the review is done, the refund will be <strong class="text-slate-900 font-bold">automatically</strong> sent to your e-wallet, and you will receive a confirmation through <strong class="text-slate-900 font-bold">SMS</strong>.</p>
-                        <p>If you have any questions, just call <span class="font-bold text-emerald-800">📞 {{ $parkContact ?: '09938373838' }}</span>.</p>
-                        <p>Thank you for your patience.</p>
+                    <div class="flex items-center justify-between py-3">
+                        <dt class="text-slate-500">Total Downpayment Paid</dt>
+                        <dd class="m-0 font-semibold tabular-nums text-slate-900">₱{{ number_format($origPaid, 2) }}</dd>
                     </div>
+                    <div class="flex items-center justify-between py-3">
+                        <dt class="font-bold text-slate-900">50% Refund to Receive</dt>
+                        <dd class="m-0 text-base font-bold tabular-nums text-emerald-800">₱{{ number_format($rescheduleRequest->refund_amount ?? $refundAmount, 2) }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between py-3">
+                        <dt class="text-slate-500">Receiving E-Wallet</dt>
+                        <dd class="m-0 font-semibold text-slate-900">{{ $rescheduleRequest->ewallet_provider ?? 'GCash' }} &middot; {{ $rescheduleRequest->ewallet_account_number }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between py-3">
+                        <dt class="text-slate-500">Account Name</dt>
+                        <dd class="m-0 font-semibold text-slate-900">{{ $rescheduleRequest->ewallet_account_name ?: ($reservation?->booker_name ?: 'Guest') }}</dd>
+                    </div>
+                </dl>
+
+                <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+                    <strong class="block text-slate-900">Refund Request Under Review</strong>
+                    Please allow up to 24 hours for management review. Once approved, your refund will be sent to your e-wallet and confirmed via SMS. For questions, call <strong class="text-slate-900">{{ $parkContact ?: '09938373838' }}</strong>.
                 </div>
 
-                <div class="text-center">
-                    <a href="{{ url('/') }}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:py-3 rounded-xl bg-[#0c5132] hover:bg-[#083e26] text-white font-semibold text-xs sm:text-sm shadow-md transition-all">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
+                <div class="mt-6">
+                    <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
                         Back to Homepage
                     </a>
                 </div>
@@ -534,80 +487,65 @@
 
         @elseif ($state === 'submitted_success')
             <!-- Submission Success Confirmation -->
-            <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-12 shadow-xl border border-emerald-100 text-center max-w-lg mx-auto">
-                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 text-2xl sm:text-3xl">
-                    <i class="bi bi-check2-circle"></i>
+            <div class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+                <div class="border-b border-slate-100 pb-4">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Reschedule Request Recorded</span>
+                    <h2 class="m-0 mt-1 font-display text-2xl font-bold text-slate-900">Request Submitted</h2>
+                    <p class="mt-1.5 mb-0 text-sm leading-relaxed text-slate-600">
+                        Thank you, <strong class="text-slate-900">{{ $reservation->booker_name }}</strong>. We have received your requested new dates.
+                    </p>
                 </div>
-                <h2 class="font-display text-xl sm:text-3xl font-bold text-emerald-950 mb-2">Request Submitted!</h2>
-                <p class="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                    Thank you, <strong class="text-slate-800">{{ $reservation->booker_name }}</strong>! We have received your requested new dates.
-                </p>
 
-                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-6 text-left">
-                    <div class="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
+                <div class="mt-5 space-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4 text-xs">
+                    <div class="grid grid-cols-2 gap-3 border-b border-slate-200 pb-3">
                         <div>
-                            <span class="text-emerald-800/80 font-medium block">Reservation ID</span>
-                            <span class="font-bold text-emerald-950 font-mono text-xs sm:text-sm">#{{ $reservation->formatted_id }}</span>
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Reservation ID</span>
+                            <span class="font-mono text-sm font-bold text-slate-900">#{{ $reservation->formatted_id }}</span>
                         </div>
                         <div>
-                            <span class="text-emerald-800/80 font-medium block">Stay Duration</span>
-                            <span class="font-semibold text-slate-700 text-[11px] sm:text-xs">
-                                {{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Stay
-                            </span>
-                        </div>
-
-                        <!-- Original Schedule (no session/slot labels) -->
-                        <div class="col-span-2 pt-2 border-t border-emerald-200/60">
-                            <span class="text-emerald-800/80 font-medium block">Original Schedule</span>
-                            <div class="text-slate-600 text-[11px] sm:text-xs mt-0.5 font-medium">
-                                @if ($origCheckInAt && $origCheckOutAt)
-                                    <span>{{ $origCheckInAt->format('M d, Y · g:i A') }} &ndash; {{ $origCheckOutAt->format('M d, Y · g:i A') }}</span>
-                                @elseif ($origStart)
-                                    <span>{{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }}</span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Requested New Schedule: Display Check-in Date & Time and Check-out Date & Time -->
-                        <div class="col-span-2 pt-2 border-t border-emerald-200/60">
-                            <span class="text-emerald-800/80 font-bold uppercase tracking-wider text-[0.65rem] sm:text-[0.7rem] block">Requested New Schedule</span>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mt-2">
-                                <div class="bg-white/80 p-2.5 sm:p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 block">Check-In</span>
-                                    <div class="font-bold text-emerald-950 text-xs sm:text-sm mt-0.5">
-                                        {{ $reqCheckInAt?->format('F j, Y') }}
-                                    </div>
-                                    <div class="text-[11px] sm:text-xs font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                                        <i class="bi bi-clock"></i> {{ $reqCheckInAt?->format('g:i A') }}
-                                    </div>
-                                </div>
-
-                                <div class="bg-white/80 p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 block">Check-Out</span>
-                                    <div class="font-bold text-emerald-950 text-sm mt-0.5">
-                                        {{ $reqCheckOutAt?->format('F j, Y') }}
-                                    </div>
-                                    <div class="text-xs font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                                        <i class="bi bi-clock"></i> {{ $reqCheckOutAt?->format('g:i A') }}
-                                    </div>
-                                </div>
-                            </div>
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Stay Duration</span>
+                            <span class="font-semibold text-slate-900">{{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Stay</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 mb-6 text-left flex items-start gap-2.5">
-                    <i class="bi bi-chat-dots-fill text-emerald-600 text-base shrink-0 mt-0.5"></i>
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Original Schedule</span>
+                        <div class="mt-0.5 font-medium text-slate-700">
+                            @if ($origCheckInAt && $origCheckOutAt)
+                                <span>{{ $origCheckInAt->format('M d, Y · g:i A') }} &ndash; {{ $origCheckOutAt->format('M d, Y · g:i A') }}</span>
+                            @elseif ($origStart)
+                                <span>{{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }}</span>
+                            @endif
+                        </div>
+                    </div>
+
                     <div>
-                        <strong>What happens next?</strong><br>
-                        Our park staff will review your requested schedule. Once approved, you will receive an SMS confirmation on <strong class="text-slate-800">{{ $displayPhone }}</strong>.
+                        <span class="mb-2 block text-[11px] font-bold uppercase tracking-wider text-emerald-800">Requested New Schedule</span>
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                                <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Check-In</span>
+                                <div class="mt-0.5 font-bold text-slate-900">{{ $reqCheckInAt?->format('F j, Y') }}</div>
+                                <div class="mt-0.5 text-slate-500">{{ $reqCheckInAt?->format('g:i A') }}</div>
+                            </div>
+                            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                                <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Check-Out</span>
+                                <div class="mt-0.5 font-bold text-slate-900">{{ $reqCheckOutAt?->format('F j, Y') }}</div>
+                                <div class="mt-0.5 text-slate-500">{{ $reqCheckOutAt?->format('g:i A') }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <a href="{{ url('/') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-semibold text-sm transition-all shadow-md">
-                    <i class="bi bi-house-door"></i> Back to Homepage
-                </a>
+                <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+                    <strong class="block text-slate-900">What happens next?</strong>
+                    Our park staff will review your requested schedule. Once approved, you will receive an SMS confirmation on <strong class="text-slate-900">{{ $displayPhone }}</strong>.
+                </div>
+
+                <div class="mt-6">
+                    <a href="{{ url('/') }}" class="inline-flex items-center rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white no-underline transition-colors hover:bg-[#1a4730] sm:text-sm">
+                        Back to Homepage
+                    </a>
+                </div>
             </div>
 
         @else
@@ -618,155 +556,111 @@
             <!-- ======================================================== -->
             <!-- STEP 1: INITIAL OPTION SELECTION SCREEN (BUTTONS FIRST)  -->
             <!-- ======================================================== -->
-            <div id="optionSelectionScreen" class="{{ $initialMode ? 'hidden' : '' }} max-w-3xl mx-auto transition-all duration-300">
+            <div id="optionSelectionScreen" class="{{ $initialMode ? 'hidden' : '' }} mx-auto max-w-3xl space-y-6 transition-all duration-200">
                 <!-- Summary Card of Current Booking -->
-                <div class="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-7 shadow-sm border border-emerald-950/10 mb-4 sm:mb-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-slate-100">
-                        <div class="flex items-center gap-2.5 sm:gap-3">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-base sm:text-lg shrink-0 font-bold">
-                                <i class="bi bi-bookmark-check-fill"></i>
-                            </div>
-                            <div>
-                                <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800 block">Current Reservation</span>
-                                <h2 class="font-display text-base sm:text-xl font-bold text-slate-900 leading-tight">{{ $reservation->booker_name }}</h2>
-                            </div>
+                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+                    <div class="flex flex-col justify-between gap-2 px-5 py-4 sm:flex-row sm:items-center">
+                        <div>
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Current Reservation</span>
+                            <h2 class="m-0 mt-0.5 font-display text-lg font-bold text-slate-900">{{ $reservation->booker_name }}</h2>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] sm:text-xs border border-emerald-200">
-                                #{{ $reservation->formatted_id }}
-                            </span>
-                            <span class="text-[11px] sm:text-xs text-slate-500 font-mono"><i class="bi bi-phone"></i> {{ $displayPhone }}</span>
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono font-bold text-slate-800">#{{ $reservation->formatted_id }}</span>
+                            <span class="font-mono text-slate-500">{{ $displayPhone }}</span>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-3 sm:pt-4 text-xs">
-                        <div class="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                            <span class="text-slate-500 text-[0.62rem] sm:text-[0.68rem] font-medium block uppercase tracking-wider">Scheduled Date:</span>
-                            <span class="font-bold text-slate-800 text-xs sm:text-sm mt-0.5 block">
+                    <div class="grid grid-cols-1 divide-y divide-slate-200 border-t border-slate-200 bg-slate-50/70 text-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                        <div class="px-5 py-3.5">
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Scheduled Date</span>
+                            <span class="mt-1 block text-sm font-bold text-slate-900">
                                 @if ($stayDays > 1)
                                     {{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }} &ndash; {{ \Carbon\Carbon::parse($origEnd)->format('M d, Y') }}
                                 @else
                                     {{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }}
                                 @endif
                             </span>
-                            <span class="text-[0.62rem] sm:text-[0.68rem] text-slate-500">({{ $stayDays }} Day Continuous Stay)</span>
+                            <span class="text-[11px] text-slate-500">{{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Continuous Stay</span>
                         </div>
-                        <div class="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                            <span class="text-slate-500 text-[0.62rem] sm:text-[0.68rem] font-medium block uppercase tracking-wider">Total Booking:</span>
-                            <span class="font-bold text-slate-800 text-xs sm:text-sm mt-0.5 block">₱{{ number_format($reservation->total_amount, 2) }}</span>
-                            <span class="text-[0.62rem] sm:text-[0.68rem] text-slate-500">{{ $reservation->number_of_guests }} registered guests</span>
+                        <div class="px-5 py-3.5">
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total Booking</span>
+                            <span class="mt-1 block text-sm font-bold tabular-nums text-slate-900">₱{{ number_format($reservation->total_amount, 2) }}</span>
+                            <span class="text-[11px] text-slate-500">{{ $reservation->number_of_guests }} registered guests</span>
                         </div>
-                        <div class="p-2.5 sm:p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/70">
-                            <span class="text-emerald-800 text-[0.62rem] sm:text-[0.68rem] font-bold block uppercase tracking-wider">Downpayment Paid:</span>
-                            <span class="font-display font-extrabold text-emerald-800 text-sm sm:text-base mt-0.5 block">₱{{ number_format($origPaid, 2) }}</span>
-                            <span class="text-[0.62rem] sm:text-[0.68rem] text-emerald-700">Eligible 50% refund: <strong>₱{{ number_format($refundAmount, 2) }}</strong></span>
+                        <div class="px-5 py-3.5">
+                            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Downpayment Paid</span>
+                            <span class="mt-1 block text-sm font-bold tabular-nums text-emerald-800">₱{{ number_format($origPaid, 2) }}</span>
+                            <span class="text-[11px] text-slate-500">50% refund value: <strong class="text-slate-700">₱{{ number_format($refundAmount, 2) }}</strong></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 1 Heading & Prompt -->
-                <div class="text-center mb-4 sm:mb-8">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200 mb-1.5 sm:mb-2">
-                        <i class="bi bi-ui-radios-grid"></i> Step 1 of 2: Pick an Option
-                    </span>
-                    <h2 class="font-display text-lg sm:text-2xl md:text-3xl font-bold text-slate-900 leading-snug">
-                        How would you like to proceed?
-                    </h2>
-                    <p class="text-slate-600 text-[11px] sm:text-sm mt-1 sm:mt-2 max-w-xl mx-auto leading-relaxed">
-                        Please choose one of the two options below to enter its process. You can reschedule to new visit dates or request a 50% refund of your downpayment.
+                <!-- Step 1 Heading -->
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Step 1 of 2</span>
+                    <h2 class="m-0 mt-1 font-display text-xl font-bold text-slate-900 sm:text-2xl">How would you like to proceed?</h2>
+                    <p class="m-0 mt-1 text-xs text-slate-600 sm:text-sm">
+                        Choose whether to move your reservation to new dates or cancel for a 50% downpayment refund.
                     </p>
                 </div>
 
-                <!-- Two Interactive Option Cards / Buttons -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5 mb-5 sm:mb-8">
-                    <!-- Option 1 Button Card: Reschedule Dates -->
-                    <div id="cardSelectResched" class="group text-left p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border-2 border-emerald-600/70 bg-gradient-to-br from-emerald-50/80 via-white to-white hover:border-emerald-700 hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                <!-- Two Option Cards -->
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <!-- Option 1: Reschedule Dates -->
+                    <div id="cardSelectResched" class="flex cursor-pointer flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-emerald-700 sm:p-6">
                         <div>
-                            <div class="flex items-center justify-between gap-2 mb-2.5 sm:mb-4">
-                                <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-800 text-white flex items-center justify-center text-lg sm:text-2xl shadow-sm group-hover:scale-110 transition-transform">
-                                    <i class="bi bi-calendar2-range"></i>
-                                </div>
-                                <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                    100% Value Kept
-                                </span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Option 1</span>
+                                <span class="text-[11px] font-semibold text-emerald-700">100% deposit kept</span>
                             </div>
-
-                            <h3 class="font-display font-bold text-base sm:text-xl text-emerald-950 mb-1 sm:mb-2">
-                                Option 1: Reschedule Dates
-                            </h3>
-                            <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed mb-2.5 sm:mb-4">
-                                Choose new dates for your visit from our real-time availability calendar. Retain 100% of your deposit value with zero penalty.
+                            <h3 class="m-0 mt-1.5 font-display text-lg font-bold text-slate-900">Reschedule Dates</h3>
+                            <p class="m-0 mt-1.5 text-xs leading-relaxed text-slate-600">
+                                Pick new available dates from our calendar and keep your full deposit value with no penalty.
                             </p>
 
-                            <ul class="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs text-slate-700 mb-3.5 sm:mb-6">
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
-                                    <span>Keep full deposit value (<strong>₱{{ number_format($origPaid, 2) }}</strong>)</span>
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
-                                    <span>Pick any available dates in our calendar</span>
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
-                                    <span>Same-category unit swap if current unit is occupied</span>
-                                </li>
+                            <ul class="mt-4 mb-5 space-y-1.5 border-t border-slate-100 pt-3.5 text-xs text-slate-700">
+                                <li>&bull; Keep full deposit (<strong>₱{{ number_format($origPaid, 2) }}</strong>)</li>
+                                <li>&bull; Live availability calendar selection</li>
+                                <li>&bull; Same-category unit swap if occupied</li>
                             </ul>
                         </div>
 
-                        <button type="button" id="btnSelectResched" class="w-full py-2.5 sm:py-3.5 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-emerald-800 hover:bg-emerald-900 group-hover:bg-emerald-900 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98">
+                        <button type="button" id="btnSelectResched" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#123322] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#1a4730] sm:text-sm">
                             <span>Choose New Dates</span>
-                            <i class="bi bi-arrow-right text-sm sm:text-base transition-transform group-hover:translate-x-1"></i>
+                            <span aria-hidden="true">&rarr;</span>
                         </button>
                     </div>
 
-                    <!-- Option 2 Button Card: 50% Refund -->
-                    <div id="cardSelectRefund" class="group text-left p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border-2 border-amber-500/70 bg-gradient-to-br from-amber-50/80 via-white to-white hover:border-amber-600 hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                    <!-- Option 2: 50% Refund -->
+                    <div id="cardSelectRefund" class="flex cursor-pointer flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-amber-600 sm:p-6">
                         <div>
-                            <div class="flex items-center justify-between gap-2 mb-2.5 sm:mb-4">
-                                <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-600 text-white flex items-center justify-center text-lg sm:text-2xl shadow-sm group-hover:scale-110 transition-transform">
-                                    <i class="bi bi-cash-stack"></i>
-                                </div>
-                                <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                                    50% Refund to GCash
-                                </span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Option 2</span>
+                                <span class="text-[11px] font-semibold text-slate-500">GCash / Maya</span>
                             </div>
-
-                            <h3 class="font-display font-bold text-base sm:text-xl text-slate-900 mb-1 sm:mb-2">
-                                Option 2: Cancel &amp; 50% Refund
-                            </h3>
-                            <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed mb-2.5 sm:mb-4">
-                                Cancel your reservation and request 50% of your paid downpayment sent directly to your GCash or Maya e-wallet account.
+                            <h3 class="m-0 mt-1.5 font-display text-lg font-bold text-slate-900">Cancel &amp; 50% Refund</h3>
+                            <p class="m-0 mt-1.5 text-xs leading-relaxed text-slate-600">
+                                Cancel your reservation and request 50% of your downpayment sent to your GCash or Maya account.
                             </p>
 
-                            <ul class="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs text-slate-700 mb-3.5 sm:mb-6">
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
-                                    <span>Receive <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% downpayment)</span>
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
-                                    <span>Sent directly to your GCash or Maya account</span>
-                                </li>
-                                <li class="flex items-center gap-2">
-                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
-                                    <span>SMS notification with transaction ref # once disbursed</span>
-                                </li>
+                            <ul class="mt-4 mb-5 space-y-1.5 border-t border-slate-100 pt-3.5 text-xs text-slate-700">
+                                <li>&bull; Receive <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% downpayment)</li>
+                                <li>&bull; Sent directly to your e-wallet</li>
+                                <li>&bull; SMS confirmation with reference #</li>
                             </ul>
                         </div>
 
-                        <button type="button" id="btnSelectRefund" class="w-full py-2.5 sm:py-3.5 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-amber-600 hover:bg-amber-700 group-hover:bg-amber-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98">
+                        <button type="button" id="btnSelectRefund" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-50 sm:text-sm">
                             <span>Request 50% Refund</span>
-                            <i class="bi bi-arrow-right text-sm sm:text-base transition-transform group-hover:translate-x-1"></i>
+                            <span aria-hidden="true">&rarr;</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Footer notice on Option Selection Screen -->
-                <div class="flex items-center justify-center gap-1.5 text-[10px] sm:text-[0.72rem] text-slate-500 text-center">
-                    <i class="bi bi-clock-history"></i>
-                    <span>This secure link expires in <strong>{{ $rescheduleRequest->expires_at->diffForHumans(['parts' => 2]) }}</strong> (valid for 24 hours).</span>
-                </div>
+                <!-- Footer notice -->
+                <p class="m-0 text-center text-xs text-slate-500">
+                    This link expires in <strong>{{ $rescheduleRequest->expires_at->diffForHumans(['parts' => 2]) }}</strong> (valid for 24 hours).
+                </p>
             </div>
 
             <!-- ======================================================== -->
@@ -774,115 +668,103 @@
             <!-- ======================================================== -->
             <div id="processScreen" class="{{ $initialMode ? '' : 'hidden' }} transition-all duration-300">
                 <!-- Navigation & Option Switcher Top Bar -->
-                <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-950/10 shadow-xs">
-                    <div class="flex items-center gap-2.5 sm:gap-3">
-                        <button type="button" id="btnBackToOptions" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] sm:text-xs transition-all cursor-pointer">
-                            <i class="bi bi-arrow-left"></i>
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="btnBackToOptions" class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                            <span aria-hidden="true">&larr;</span>
                             <span>Back to Options</span>
                         </button>
-                        <span id="processStepTitle" class="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:inline">
-                            Step 2: <strong class="text-emerald-950 font-bold">Choose New Dates (Option 1)</strong>
+                        <span id="processStepTitle" class="hidden text-xs font-medium text-slate-500 sm:inline">
+                            Step 2: <strong class="font-bold text-slate-900">Choose New Dates (Option 1)</strong>
                         </span>
                     </div>
 
-                    <!-- Option Switcher Pills inside process -->
-                    <div class="flex items-center gap-1.5 sm:gap-2 self-start sm:self-auto">
-                        <span class="text-[0.62rem] sm:text-[0.68rem] text-slate-400 font-semibold uppercase tracking-wider hidden md:inline">Switch:</span>
-                        <button type="button" id="tabOptionResched" class="guest-action-tab text-left px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-emerald-700 bg-emerald-50 text-emerald-900 font-bold text-[11px] sm:text-xs transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
-                            <i class="bi bi-calendar2-range"></i>
+                    <!-- Option Switcher -->
+                    <div class="flex items-center gap-2">
+                        <span class="hidden text-[11px] font-semibold uppercase tracking-wider text-slate-400 md:inline">Switch:</span>
+                        <button type="button" id="tabOptionResched" class="guest-action-tab inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border-2 border-emerald-700 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-900 transition-colors">
                             <span>Reschedule</span>
                         </button>
-                        <button type="button" id="tabOptionRefund" class="guest-action-tab text-left px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-slate-200 bg-white hover:border-amber-400 text-slate-700 font-semibold text-[11px] sm:text-xs transition-all cursor-pointer inline-flex items-center gap-1.5">
-                            <i class="bi bi-cash-stack"></i>
+                        <button type="button" id="tabOptionRefund" class="guest-action-tab inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-amber-500">
                             <span>50% Refund</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
+                <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
                 
                 <!-- Left: Reservation Details & Notice -->
-                <div class="lg:col-span-5 flex flex-col gap-4 sm:gap-6">
-                    <div class="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-sm border border-emerald-950/10">
-                        <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 mb-3 sm:mb-4">
+                <div class="flex flex-col gap-5 lg:col-span-5">
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+                        <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
                             <div>
-                                <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800 block">Reservation Details</span>
-                                <h2 class="font-display text-base sm:text-xl font-bold text-slate-900 leading-tight">{{ $reservation->booker_name }}</h2>
+                                <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Reservation Details</span>
+                                <h2 class="m-0 mt-0.5 font-display text-lg font-bold text-slate-900">{{ $reservation->booker_name }}</h2>
                             </div>
-                            <span class="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] sm:text-xs border border-emerald-200">
+                            <span class="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-bold text-slate-800">
                                 #{{ $reservation->formatted_id }}
                             </span>
                         </div>
 
                         <!-- Current Scheduled Info -->
-                        <div class="space-y-2 sm:space-y-3 text-[11px] sm:text-xs mb-3.5 sm:mb-5">
-                            <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <span class="text-slate-500 font-medium">Original Dates:</span>
-                                <span class="font-bold text-slate-800 text-right">
+                        <dl class="m-0 mb-4 divide-y divide-slate-100 text-xs">
+                            <div class="flex items-center justify-between gap-2 py-2.5">
+                                <dt class="text-slate-500">Original Dates</dt>
+                                <dd class="m-0 text-right font-semibold text-slate-900">
                                     @if ($stayDays > 1)
                                         {{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }} &ndash; {{ \Carbon\Carbon::parse($origEnd)->format('M d, Y') }}
-                                        <span class="block text-[0.62rem] sm:text-[0.68rem] text-slate-500 font-normal">({{ $stayDays }} Days Stay)</span>
+                                        <span class="block text-[11px] font-normal text-slate-500">({{ $stayDays }} Days Stay)</span>
                                     @else
                                         {{ \Carbon\Carbon::parse($origStart)->format('F j, Y') }}
                                     @endif
-                                </span>
+                                </dd>
                             </div>
-
-                            <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <span class="text-slate-500 font-medium">Stay Duration:</span>
-                                <span class="font-bold text-emerald-900">
-                                    {{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Continuous Stay
-                                </span>
+                            <div class="flex items-center justify-between gap-2 py-2.5">
+                                <dt class="text-slate-500">Stay Duration</dt>
+                                <dd class="m-0 font-semibold text-slate-900">{{ $stayDays }} {{ \Illuminate\Support\Str::plural('Day', $stayDays) }} Continuous Stay</dd>
                             </div>
-
-                            <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <span class="text-slate-500 font-medium">Session:</span>
-                                <span class="font-bold text-slate-800">
-                                    Fixed (same as original)
-                                </span>
+                            <div class="flex items-center justify-between gap-2 py-2.5">
+                                <dt class="text-slate-500">Session</dt>
+                                <dd class="m-0 font-semibold text-slate-900">Fixed (same as original)</dd>
                             </div>
-
-                            <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <span class="text-slate-500 font-medium">Guests Count:</span>
-                                <span class="font-semibold text-slate-800">{{ $reservation->number_of_guests }} guests</span>
+                            <div class="flex items-center justify-between gap-2 py-2.5">
+                                <dt class="text-slate-500">Guests</dt>
+                                <dd class="m-0 font-semibold text-slate-900">{{ $reservation->number_of_guests }} guests</dd>
                             </div>
+                        </dl>
 
-                            <!-- Financial Summary Breakdown -->
-                            <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-amber-50/50 border border-amber-200/60 space-y-1.5 sm:space-y-2">
-                                <div class="flex items-center justify-between text-slate-600">
-                                    <span>Total Booking:</span>
-                                    <span class="font-bold text-slate-900">₱{{ number_format($reservation->total_amount, 2) }}</span>
-                                </div>
-                                <div class="flex items-center justify-between text-slate-600">
-                                    <span>Downpayment Paid:</span>
-                                    <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
-                                </div>
-                                <div class="flex items-center justify-between pt-1 border-t border-amber-200/60">
-                                    <span class="text-amber-900 font-bold uppercase text-[0.62rem] sm:text-[0.65rem]">50% Refund Value:</span>
-                                    <span class="font-extrabold text-emerald-700 text-xs sm:text-sm">₱{{ number_format($refundAmount, 2) }}</span>
-                                </div>
+                        <!-- Financial Summary Breakdown -->
+                        <div class="mb-4 space-y-1.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
+                            <div class="flex items-center justify-between text-slate-600">
+                                <span>Total Booking</span>
+                                <span class="font-semibold tabular-nums text-slate-900">₱{{ number_format($reservation->total_amount, 2) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-slate-600">
+                                <span>Downpayment Paid</span>
+                                <span class="font-semibold tabular-nums text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-200 pt-2">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-700">50% Refund Value</span>
+                                <span class="font-bold tabular-nums text-emerald-800">₱{{ number_format($refundAmount, 2) }}</span>
                             </div>
                         </div>
 
                         @if ($stayDays > 1)
-                            <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] sm:text-xs text-emerald-900 mb-3.5 sm:mb-5 flex items-start gap-2 sm:gap-2.5">
-                                <i class="bi bi-calendar-range-fill text-emerald-700 text-sm sm:text-base shrink-0 mt-0.5"></i>
-                                <div class="leading-relaxed">
-                                    <strong>{{ $stayDays }}-Day Stay Adaptation:</strong><br>
-                                    When you pick a check-in date, the selector automatically schedules the full <strong>{{ $stayDays }} continuous days</strong> through check-out. The session is fixed (same as original).
-                                </div>
+                            <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-xs leading-relaxed text-emerald-900">
+                                <strong>{{ $stayDays }}-Day Stay Adaptation:</strong>
+                                Picking a check-in date automatically schedules all <strong>{{ $stayDays }} continuous days</strong> through check-out.
                             </div>
                         @endif
 
                         <!-- Amenities Availed -->
                         @if ($reservation->reservationAmenities->isNotEmpty())
-                            <div class="mb-3.5 sm:mb-5">
-                                <div class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 mb-1.5 sm:mb-2">Reserved Amenities</div>
-                                <div class="space-y-1 sm:space-y-1.5">
+                            <div class="mb-4">
+                                <div class="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Reserved Amenities</div>
+                                <div class="divide-y divide-slate-100 rounded-lg border border-slate-200 text-xs">
                                     @foreach ($reservation->reservationAmenities as $ra)
-                                        <div class="flex items-center justify-between px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-emerald-50/50 border border-emerald-100/60 text-[11px] sm:text-xs">
-                                            <span class="font-semibold text-emerald-950">{{ $ra->amenity?->amenities_name ?? 'Amenity' }}</span>
-                                            <span class="text-[0.65rem] sm:text-[0.7rem] text-emerald-700 font-medium">Qty: {{ $ra->quantity }}</span>
+                                        <div class="flex items-center justify-between px-3 py-2">
+                                            <span class="font-semibold text-slate-800">{{ $ra->amenity?->amenities_name ?? 'Amenity' }}</span>
+                                            <span class="text-slate-500">Qty: {{ $ra->quantity }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -890,137 +772,122 @@
                         @endif
 
                         <!-- Expiration Notice -->
-                        <div class="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-slate-100 text-[10px] sm:text-[0.72rem] text-slate-600">
-                            <i class="bi bi-clock-history text-slate-500"></i>
-                            <span>Link expires in <strong>{{ $rescheduleRequest->expires_at->diffForHumans(['parts' => 2]) }}</strong> (valid 24h)</span>
-                        </div>
+                        <p class="m-0 text-[11px] text-slate-500">
+                            Link expires in <strong>{{ $rescheduleRequest->expires_at->diffForHumans(['parts' => 2]) }}</strong> (valid 24h).
+                        </p>
                     </div>
                 </div>
 
                 <!-- Right: Switchable Panels (Option 1 Calendar VS Option 2 50% Refund) -->
                 <div class="lg:col-span-7">
                     <!-- Option 1: Calendar Container -->
-                    <div id="calendarContainer" class="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-6 md:p-8 shadow-sm border border-emerald-950/10 transition-all">
-                        <div class="mb-3 sm:mb-4">
-                            <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 block">Option 1 of 2</span>
-                            <h3 class="font-display text-lg sm:text-2xl font-bold text-slate-900 leading-snug">
+                    <div id="calendarContainer" class="rounded-xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+                        <div class="mb-4 border-b border-slate-100 pb-3.5">
+                            <span class="block text-[11px] font-bold uppercase tracking-wider text-emerald-800">Option 1 of 2</span>
+                            <h3 class="m-0 mt-0.5 font-display text-lg font-bold text-slate-900 sm:text-xl">
                                 @if ($stayDays > 1)
                                     Choose Check-In Date ({{ $stayDays }}-Day Stay)
                                 @else
                                     Choose Your Preferred Date
                                 @endif
                             </h3>
-                            <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 leading-relaxed">
+                            <p class="m-0 mt-1 text-xs leading-relaxed text-slate-500">
                                 @if ($stayDays > 1)
-                                    Select your preferred check-in date. The calendar will automatically reserve the entire <strong>{{ $stayDays }}-day window</strong>. The session is fixed (same as original).
+                                    Select your preferred check-in date. The calendar will automatically reserve the entire <strong>{{ $stayDays }}-day window</strong>.
                                 @else
-                                    Only dates with full availability for your reserved amenities are selectable. The session is fixed (same as original).
+                                    Only dates with full availability for your reserved amenities are selectable.
                                 @endif
                             </p>
                         </div>
 
                         <!-- Calendar Header (Month / Year Navigation) -->
-                        <div class="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-slate-100">
-                            <button type="button" id="prevMonthBtn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50 text-slate-700 flex items-center justify-center transition-all cursor-pointer">
-                                <i class="bi bi-chevron-left text-[11px] sm:text-xs font-bold"></i>
+                        <div class="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+                            <button type="button" id="prevMonthBtn" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50">
+                                <i class="bi bi-chevron-left text-xs font-bold"></i>
                             </button>
-                            <div class="text-center">
-                                <span id="calendarMonthLabel" class="font-display font-bold text-sm sm:text-base md:text-lg text-slate-900 block">Loading...</span>
-                            </div>
-                            <button type="button" id="nextMonthBtn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50 text-slate-700 flex items-center justify-center transition-all cursor-pointer">
-                                <i class="bi bi-chevron-right text-[11px] sm:text-xs font-bold"></i>
+                            <span id="calendarMonthLabel" class="font-display text-sm font-bold text-slate-900 sm:text-base">Loading...</span>
+                            <button type="button" id="nextMonthBtn" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50">
+                                <i class="bi bi-chevron-right text-xs font-bold"></i>
                             </button>
                         </div>
 
                         <!-- Weekday labels -->
-                        <div class="grid grid-cols-7 gap-1 sm:gap-1.5 text-center mb-1.5 sm:mb-2">
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Sun</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Mon</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Tue</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Wed</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Thu</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Fri</span>
-                            <span class="text-[0.65rem] sm:text-[0.7rem] font-bold uppercase tracking-wider text-slate-400">Sat</span>
+                        <div class="mb-1.5 grid grid-cols-7 gap-1 text-center">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Sun</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Mon</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tue</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Wed</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Thu</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fri</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Sat</span>
                         </div>
 
                         <!-- Calendar Days Grid -->
-                        <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-1.5 min-h-[220px] sm:min-h-[260px] relative">
-                            <!-- Injected dynamically by JS -->
-                            <div class="col-span-7 flex items-center justify-center py-12 sm:py-16 text-slate-400 text-xs">
-                                <i class="bi bi-arrow-repeat animate-spin text-base sm:text-lg mr-2 text-emerald-600"></i> Loading availability calendar...
+                        <div id="calendarGrid" class="relative grid min-h-[240px] grid-cols-7 gap-1">
+                            <div class="col-span-7 flex items-center justify-center py-14 text-xs text-slate-400">
+                                Loading availability calendar...
                             </div>
                         </div>
 
                         <!-- Legend -->
-                        <div class="flex items-center justify-between text-[0.65rem] sm:text-[0.7rem] text-slate-500 mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 flex-wrap gap-1.5 sm:gap-2">
-                            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-                                <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                    <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md border border-slate-300 bg-white"></span> Available
+                        <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-[11px] text-slate-500">
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="h-3 w-3 rounded border border-slate-300 bg-white"></span> Available
+                            </span>
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="flex h-3 w-3 items-center justify-center rounded border border-amber-300 bg-amber-50">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                </span> Unit Swap Available
+                            </span>
+                            @if ($stayDays > 1)
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-3 w-3 rounded bg-emerald-900"></span> Check-in / Out
                                 </span>
-                                <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                    <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md border border-amber-300 bg-amber-50 relative flex items-center justify-center">
-                                        <span class="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-amber-500"></span>
-                                    </span> Unit Swap Available
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-3 w-3 rounded border border-emerald-300 bg-emerald-200"></span> Stay Days
                                 </span>
-                                @if ($stayDays > 1)
-                                    <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                        <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-emerald-900"></span> Check-in / Out
-                                    </span>
-                                    <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                        <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-emerald-200 border border-emerald-300"></span> Stay Days
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                        <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-emerald-900"></span> Selected
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center gap-1 sm:gap-1.5">
-                                    <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-slate-200 line-through"></span> Unavailable
+                            @else
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-3 w-3 rounded bg-emerald-900"></span> Selected
                                 </span>
-                            </div>
+                            @endif
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="h-3 w-3 rounded bg-slate-200 line-through"></span> Unavailable
+                            </span>
                         </div>
 
                         <!-- Selection Summary & Submit Form -->
-                        <form id="rescheduleForm" action="{{ url('/reservation/reschedule/' . $rescheduleRequest->token) }}" method="POST" class="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-100">
+                        <form id="rescheduleForm" action="{{ url('/reservation/reschedule/' . $rescheduleRequest->token) }}" method="POST" class="mt-5 border-t border-slate-100 pt-5">
                             @csrf
                             <input type="hidden" name="requested_date" id="requestedDateInput" value="">
                             <input type="hidden" name="replacement_amenity_id" id="replacementAmenityIdInput" value="">
 
-                            <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 mb-3.5 sm:mb-5">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-emerald-200/60 mb-2.5 sm:mb-3">
+                            <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+                                <div class="flex flex-col justify-between gap-2 border-b border-slate-200 pb-3 sm:flex-row sm:items-center">
                                     <div>
-                                        <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800 block">
+                                        <span class="block text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                                             @if ($stayDays > 1)
-                                                 Selected {{ $stayDays }}-Day Reschedule Schedule:
+                                                Selected {{ $stayDays }}-Day Schedule
                                             @else
-                                                Selected Preferred Date:
+                                                Selected Preferred Date
                                             @endif
                                         </span>
-                                        <div id="selectedDateDisplay" class="font-bold text-slate-800 text-xs sm:text-base mt-0.5">
+                                        <div id="selectedDateDisplay" class="mt-0.5 text-sm font-bold text-slate-900">
                                             Please tap an available check-in date on the calendar above
                                         </div>
                                     </div>
-                                    <div class="shrink-0">
-                                        <span id="dateBadge" class="hidden px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-800 text-white">
-                                            @if ($stayDays > 1) {{ $stayDays }} Days Picked @else Date Picked @endif
-                                        </span>
-                                    </div>
+                                    <span id="dateBadge" class="hidden shrink-0 rounded-md bg-emerald-800 px-2.5 py-1 text-xs font-bold text-white">
+                                        @if ($stayDays > 1) {{ $stayDays }} Days Picked @else Date Picked @endif
+                                    </span>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-emerald-950/80">
-                                    <div class="flex items-center gap-1.5">
-                                        <i class="bi bi-clock-history text-emerald-700"></i>
-                                        <span>Session: <strong class="text-emerald-950">Fixed (same as original)</strong></span>
-                                    </div>
-                                    <div class="flex items-center gap-1.5">
-                                        <i class="bi bi-shield-check text-emerald-700"></i>
-                                        <span>Amenities: <strong class="text-emerald-950">100% Available for full stay</strong></span>
-                                    </div>
+                                <div class="mt-2.5 grid grid-cols-1 gap-1.5 text-xs text-slate-600 sm:grid-cols-2">
+                                    <span>Session: <strong class="text-slate-900">Fixed (same as original)</strong></span>
+                                    <span>Amenities: <strong class="text-slate-900">100% Available for full stay</strong></span>
                                 </div>
                             </div>
 
-                            <button type="submit" id="submitRescheduleBtn" disabled class="w-full cursor-not-allowed opacity-50 py-2.5 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-md flex items-center justify-center gap-2">
-                                <i class="bi bi-calendar-check text-sm sm:text-base"></i>
+                            <button type="submit" id="submitRescheduleBtn" disabled class="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#123322] px-5 py-2.5 text-xs font-semibold text-white opacity-50 transition-colors hover:bg-[#1a4730] sm:text-sm">
                                 <span>
                                     @if ($stayDays > 1)
                                         Submit {{ $stayDays }}-Day Reschedule Request
@@ -1033,116 +900,105 @@
                     </div>
 
                     <!-- Option 2: 50% Refund Request Container -->
-                    <div id="refundContainer" class="hidden bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-6 md:p-8 shadow-sm border border-amber-950/10 transition-all">
-                        <div class="mb-3 sm:mb-4">
-                            <span class="text-[0.62rem] sm:text-[0.68rem] font-bold uppercase tracking-wider text-amber-700 block">Option 2 of 2</span>
-                            <h3 class="font-display text-lg sm:text-2xl font-bold text-slate-900 leading-snug">
+                    <div id="refundContainer" class="hidden rounded-xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+                        <div class="mb-4 border-b border-slate-100 pb-3.5">
+                            <span class="block text-[11px] font-bold uppercase tracking-wider text-amber-700">Option 2 of 2</span>
+                            <h3 class="m-0 mt-0.5 font-display text-lg font-bold text-slate-900 sm:text-xl">
                                 Request 50% Downpayment Refund
                             </h3>
-                            <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 leading-relaxed">
-                                Complete this form to cancel your reservation and have 50% of your downpayment sent directly to your GCash or e-wallet account by park staff.
+                            <p class="m-0 mt-1 text-xs leading-relaxed text-slate-500">
+                                Complete this form to cancel your reservation and receive 50% of your downpayment via GCash or Maya.
                             </p>
                         </div>
 
                         <!-- Financial Breakdown Card -->
-                        <div class="rounded-xl sm:rounded-2xl border border-amber-200 bg-amber-50/60 p-3 sm:p-5 mb-3.5 sm:mb-5 text-[11px] sm:text-xs">
-                            <div class="flex items-center justify-between pb-2 sm:pb-3 border-b border-amber-200/70">
-                                <span class="text-slate-600 font-medium">Total Reservation Cost:</span>
-                                <span class="font-bold text-slate-900">₱{{ number_format($reservation->total_amount, 2) }}</span>
+                        <div class="mb-5 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/70 px-4 text-xs">
+                            <div class="flex items-center justify-between py-2.5">
+                                <span class="text-slate-600">Total Reservation Cost</span>
+                                <span class="font-semibold tabular-nums text-slate-900">₱{{ number_format($reservation->total_amount, 2) }}</span>
                             </div>
-                            <div class="flex items-center justify-between py-2 sm:py-2.5 border-b border-amber-200/70">
-                                <span class="text-slate-600 font-medium">Downpayment Paid:</span>
-                                <span class="font-bold text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
+                            <div class="flex items-center justify-between py-2.5">
+                                <span class="text-slate-600">Downpayment Paid</span>
+                                <span class="font-semibold tabular-nums text-slate-900">₱{{ number_format($origPaid, 2) }}</span>
                             </div>
-                            <div class="flex items-center justify-between py-2 sm:py-3 border-b border-amber-200/70">
+                            <div class="flex items-center justify-between py-3">
                                 <div>
-                                    <span class="font-extrabold text-amber-950 block text-xs sm:text-sm">Eligible 50% Refund to Receive:</span>
-                                    <span class="text-[0.62rem] sm:text-[0.68rem] text-amber-800">50% of downpayment</span>
+                                    <span class="block font-bold text-slate-900">Eligible 50% Refund</span>
+                                    <span class="text-[11px] text-slate-500">50% of downpayment</span>
                                 </div>
-                                <span class="font-display font-extrabold text-emerald-700 text-base sm:text-2xl">
+                                <span class="text-lg font-bold tabular-nums text-emerald-800">
                                     ₱{{ number_format($refundAmount, 2) }}
                                 </span>
                             </div>
-                            <div class="flex items-center justify-between pt-2 sm:pt-2.5 text-slate-500 text-[0.65rem] sm:text-[0.72rem]">
-                                <span>Cancellation Policy Fee (50% Retained):</span>
-                                <span class="font-semibold text-slate-700">₱{{ number_format($retainedAmount, 2) }}</span>
+                            <div class="flex items-center justify-between py-2 text-[11px] text-slate-500">
+                                <span>Cancellation Policy Fee (50% Retained)</span>
+                                <span class="font-semibold tabular-nums text-slate-700">₱{{ number_format($retainedAmount, 2) }}</span>
                             </div>
                         </div>
 
                         <!-- Refund Form -->
-                        <form id="refundForm" action="{{ url('/reservation/reschedule/' . $rescheduleRequest->token . '/refund') }}" method="POST" class="space-y-3 sm:space-y-4">
+                        <form id="refundForm" action="{{ url('/reservation/reschedule/' . $rescheduleRequest->token . '/refund') }}" method="POST" class="space-y-4">
                             @csrf
                             <input type="hidden" name="action_type" value="refund">
 
                             <!-- E-Wallet Provider Selection -->
                             <div>
-                                <label class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1.5 sm:mb-2">
-                                    Select E-Wallet Provider:
-                                </label>
-                                <div class="grid grid-cols-2 gap-2 sm:gap-3">
-                                    <label class="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 border-emerald-700 bg-emerald-50/50 cursor-pointer transition-all hover:shadow-xs group/wallet" id="walletLabelGcash">
+                                <label class="mb-1.5 block text-xs font-semibold text-slate-700">E-Wallet Provider</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border-2 border-emerald-700 bg-emerald-50/50 px-3.5 py-2.5 transition-colors" id="walletLabelGcash">
                                         <input type="radio" name="ewallet_provider" value="GCash" checked class="text-emerald-700 focus:ring-emerald-600">
-                                        <div class="flex items-center gap-1.5 sm:gap-2">
-                                            <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] sm:text-xs shadow-2xs">G</span>
-                                            <span class="text-xs font-bold text-slate-900">GCash</span>
-                                        </div>
+                                        <span class="text-xs font-bold text-slate-900">GCash</span>
                                     </label>
-                                    <label class="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white cursor-pointer transition-all hover:border-emerald-300 hover:bg-slate-50 group/wallet" id="walletLabelMaya">
+                                    <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 transition-colors hover:bg-slate-50" id="walletLabelMaya">
                                         <input type="radio" name="ewallet_provider" value="Maya" class="text-emerald-700 focus:ring-emerald-600">
-                                        <div class="flex items-center gap-1.5 sm:gap-2">
-                                            <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-[10px] sm:text-xs shadow-2xs">M</span>
-                                            <span class="text-xs font-bold text-slate-900">Maya</span>
-                                        </div>
+                                        <span class="text-xs font-bold text-slate-900">Maya</span>
                                     </label>
                                 </div>
                             </div>
 
                             <!-- Mobile / Account Number -->
                             <div>
-                                <div class="flex items-center justify-between mb-1">
-                                    <label for="refundAccountNo" class="block text-[11px] sm:text-xs font-bold text-slate-700">
-                                        E-Wallet Account / Mobile Number: <span class="text-red-500">*</span>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <label for="refundAccountNo" class="block text-xs font-semibold text-slate-700">
+                                        E-Wallet Mobile Number <span class="text-red-500">*</span>
                                     </label>
-                                    <span class="text-[0.62rem] sm:text-[0.68rem] text-slate-400">Philippine mobile (starts with 09)</span>
+                                    <span class="text-[11px] text-slate-400">Starts with 09</span>
                                 </div>
-                                <div class="relative flex items-center">
-                                    <span class="absolute left-3 text-slate-400 text-xs">
-                                        <i class="bi bi-phone"></i>
-                                    </span>
-                                    <input type="text" name="ewallet_account_number" id="refundAccountNo" maxlength="13" required value="{{ $reservation->phone }}" class="w-full pl-8 sm:pl-9 pr-3 sm:pr-3.5 py-2 sm:py-3 text-xs font-mono font-bold rounded-lg sm:rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-none" placeholder="09XXXXXXXXX">
-                                </div>
-                                <p class="text-[0.62rem] sm:text-[0.68rem] text-slate-400 mt-1">Please ensure your 11-digit mobile number is correct for manual GCash transfer.</p>
+                                <input type="text" name="ewallet_account_number" id="refundAccountNo" maxlength="13" required value="{{ $reservation->phone }}"
+                                    class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 font-mono text-sm font-semibold text-slate-900 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/15"
+                                    placeholder="09XXXXXXXXX">
                             </div>
 
                             <!-- Account Holder Name -->
                             <div>
-                                <label for="refundAccountName" class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1">
-                                    Account Holder Full Name (Registered on E-Wallet): <span class="text-red-500">*</span>
+                                <label for="refundAccountName" class="mb-1 block text-xs font-semibold text-slate-700">
+                                    Account Holder Full Name <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" name="ewallet_account_name" id="refundAccountName" required value="{{ $reservation->booker_name }}" class="w-full px-3 sm:px-3.5 py-2 sm:py-3 text-xs font-semibold rounded-lg sm:rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-none" placeholder="e.g. Juan Dela Cruz">
+                                <input type="text" name="ewallet_account_name" id="refundAccountName" required value="{{ $reservation->booker_name }}"
+                                    class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-900 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/15"
+                                    placeholder="e.g. Juan Dela Cruz">
                             </div>
 
                             <!-- Reason / Feedback (optional) -->
                             <div>
-                                <label for="refundReason" class="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1">
-                                    Reason for Cancellation / Refund (Optional):
+                                <label for="refundReason" class="mb-1 block text-xs font-semibold text-slate-700">
+                                    Reason for Cancellation <span class="font-normal text-slate-400">(Optional)</span>
                                 </label>
-                                <textarea name="refund_reason" id="refundReason" rows="2" class="w-full p-2.5 sm:p-3 text-xs rounded-lg sm:rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-none" placeholder="e.g. Schedule conflict, unable to reschedule new dates"></textarea>
+                                <textarea name="refund_reason" id="refundReason" rows="2"
+                                    class="w-full rounded-lg border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/15"
+                                    placeholder="e.g. Schedule conflict, unable to reschedule new dates"></textarea>
                             </div>
 
                             <!-- Agreement checkbox -->
-                            <div class="pt-1 sm:pt-2">
-                                <label class="flex items-start gap-2 sm:gap-2.5 cursor-pointer text-[11px] sm:text-xs text-slate-600 leading-snug sm:leading-relaxed">
-                                    <input type="checkbox" id="refundConfirmCheck" required class="mt-0.5 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600">
-                                    <span>
-                                        I understand that submitting this request will <strong>cancel Reservation #{{ $reservation->formatted_id }}</strong> and that <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% of my downpayment) will be manually transferred to my GCash account by park staff.
-                                    </span>
-                                </label>
-                            </div>
+                            <label class="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-slate-600">
+                                <input type="checkbox" id="refundConfirmCheck" required class="mt-0.5 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600">
+                                <span>
+                                    I understand that submitting this request will <strong>cancel Reservation #{{ $reservation->formatted_id }}</strong> and that <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% of my downpayment) will be transferred to my e-wallet account by park staff.
+                                </span>
+                            </label>
 
-                            <button type="submit" id="submitRefundBtn" class="w-full py-2.5 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-[0.99] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer mt-3 sm:mt-4">
-                                <i class="bi bi-send-check text-sm sm:text-base"></i>
-                                <span>Submit 50% Refund Request (₱{{ number_format($refundAmount, 2) }})</span>
+                            <button type="submit" id="submitRefundBtn" class="flex w-full cursor-pointer items-center justify-center rounded-lg bg-amber-700 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-amber-800 sm:text-sm">
+                                Submit 50% Refund Request (₱{{ number_format($refundAmount, 2) }})
                             </button>
                         </form>
                     </div><!-- /#refundContainer -->

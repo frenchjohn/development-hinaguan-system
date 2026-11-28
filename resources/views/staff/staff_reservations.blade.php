@@ -163,61 +163,38 @@
                     'night_pool_fee' => $parkSettings->night_pool_fee ?? 0,
                 ]) }}">
                     <!-- 1. DATE & TIME -->
-                    <article class="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-3.5 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90 min-w-0">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </span>
-                        <div class="flex flex-col gap-0.5 min-w-0">
-                            <p class="m-0 text-[0.68rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1] truncate">DATE &amp; TIME</p>
-                            <p class="m-0 text-sm font-bold text-[#183d28] dark:text-[#e8f5e9] truncate" id="resvDate">{{ now()->format('F j, Y') }}</p>
-                            <p class="m-0 text-xs font-semibold text-[#2e7d32] dark:text-[#4ade80] flex items-center gap-1.5 truncate">
-                                <svg class="h-3.5 w-3.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span id="resvTime">{{ now()->format('g:i A') }}</span>
-                            </p>
-                        </div>
+                    <article class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19] min-w-0">
+                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Date &amp; Time</p>
+                        <p class="m-0 mt-2 text-lg font-bold leading-tight text-slate-900 dark:text-white truncate" id="resvDate">{{ now()->format('F j, Y') }}</p>
+                        <p class="m-0 mt-1.5 text-xs font-medium tabular-nums text-slate-500 dark:text-slate-400 truncate" id="resvTime">{{ now()->format('g:i A') }}</p>
                     </article>
 
                     <!-- 2. SESSION -->
-                    <article class="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-3.5 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90 min-w-0">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff8e1] text-[#f57f17] dark:bg-[rgba(255,179,0,0.2)] dark:text-[#ffca28]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        </span>
-                        <div class="flex flex-col gap-1 min-w-0">
-                            <p class="m-0 text-[0.68rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1] truncate">SESSION</p>
-                            <span class="inline-flex w-fit items-center rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide {{ $timePeriod === 'Daytime' ? 'bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]' : 'bg-[#ede7f6] text-[#6a1b9a] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8]' }}" id="resvSession">{{ $timePeriod === 'Nighttime' ? 'OVERNIGHT' : strtoupper($timePeriod) }}</span>
-                            <p class="m-0 text-[0.65rem] text-[#718076] dark:text-[#9baaa1] truncate">
-                                {{ $timePeriod === 'Daytime' ? ($daytimeStart ? \Carbon\Carbon::parse($daytimeStart)->format('g:i A') : '6:00 AM') . ' – ' . ($daytimeEnd ? \Carbon\Carbon::parse($daytimeEnd)->format('g:i A') : '5:00 PM') : ($nighttimeStart ? \Carbon\Carbon::parse($nighttimeStart)->format('g:i A') : '5:00 PM') . ' – ' . ($nighttimeEnd ? \Carbon\Carbon::parse($nighttimeEnd)->format('g:i A') : '6:00 AM') }}
-                            </p>
-                        </div>
+                    <article class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19] min-w-0">
+                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Current Session</p>
+                        <p class="m-0 mt-2 text-lg font-bold leading-tight text-slate-900 dark:text-white truncate" id="resvSession">{{ $timePeriod === 'Nighttime' ? 'Overnight' : $timePeriod }}</p>
+                        <p class="m-0 mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {{ $timePeriod === 'Daytime' ? ($daytimeStart ? \Carbon\Carbon::parse($daytimeStart)->format('g:i A') : '6:00 AM') . ' – ' . ($daytimeEnd ? \Carbon\Carbon::parse($daytimeEnd)->format('g:i A') : '5:00 PM') : ($nighttimeStart ? \Carbon\Carbon::parse($nighttimeStart)->format('g:i A') : '5:00 PM') . ' – ' . ($nighttimeEnd ? \Carbon\Carbon::parse($nighttimeEnd)->format('g:i A') : '6:00 AM') }}
+                        </p>
                     </article>
 
                     <!-- 3. PENDING RESERVATIONS -->
-                    <article class="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-3.5 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90 min-w-0">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
-                        <div class="flex flex-col gap-0.5 min-w-0">
-                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $pendingCount }}</p>
-                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1] truncate">Pending Reservations</p>
-                            <p class="m-0 text-[0.65rem] text-[#718076] dark:text-[#9baaa1] truncate">Awaiting confirmation</p>
-                        </div>
+                    <article class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19] min-w-0">
+                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Pending Reservations</p>
+                        <p class="m-0 mt-2 text-2xl font-bold tabular-nums leading-tight text-slate-900 dark:text-white">{{ $pendingCount }}</p>
+                        <p class="m-0 mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">Awaiting confirmation</p>
                     </article>
 
                     <!-- 4. TODAY & PAST RESERVATIONS -->
-                    <article class="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-3.5 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90 min-w-0">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ ($pastScheduleCount ?? 0) > 0 ? 'bg-[#fee2e2] text-[#dc2626] dark:bg-[rgba(220,38,38,0.2)] dark:text-[#f87171]' : 'bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]' }}">
-                            <i class="bi bi-calendar-event text-lg"></i>
-                        </span>
-                        <div class="flex flex-col gap-0.5 min-w-0">
-                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $scheduledOrPastCount ?? 0 }}</p>
-                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1] truncate">Today &amp; Past Reservations</p>
-                            <p class="m-0 text-[0.65rem] text-[#718076] dark:text-[#9baaa1] truncate">
-                                <span>{{ $todayScheduledCount ?? 0 }} today</span>
-                                @if(($pastScheduleCount ?? 0) > 0)
-                                    &middot; <span class="font-bold text-[#dc2626] dark:text-[#f87171]">{{ $pastScheduleCount }} past schedule</span>
-                                @endif
-                            </p>
-                        </div>
+                    <article class="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-white/10 dark:bg-[#181b19] min-w-0">
+                        <p class="m-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">Today &amp; Past</p>
+                        <p class="m-0 mt-2 text-2xl font-bold tabular-nums leading-tight text-slate-900 dark:text-white">{{ $scheduledOrPastCount ?? 0 }}</p>
+                        <p class="m-0 mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+                            <span>{{ $todayScheduledCount ?? 0 }} today</span>
+                            @if(($pastScheduleCount ?? 0) > 0)
+                                &middot; <span class="font-semibold text-red-600 dark:text-red-400">{{ $pastScheduleCount }} past schedule</span>
+                            @endif
+                        </p>
                     </article>
                 </div>
 
@@ -274,16 +251,11 @@
 
                     {{-- Section header --}}
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
-                        <div class="flex items-center gap-2.5">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                                <i class="bi bi-calendar2-range-fill text-sm"></i>
-                            </span>
-                            <div>
-                                <h3 class="m-0 text-sm font-bold text-[var(--ink)]">Reservation Management Log</h3>
-                                <p class="m-0 text-[11px] text-[var(--ink-muted)]">
-                                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
-                                </p>
-                            </div>
+                        <div>
+                            <h3 class="m-0 text-sm font-bold text-[var(--ink)]">Reservation Management Log</h3>
+                            <p class="m-0 mt-0.5 text-[11px] text-[var(--ink-muted)]">
+                                <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
+                            </p>
                         </div>
                     </div>
 
@@ -321,13 +293,12 @@
                             {{-- Reschedule Requests --}}
                             <button 
                                 type="button" 
-                                class="h-9 flex items-center gap-1.5 px-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-900 dark:text-amber-300 hover:bg-amber-500 hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs" 
+                                class="h-9 flex items-center gap-2 px-3.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 transition-colors cursor-pointer" 
                                 id="reschedRequestsBtn" 
                                 title="View Reschedule Requests"
                             >
-                                <i class="bi bi-calendar2-range text-xs"></i>
                                 <span>Resched Requests</span>
-                                <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-amber-600 rounded-full">0</span>
+                                <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-amber-600 rounded">0</span>
                             </button>
                         </div>
 
@@ -460,18 +431,17 @@
                                         {{-- Main Guest --}}
                                         <td class="py-3 px-4 border-b border-[var(--border)]">
                                             <div class="flex items-center gap-2.5">
-                                                <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-900 text-xs font-bold uppercase text-white shadow-xs">
+                                                <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg bg-[#155e3c] text-xs font-bold uppercase text-white">
                                                     {{ $initials }}
                                                 </span>
                                                 <div class="min-w-0">
                                                     <div class="flex items-center gap-1.5 flex-wrap">
                                                         <span class="font-bold text-xs text-[var(--ink)] leading-snug">{{ $reservation->booker_name }}</span>
                                                         @if ($isToday)
-                                                            <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider">TODAY</span>
+                                                            <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/40 dark:text-emerald-300">Today</span>
                                                         @elseif ($isPastArrival)
-                                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white uppercase tracking-wider" title="Arrival date was {{ $resDateObj->format('M j, Y') }} ({{ $daysOverdue }} {{ $daysOverdue === 1 ? 'day' : 'days' }} overdue)">
-                                                                <i class="bi bi-exclamation-triangle-fill text-[9px]"></i>
-                                                                PAST ARRIVAL (-{{ $daysOverdue }}d ago)
+                                                            <span class="inline-flex items-center rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-300" title="Arrival date was {{ $resDateObj->format('M j, Y') }} ({{ abs($daysOverdue) }} {{ abs($daysOverdue) === 1 ? 'day' : 'days' }} overdue)">
+                                                                Overdue ({{ abs($daysOverdue) }}d)
                                                             </span>
                                                         @endif
                                                     </div>
@@ -508,8 +478,7 @@
                                         {{-- Session --}}
                                         <td class="py-3 px-4 text-center whitespace-nowrap border-b border-[var(--border)]">
                                             @if ($isMultiDay)
-                                                <span class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300">
-                                                    <i class="bi bi-calendar-range text-[10px] text-teal-600"></i>
+                                                <span class="inline-flex items-center rounded-md border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-800 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300">
                                                     Continuous Stay ({{ $totalDays }}D)
                                                 </span>
                                             @elseif (!empty($timeSlots))
@@ -518,17 +487,9 @@
                                                         @php
                                                             $isNight = in_array(strtolower($slot), ['nighttime', 'overnight']);
                                                         @endphp
-                                                        @if ($isNight)
-                                                            <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300">
-                                                                <i class="bi bi-moon-stars-fill text-[10px] text-indigo-500"></i>
-                                                                Overnight
-                                                            </span>
-                                                        @else
-                                                            <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300">
-                                                                <i class="bi bi-sun-fill text-[10px] text-amber-500"></i>
-                                                                {{ str_ireplace('nighttime', 'Overnight', $slot) }}
-                                                            </span>
-                                                        @endif
+                                                        <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] font-semibold {{ $isNight ? 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300' : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300' }}">
+                                                            {{ $isNight ? 'Overnight' : str_ireplace('nighttime', 'Overnight', $slot) }}
+                                                        </span>
                                                     @endforeach
                                                 </div>
                                             @else
@@ -536,17 +497,9 @@
                                                     $startSlot = $reservation->start_slot ?? 'Daytime';
                                                     $isNight = in_array(strtolower($startSlot), ['nighttime', 'overnight']);
                                                 @endphp
-                                                @if ($isNight)
-                                                    <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300">
-                                                        <i class="bi bi-moon-stars-fill text-[10px] text-indigo-500"></i>
-                                                        Overnight
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300">
-                                                        <i class="bi bi-sun-fill text-[10px] text-amber-500"></i>
-                                                        {{ str_ireplace('nighttime', 'Overnight', $startSlot) }}
-                                                    </span>
-                                                @endif
+                                                <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] font-semibold {{ $isNight ? 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300' : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300' }}">
+                                                    {{ $isNight ? 'Overnight' : str_ireplace('nighttime', 'Overnight', $startSlot) }}
+                                                </span>
                                             @endif
                                         </td>
 
@@ -819,19 +772,29 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="confirmModal" aria-hidden="true">
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75 backdrop-blur-sm" data-close-confirm-modal="true"></div>
-        <div class="guest-modal__content guest-modal__content--confirm relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-            <div class="guest-modal__confirm-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400">
-                <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center p-4 is-open:flex" style="z-index: 1400 !important;" id="confirmModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/55 dark:bg-black/75" data-close-confirm-modal="true"></div>
+        <div class="relative z-[1] w-full max-w-[420px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#1a1d1b]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-white/10">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div id="confirmModalIconWrap" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#155e3c] dark:bg-emerald-950/50 dark:text-emerald-400">
+                        <i id="confirmModalIcon" class="bi bi-check2-circle text-base"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="confirmModalTitle" class="m-0 text-sm font-bold text-slate-900 dark:text-white">Confirm Action</h3>
+                        <p id="confirmModalSubtitle" class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Please review before continuing.</p>
+                    </div>
+                </div>
+                <button type="button" data-close-confirm-modal="true" aria-label="Close" class="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-200">
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
             </div>
-            <h3 id="confirmModalTitle" class="guest-modal__title guest-modal__title--confirm m-0 mb-3 font-display text-xl text-hp-text">Confirm Action</h3>
-            <p id="confirmModalMessage" class="guest-modal__message mb-8 text-[0.95rem] leading-relaxed text-hp-text-muted">Are you sure you want to proceed?</p>
-            <div class="guest-modal__actions flex justify-center gap-3">
-                <button type="button" class="guest-form__secondary min-w-[100px] cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="confirmModalCancel">No</button>
-                <button type="button" class="guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmModalConfirm">Yes</button>
+            <div class="px-5 py-4">
+                <p id="confirmModalMessage" class="m-0 text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">Are you sure you want to proceed?</p>
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+                <button type="button" class="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10" id="confirmModalCancel">No</button>
+                <button type="button" class="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-[#155e3c] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#114b30]" id="confirmModalConfirm">Yes</button>
             </div>
         </div>
     </div>
@@ -853,79 +816,98 @@
     </div>
 
     <!-- RESCHEDULE REQUESTS LIST MODAL -->
-    <div class="guest-modal fixed inset-0 z-[1300] hidden items-center justify-center is-open:flex" style="z-index: 1300 !important;" id="reschedRequestsModal" aria-hidden="true">
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-resched-requests-modal="true"></div>
-        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl mx-3 sm:mx-6 my-auto" role="dialog" aria-modal="true" aria-labelledby="reschedRequestsModalTitle">
-            <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/50 dark:bg-white/[0.02]">
+    <div class="guest-modal fixed inset-0 z-[1300] hidden items-center justify-center p-4 is-open:flex" style="z-index: 1300 !important;" id="reschedRequestsModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/55 dark:bg-black/75" data-close-resched-requests-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#1a1d1b] my-auto" role="dialog" aria-modal="true" aria-labelledby="reschedRequestsModalTitle">
+            <div class="shrink-0 flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4 dark:border-white/10">
                 <div>
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-calendar2-range text-lg text-emerald-800 dark:text-emerald-400"></i>
-                        <h3 id="reschedRequestsModalTitle" class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Reschedule &amp; Refund Requests</h3>
-                    </div>
-                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Manage guest date change and 50% downpayment refund requests</p>
+                    <h3 id="reschedRequestsModalTitle" class="m-0 text-base font-bold text-slate-900 dark:text-white">Reservation Reschedule &amp; Refund Requests</h3>
+                    <p class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Click any request row to view full details and take action.</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="button" id="refreshReschedRequestsBtn" class="cursor-pointer h-8 px-3 rounded-xl border border-gray-300/80 bg-white/80 hover:bg-gray-100 text-gray-700 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-colors">
+                    <button type="button" id="refreshReschedRequestsBtn" class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10">
                         <i class="bi bi-arrow-clockwise text-xs"></i>
                         <span>Refresh</span>
                     </button>
-                    <button type="button" class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-resched-requests-modal="true" aria-label="Close modal">
-                        <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+                    <button type="button" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-200" data-close-resched-requests-modal="true" aria-label="Close modal">
+                        <i class="bi bi-x-lg text-xs"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Status Filter Tabs -->
-            <div class="shrink-0 px-6 py-2.5 border-b border-[rgba(13,44,29,0.08)] dark:border-white/5 bg-white/30 dark:bg-white/[0.01] flex items-center gap-2 overflow-x-auto custom-scrollbar">
-                <button type="button" class="resched-tab-btn is-active cursor-pointer px-3 py-1 rounded-xl text-xs font-bold transition-all bg-hp-green text-white shadow-xs shrink-0" data-resched-tab="all">
-                    All (<span id="reschedCountAll">0</span>)
-                </button>
-                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="submitted">
-                    Awaiting Action (<span id="reschedCountSubmitted">0</span>)
-                </button>
-                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="refund">
-                    50% Refunds (<span id="reschedCountRefund">0</span>)
-                </button>
-                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="pending">
-                    Link Sent / Pending (<span id="reschedCountPending">0</span>)
-                </button>
-                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="approved">
-                    Approved (<span id="reschedCountApproved">0</span>)
-                </button>
-                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="declined">
-                    Declined (<span id="reschedCountDeclined">0</span>)
-                </button>
+            <!-- Status & Type Filter Bar -->
+            <div class="shrink-0 flex flex-wrap items-center gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-2.5 dark:border-white/10 dark:bg-white/[0.02]">
+                <div class="flex items-center gap-2">
+                    <label for="reschedStatusFilter" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Status:</label>
+                    <select id="reschedStatusFilter" class="h-8 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#155e3c] focus:outline-none dark:border-white/15 dark:bg-[#1a1d1b] dark:text-slate-100">
+                        <option value="submitted" selected>Awaiting Action (0)</option>
+                        <option value="all">All Statuses (0)</option>
+                        <option value="pending">Link Sent / Pending (0)</option>
+                        <option value="approved">Approved (0)</option>
+                        <option value="declined">Declined (0)</option>
+                        <option value="expired">Expired (0)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="reschedTypeFilter" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Type:</label>
+                    <select id="reschedTypeFilter" class="h-8 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-[#155e3c] focus:outline-none dark:border-white/15 dark:bg-[#1a1d1b] dark:text-slate-100">
+                        <option value="all" selected>All Types</option>
+                        <option value="reschedule">Reschedule</option>
+                        <option value="refund">50% Refund</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Table / Request list -->
-            <div class="flex-1 min-h-[280px] overflow-y-auto custom-scrollbar p-5 sm:p-6">
-                <div id="reschedRequestsList" class="space-y-3">
+            <div class="flex-1 min-h-[280px] overflow-y-auto custom-scrollbar p-5">
+                <div id="reschedRequestsList">
                     {{-- Skeleton loader (replaced by JS on load) --}}
-                    @foreach(range(1,3) as $_)
-                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 animate-pulse">
-                        <div class="flex items-center gap-2.5 mb-3">
-                            <div class="h-5 w-14 rounded-md bg-slate-200 dark:bg-white/10"></div>
-                            <div class="h-4 w-36 rounded-md bg-slate-200 dark:bg-white/10"></div>
-                            <div class="h-5 w-20 rounded-lg bg-slate-200 dark:bg-white/10 ml-auto"></div>
+                    <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+                        <div class="divide-y divide-slate-100 dark:divide-white/10">
+                            @foreach(range(1,4) as $_)
+                            <div class="flex items-center gap-4 px-4 py-3 animate-pulse">
+                                <div class="h-4 w-12 rounded bg-slate-200 dark:bg-white/10"></div>
+                                <div class="h-4 w-32 rounded bg-slate-200 dark:bg-white/10"></div>
+                                <div class="h-4 w-24 rounded bg-slate-100 dark:bg-white/5"></div>
+                                <div class="h-4 w-40 rounded bg-slate-100 dark:bg-white/5"></div>
+                                <div class="h-5 w-24 rounded bg-slate-200 dark:bg-white/10 ml-auto"></div>
+                            </div>
+                            @endforeach
                         </div>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
-                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
-                        </div>
-                        <div class="h-3 w-2/3 rounded bg-slate-100 dark:bg-white/5"></div>
                     </div>
-                    @endforeach
                 </div>
             </div>
 
-            <div class="shrink-0 flex items-center justify-between px-6 py-3 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/50 dark:bg-white/[0.02]">
-                <div class="text-xs text-hp-text-muted">
-                    Showing <span id="reschedRequestsTotalShowing" class="font-bold text-hp-text">0</span> request(s)
+            <div class="shrink-0 flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    Showing <span id="reschedRequestsTotalShowing" class="font-bold text-slate-900 dark:text-white">0</span> request(s)
                 </div>
-                <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2 text-xs font-semibold text-hp-text hover:bg-white dark:hover:bg-white/15" data-close-resched-requests-modal="true">
+                <button type="button" class="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10" data-close-resched-requests-modal="true">
                     Close
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- RESCHEDULE / REFUND REQUEST DETAIL MODAL -->
+    <div class="guest-modal fixed inset-0 z-[1350] hidden items-center justify-center p-4 is-open:flex" style="z-index: 1350 !important;" id="reschedRequestDetailModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/55 dark:bg-black/75" data-close-resched-detail-modal="true"></div>
+        <div class="relative z-[1] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#1a1d1b] my-auto" role="dialog" aria-modal="true" aria-labelledby="reschedDetailTitle">
+            <div class="shrink-0 flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-white/10">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="reschedDetailId" class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">#000</span>
+                        <h3 id="reschedDetailTitle" class="m-0 text-sm font-bold text-slate-900 dark:text-white truncate">Request Details</h3>
+                        <span id="reschedDetailStatusBadge"></span>
+                    </div>
+                    <p id="reschedDetailSubtitle" class="m-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Review request information and choose an action.</p>
+                </div>
+                <button type="button" data-close-resched-detail-modal="true" aria-label="Close" class="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-slate-200">
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+            <div id="reschedDetailBody" class="flex-1 overflow-y-auto custom-scrollbar px-5 py-4 text-xs text-slate-700 dark:text-slate-200"></div>
+            <div id="reschedDetailFooter" class="shrink-0 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.03]"></div>
         </div>
     </div>
 

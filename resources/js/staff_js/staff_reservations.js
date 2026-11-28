@@ -136,23 +136,20 @@ window.AppPage['staff_reservations'] = function () {
         const slots = reservation?.time_slots || [];
         const totalDays = Number(reservation?.total_days || 1);
         if (totalDays > 1) {
-            return `<span class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap"><i class="bi bi-calendar-range text-[10px] text-teal-600 dark:text-teal-400"></i>Continuous Stay (${totalDays}D)</span>`;
+            return `<span class="inline-flex items-center rounded-md border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-800 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">Continuous Stay (${totalDays}D)</span>`;
         }
+        const badgeForSlot = (raw) => {
+            const isNight = ['nighttime', 'overnight'].includes(String(raw).toLowerCase());
+            const label = isNight ? 'Overnight' : escapeHtml(String(raw).replace(/nighttime/gi, 'Overnight'));
+            const cls = isNight
+                ? 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300'
+                : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300';
+            return `<span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] font-semibold ${cls} whitespace-nowrap">${label}</span>`;
+        };
         if (slots.length > 0) {
-            return `<div class="time-slot-labels flex flex-wrap items-center justify-center gap-1">${slots.map(slot => {
-                const isNight = ['nighttime', 'overnight'].includes(String(slot).toLowerCase());
-                if (isNight) {
-                    return `<span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[10px] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
-                }
-                return `<span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[10px] text-amber-500 dark:text-amber-400"></i>${escapeHtml(slot)}</span>`;
-            }).join('')}</div>`;
+            return `<div class="time-slot-labels flex flex-wrap items-center justify-center gap-1">${slots.map(badgeForSlot).join('')}</div>`;
         }
-        const rawSlot = reservation?.start_slot || 'Daytime';
-        const isNight = ['nighttime', 'overnight'].includes(String(rawSlot).toLowerCase());
-        if (isNight) {
-            return `<span class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[10px] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
-        }
-        return `<span class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[10px] text-amber-500 dark:text-amber-400"></i>${escapeHtml(rawSlot)}</span>`;
+        return badgeForSlot(reservation?.start_slot || 'Daytime');
     };
 
     // Shared row markup (used by server rows, refresh + fallback renders)
@@ -193,12 +190,9 @@ window.AppPage['staff_reservations'] = function () {
         };
 
         const badgeHtml = isToday
-            ? `<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-wider">TODAY</span>`
+            ? `<span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/40 dark:text-emerald-300">Today</span>`
             : (isPastArrival
-                ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white uppercase tracking-wider" title="Arrival date was ${escapeHtml(resDateStr)} (${daysOverdue} days overdue)">
-                    <i class="bi bi-exclamation-triangle-fill text-[9px]"></i>
-                    PAST ARRIVAL (-${daysOverdue}d ago)
-                </span>`
+                ? `<span class="inline-flex items-center rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-300" title="Arrival date was ${escapeHtml(resDateStr)} (${daysOverdue} days overdue)">Overdue (${daysOverdue}d)</span>`
                 : '');
 
         const statusColors = {
@@ -219,7 +213,7 @@ window.AppPage['staff_reservations'] = function () {
                 </td>
                 <td class="py-3 px-4 border-b border-[var(--border)]">
                     <div class="flex items-center gap-2.5">
-                        <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-emerald-900 text-xs font-bold uppercase text-white shadow-xs">${escapeHtml(getInitials(reservation.booker_name))}</span>
+                        <span class="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg bg-[#155e3c] text-xs font-bold uppercase text-white">${escapeHtml(getInitials(reservation.booker_name))}</span>
                         <div class="min-w-0">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="font-bold text-xs text-[var(--ink)] leading-snug">${escapeHtml(reservation.booker_name)}</span>
@@ -4829,7 +4823,6 @@ window.AppPage['staff_reservations'] = function () {
                         () => updateReservationStatus(reservation.id, 'Cancelled'),
                         {
                             confirmText: 'Yes, Cancel',
-                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 shadow-sm',
                         }
                     );
                 });
@@ -4853,7 +4846,6 @@ window.AppPage['staff_reservations'] = function () {
                         () => updateReservationStatus(reservation.id, 'No Show'),
                         {
                             confirmText: 'Yes, Mark No-Show',
-                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700 shadow-sm',
                         }
                     );
                 });
@@ -5313,7 +5305,11 @@ window.AppPage['staff_reservations'] = function () {
                 if (typeof applyFilters === 'function') {
                     applyFilters();
                 }
-                openModal(reservationId);
+                if (targetStatus === 'Cancelled' || targetStatus === 'No Show') {
+                    closeModal();
+                } else {
+                    openModal(reservationId);
+                }
             }
 
             window.dispatchEvent(new CustomEvent('app:data-mutated'));
@@ -5448,51 +5444,139 @@ window.AppPage['staff_reservations'] = function () {
     // Confirmation modal functionality
     const confirmModal = document.getElementById('confirmModal');
     const confirmModalTitle = document.getElementById('confirmModalTitle');
+    const confirmModalSubtitle = document.getElementById('confirmModalSubtitle');
+    const confirmModalIconWrap = document.getElementById('confirmModalIconWrap');
+    const confirmModalIcon = document.getElementById('confirmModalIcon');
     const confirmModalMessage = document.getElementById('confirmModalMessage');
     const confirmModalConfirm = document.getElementById('confirmModalConfirm');
     const confirmModalCancel = document.getElementById('confirmModalCancel');
     const confirmModalCloseButtons = document.querySelectorAll('[data-close-confirm-modal="true"]');
 
     let confirmCallback = null;
+    let confirmLoadingText = 'Processing...';
+    let isConfirmProcessing = false;
+
+    const defaultConfirmBtnClass = 'inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-[#155e3c] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#114b30] disabled:cursor-not-allowed disabled:opacity-70';
+    const setConfirmModalBusy = (busy) => {
+        isConfirmProcessing = busy;
+        if (confirmModalConfirm) {
+            confirmModalConfirm.disabled = busy;
+        }
+        if (confirmModalCancel) {
+            confirmModalCancel.disabled = busy;
+            confirmModalCancel.classList.toggle('opacity-50', busy);
+            confirmModalCancel.classList.toggle('cursor-not-allowed', busy);
+            confirmModalCancel.classList.toggle('pointer-events-none', busy);
+        }
+        confirmModalCloseButtons.forEach((btn) => {
+            if (btn.tagName === 'BUTTON') {
+                btn.disabled = busy;
+                btn.classList.toggle('opacity-50', busy);
+            }
+            btn.classList.toggle('pointer-events-none', busy);
+        });
+    };
 
     const showConfirmModal = (title, message, callback, options = {}) => {
         if (confirmModalTitle) confirmModalTitle.textContent = title;
         if (confirmModalMessage) confirmModalMessage.textContent = message;
-        if (confirmModalConfirm) {
-            confirmModalConfirm.textContent = options.confirmText || 'Yes';
-            if (options.confirmClass) {
-                confirmModalConfirm.className = options.confirmClass;
+
+        const label = options.confirmText || 'Yes';
+        const isDanger = /cancel|delete/i.test(`${title} ${label}`);
+        const isNoShow = /no-show|no show/i.test(`${title} ${label}`);
+        confirmLoadingText = options.loadingText || (
+            /cancel/i.test(`${title} ${label}`)
+                ? 'Cancelling...'
+                : /delete/i.test(`${title} ${label}`)
+                    ? 'Deleting...'
+                    : isNoShow
+                        ? 'Marking No-Show...'
+                        : 'Processing...'
+        );
+
+        if (confirmModalSubtitle) {
+            confirmModalSubtitle.textContent = isDanger
+                ? 'This action cannot be easily undone.'
+                : isNoShow
+                    ? 'The reservation will be marked as No Show.'
+                    : 'Please review before continuing.';
+        }
+        if (confirmModalIconWrap && confirmModalIcon) {
+            if (isDanger) {
+                confirmModalIconWrap.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400';
+                confirmModalIcon.className = 'bi bi-x-circle text-base';
+            } else if (isNoShow) {
+                confirmModalIconWrap.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400';
+                confirmModalIcon.className = 'bi bi-person-x text-base';
             } else {
-                confirmModalConfirm.className = 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark';
+                confirmModalIconWrap.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-[#155e3c] dark:bg-emerald-950/50 dark:text-emerald-400';
+                confirmModalIcon.className = 'bi bi-check2-circle text-base';
             }
         }
+
+        if (confirmModalConfirm) {
+            confirmModalConfirm.textContent = label;
+            if (options.confirmClass) {
+                confirmModalConfirm.className = options.confirmClass;
+            } else if (isDanger) {
+                confirmModalConfirm.className = 'inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-red-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70';
+            } else if (isNoShow) {
+                confirmModalConfirm.className = 'inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-purple-700 px-4 text-xs font-semibold text-white transition-colors hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-70';
+            } else {
+                confirmModalConfirm.className = defaultConfirmBtnClass;
+            }
+        }
+        setConfirmModalBusy(false);
         confirmCallback = callback;
         confirmModal.classList.add('is-open');
         confirmModal.setAttribute('aria-hidden', 'false');
     };
 
-    const closeConfirmModal = () => {
+    const closeConfirmModal = (force = false) => {
+        if (isConfirmProcessing && !force) return;
+        setConfirmModalBusy(false);
         confirmModal.classList.remove('is-open');
         confirmModal.setAttribute('aria-hidden', 'true');
         if (confirmModalConfirm) {
             confirmModalConfirm.textContent = 'Yes';
-            confirmModalConfirm.className = 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark';
+            confirmModalConfirm.className = defaultConfirmBtnClass;
         }
         confirmCallback = null;
         window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     confirmModalCloseButtons.forEach((button) => {
-        button.addEventListener('click', closeConfirmModal);
+        button.addEventListener('click', () => closeConfirmModal(false));
     });
 
-    confirmModalCancel?.addEventListener('click', closeConfirmModal);
+    confirmModalCancel?.addEventListener('click', () => closeConfirmModal(false));
 
-    confirmModalConfirm?.addEventListener('click', () => {
-        if (confirmCallback) {
-            confirmCallback();
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && confirmModal && confirmModal.classList.contains('is-open')) {
+            if (isConfirmProcessing) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            closeConfirmModal(false);
         }
-        closeConfirmModal();
+    });
+
+    confirmModalConfirm?.addEventListener('click', async () => {
+        if (isConfirmProcessing) return;
+        if (!confirmCallback) {
+            closeConfirmModal(true);
+            return;
+        }
+        setConfirmModalBusy(true);
+        if (confirmModalConfirm) {
+            confirmModalConfirm.innerHTML = `<span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span><span>${escapeHtml(confirmLoadingText)}</span>`;
+        }
+        try {
+            await confirmCallback();
+        } finally {
+            closeConfirmModal(true);
+        }
     });
 
     // Success modal functionality
@@ -7416,7 +7500,11 @@ window.AppPage['staff_reservations'] = function () {
     const processRefundModal = document.getElementById('processRefundModal');
     const reschedRequestsBadge = document.getElementById('reschedRequestsBadge');
 
-    let currentReschedFilter = 'all';
+    let currentReschedFilter = 'submitted';
+    let currentReschedTypeFilter = 'all';
+    let allReschedRequestsCache = null;
+    let allReschedCountsCache = null;
+    let reschedPrefetchPromise = null;
 
     // Open Send Reschedule SMS Modal
     const openRequestReschedModal = (reservation) => {
@@ -7658,22 +7746,30 @@ window.AppPage['staff_reservations'] = function () {
             reschedRequestsModal.classList.remove('hidden');
             reschedRequestsModal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('overflow-hidden');
-            loadRescheduleRequests(currentReschedFilter);
+            if (allReschedRequestsCache !== null) {
+                renderRescheduleRequestsTable();
+                loadRescheduleRequests(currentReschedFilter, { silent: true });
+            } else {
+                loadRescheduleRequests(currentReschedFilter);
+            }
         }
     };
     window.openReschedRequestsModal = openReschedRequestsModal;
 
-    const openReschedRequestsModalWithTab = (tabName = 'all') => {
-        document.querySelectorAll('.resched-tab-btn').forEach(b => {
-            if (b.dataset.reschedTab === tabName) {
-                b.classList.add('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
-                b.classList.remove('text-hp-text');
-            } else {
-                b.classList.remove('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
-                b.classList.add('text-hp-text');
-            }
-        });
-        currentReschedFilter = tabName;
+    const openReschedRequestsModalWithTab = (tabName = 'submitted') => {
+        const filterSelect = document.getElementById('reschedStatusFilter');
+        const typeSelect = document.getElementById('reschedTypeFilter');
+        if (tabName === 'refund') {
+            if (filterSelect) filterSelect.value = 'all';
+            if (typeSelect) typeSelect.value = 'refund';
+            currentReschedFilter = 'all';
+            currentReschedTypeFilter = 'refund';
+        } else {
+            if (filterSelect) filterSelect.value = tabName;
+            if (typeSelect) typeSelect.value = 'all';
+            currentReschedFilter = tabName;
+            currentReschedTypeFilter = 'all';
+        }
         openReschedRequestsModal();
     };
     window.openReschedRequestsModalWithTab = openReschedRequestsModalWithTab;
@@ -7699,461 +7795,548 @@ window.AppPage['staff_reservations'] = function () {
         loadRescheduleRequests(currentReschedFilter);
     });
 
-    // Tab buttons in Reschedule Requests modal
-    document.querySelectorAll('.resched-tab-btn').forEach(tabBtn => {
-        tabBtn.addEventListener('click', () => {
-            document.querySelectorAll('.resched-tab-btn').forEach(b => {
-                b.classList.remove('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
-                b.classList.add('text-hp-text');
-            });
-            tabBtn.classList.add('is-active', 'bg-hp-green', 'text-white', 'shadow-xs');
-            tabBtn.classList.remove('text-hp-text');
-
-            currentReschedFilter = tabBtn.dataset.reschedTab || 'all';
-            loadRescheduleRequests(currentReschedFilter);
+    // Status & Type filter dropdowns in Reschedule Requests modal
+    const reschedStatusFilter = document.getElementById('reschedStatusFilter');
+    if (reschedStatusFilter) {
+        reschedStatusFilter.value = currentReschedFilter;
+        reschedStatusFilter.addEventListener('change', () => {
+            currentReschedFilter = reschedStatusFilter.value || 'submitted';
+            if (allReschedRequestsCache !== null) {
+                renderRescheduleRequestsTable();
+            } else {
+                loadRescheduleRequests(currentReschedFilter);
+            }
         });
+    }
+
+    const reschedTypeFilter = document.getElementById('reschedTypeFilter');
+    if (reschedTypeFilter) {
+        reschedTypeFilter.value = currentReschedTypeFilter;
+        reschedTypeFilter.addEventListener('change', () => {
+            currentReschedTypeFilter = reschedTypeFilter.value || 'all';
+            if (allReschedRequestsCache !== null) {
+                renderRescheduleRequestsTable();
+            } else {
+                loadRescheduleRequests(currentReschedFilter);
+            }
+        });
+    }
+
+    const reschedRequestDetailModal = document.getElementById('reschedRequestDetailModal');
+    let reschedRequestsById = {};
+
+    const getReschedStatusInfo = (req) => {
+        const isSub = req.status === 'submitted';
+        const isApp = req.status === 'approved';
+        const isDec = req.status === 'declined';
+        const isExp = req.status === 'expired' || req.is_expired;
+
+        if (req.is_refund) {
+            if (isSub) {
+                return {
+                    label: 'Awaiting Refund',
+                    badge: `<span class="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300">Awaiting Refund</span>`,
+                };
+            }
+            if (isApp) {
+                return {
+                    label: 'Refund Sent',
+                    badge: `<span class="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300">Refund Sent</span>`,
+                };
+            }
+            if (isDec) {
+                return {
+                    label: 'Declined',
+                    badge: `<span class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:border-red-800/40 dark:bg-red-950/30 dark:text-red-300">Declined</span>`,
+                };
+            }
+            return {
+                label: 'Expired',
+                badge: `<span class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Expired</span>`,
+            };
+        }
+
+        if (isSub) {
+            return {
+                label: 'Awaiting Action',
+                badge: `<span class="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300">Awaiting Action</span>`,
+            };
+        }
+        if (isApp) {
+            return {
+                label: 'Approved',
+                badge: `<span class="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300">Approved</span>`,
+            };
+        }
+        if (isDec) {
+            return {
+                label: 'Declined',
+                badge: `<span class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:border-red-800/40 dark:bg-red-950/30 dark:text-red-300">Declined</span>`,
+            };
+        }
+        if (isExp) {
+            return {
+                label: 'Expired',
+                badge: `<span class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Expired</span>`,
+            };
+        }
+        return {
+            label: 'Link Sent (24h)',
+            badge: `<span class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Link Sent (24h)</span>`,
+        };
+    };
+
+    const closeReschedDetailModal = () => {
+        if (!reschedRequestDetailModal) return;
+        reschedRequestDetailModal.classList.remove('is-open');
+        reschedRequestDetailModal.classList.add('hidden');
+        reschedRequestDetailModal.setAttribute('aria-hidden', 'true');
+        const anyOpen = document.querySelectorAll('.guest-modal.is-open').length > 0;
+        if (!anyOpen) {
+            document.body.classList.remove('overflow-hidden');
+        }
+        window.dispatchEvent(new CustomEvent('modal:closed'));
+    };
+
+    document.querySelectorAll('[data-close-resched-detail-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeReschedDetailModal);
     });
 
-    // Fetch and render Reschedule Requests
-    const loadRescheduleRequests = async (filter = 'all') => {
-        const container = document.getElementById('reschedRequestsList');
-        if (!container) return;
+    const openReschedDetailModal = (req) => {
+        if (!reschedRequestDetailModal || !req) return;
 
-        container.innerHTML = `
-            <div class="space-y-3">
-                ${[1, 2, 3].map(() => `
-                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 animate-pulse">
-                        <div class="flex items-center gap-2.5 mb-3">
-                            <div class="h-5 w-14 rounded-md bg-slate-200 dark:bg-white/10"></div>
-                            <div class="h-4 w-36 rounded-md bg-slate-200 dark:bg-white/10"></div>
-                            <div class="h-5 w-20 rounded-lg bg-slate-200 dark:bg-white/10 ml-auto"></div>
+        const idEl = document.getElementById('reschedDetailId');
+        const titleEl = document.getElementById('reschedDetailTitle');
+        const subtitleEl = document.getElementById('reschedDetailSubtitle');
+        const statusEl = document.getElementById('reschedDetailStatusBadge');
+        const bodyEl = document.getElementById('reschedDetailBody');
+        const footerEl = document.getElementById('reschedDetailFooter');
+
+        const statusInfo = getReschedStatusInfo(req);
+        const phoneDisplay = formatPhilippinePhone(req.phone);
+        const isSub = req.status === 'submitted';
+
+        if (idEl) idEl.textContent = `#${formatReservationId(req.reservation_id)}`;
+        if (titleEl) titleEl.textContent = req.booker_name || 'Guest';
+        if (subtitleEl) subtitleEl.textContent = `${req.is_refund ? '50% Downpayment Refund Request' : 'Reservation Reschedule Request'} • ${phoneDisplay}`;
+        if (statusEl) statusEl.innerHTML = statusInfo.badge;
+
+        if (bodyEl) {
+            if (req.is_refund) {
+                bodyEl.innerHTML = `
+                    <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 divide-y divide-slate-100 dark:divide-white/10">
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5 bg-slate-50/60 dark:bg-white/[0.02]">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Request Type</span>
+                            <span class="col-span-2 font-semibold text-slate-900 dark:text-white">50% Downpayment Refund</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
-                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">50% Refund Amount</span>
+                            <div class="col-span-2">
+                                <span class="font-bold text-slate-900 dark:text-white text-sm">${escapeHtml(req.refund_amount_formatted)}</span>
+                                <span class="text-slate-400 ml-1">(Downpayment: ${escapeHtml(req.amount_paid_formatted || req.total_amount_formatted)})</span>
+                            </div>
                         </div>
-                        <div class="h-3 w-2/3 rounded bg-slate-100 dark:bg-white/5"></div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Receiving E-Wallet</span>
+                            <div class="col-span-2 flex items-center gap-2 flex-wrap">
+                                <span class="font-semibold text-slate-900 dark:text-white">${escapeHtml(req.ewallet_provider)} &bull;</span>
+                                <span class="font-mono font-semibold text-slate-900 dark:text-white">${escapeHtml(req.ewallet_account_number)}</span>
+                                <button type="button" class="btn-copy-ewallet inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10 cursor-pointer" data-copy-text="${escapeHtml(req.ewallet_account_number)}">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Account Name</span>
+                            <span class="col-span-2 font-semibold text-slate-900 dark:text-white">${escapeHtml(req.ewallet_account_name)}</span>
+                        </div>
+                        ${req.reason ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Guest Reason</span>
+                            <span class="col-span-2 text-slate-700 dark:text-slate-200">&ldquo;${escapeHtml(req.reason)}&rdquo;</span>
+                        </div>` : ''}
+                        ${req.refund_reference_number ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Disbursed Ref #</span>
+                            <span class="col-span-2 font-mono font-semibold text-slate-900 dark:text-white">${escapeHtml(req.refund_reference_number)}</span>
+                        </div>` : ''}
+                        ${req.approved_at ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Disbursed By</span>
+                            <span class="col-span-2 text-slate-800 dark:text-slate-200">${escapeHtml(req.approver_name || 'Staff')} (${escapeHtml(req.approved_at)})</span>
+                        </div>` : ''}
+                        ${req.decline_reason ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Decline Reason</span>
+                            <span class="col-span-2 text-red-600 dark:text-red-400">&ldquo;${escapeHtml(req.decline_reason)}&rdquo;</span>
+                        </div>` : ''}
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5 bg-slate-50/60 dark:bg-white/[0.02]">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Submitted</span>
+                            <span class="col-span-2 text-slate-600 dark:text-slate-300">${escapeHtml(req.created_at)} (${escapeHtml(req.created_at_human)})</span>
+                        </div>
                     </div>
-                `).join('')}
-            </div>
-        `;
-
-        try {
-            const url = filter === 'all' ? '/staff/reschedule-requests' : `/staff/reschedule-requests?status=${encodeURIComponent(filter)}`;
-            const response = await fetch(url, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-            });
-
-            if (!response.ok) throw new Error('Failed to load requests');
-
-            const data = await response.json();
-            const requests = data.requests || [];
-
-            // Update badge count
-            const subCount = data.counts ? (data.counts.submitted || 0) : (data.submitted_count || 0);
-            if (reschedRequestsBadge) {
-                if (subCount > 0) {
-                    reschedRequestsBadge.textContent = subCount;
-                    reschedRequestsBadge.classList.remove('hidden');
-                } else {
-                    reschedRequestsBadge.classList.add('hidden');
-                }
-            }
-
-            // Update tab counter elements from complete counts payload
-            const totalShowingEl = document.getElementById('reschedRequestsTotalShowing');
-            if (totalShowingEl) totalShowingEl.textContent = requests.length;
-
-            const countAll = document.getElementById('reschedCountAll');
-            const countSub = document.getElementById('reschedCountSubmitted');
-            const countRefund = document.getElementById('reschedCountRefund');
-            const countPend = document.getElementById('reschedCountPending');
-            const countApp = document.getElementById('reschedCountApproved');
-            const countDec = document.getElementById('reschedCountDeclined');
-
-            if (data.counts) {
-                if (countAll) countAll.textContent = data.counts.all ?? 0;
-                if (countSub) countSub.textContent = data.counts.submitted ?? 0;
-                if (countRefund) countRefund.textContent = data.counts.refund ?? 0;
-                if (countPend) countPend.textContent = data.counts.pending ?? 0;
-                if (countApp) countApp.textContent = data.counts.approved ?? 0;
-                if (countDec) countDec.textContent = data.counts.declined ?? 0;
+                `;
             } else {
-                if (countSub) countSub.textContent = subCount;
-                if (countAll) countAll.textContent = data.total_count || requests.length;
-            }
+                const amenitiesList = (req.amenities || []).length
+                    ? (req.amenities || []).map(a => `<span class="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">${escapeHtml(a)}</span>`).join(' ')
+                    : '<span class="text-slate-400">—</span>';
 
-            if (requests.length === 0) {
-                container.innerHTML = `
-                    <div class="py-12 text-center text-hp-text-muted text-xs">
-                        <i class="bi bi-inbox text-3xl text-gray-300 dark:text-white/20 block mb-2"></i>
-                        No reschedule or refund requests found in this view.
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = requests.map(req => {
-                const isSub = req.status === 'submitted';
-                const isApp = req.status === 'approved';
-                const isDec = req.status === 'declined';
-                const isPend = req.status === 'pending';
-                const isExp = req.status === 'expired' || req.is_expired;
-
-                // ── 50% Refund Request Card ───────────────────────────────
-                if (req.is_refund) {
-                    let refundStatusBadge = '';
-                    if (isSub) {
-                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300"><i class="bi bi-clock"></i> Awaiting Staff GCash Transfer</span>`;
-                    } else if (isApp) {
-                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"><i class="bi bi-check-circle-fill"></i> Refund Sent by ${escapeHtml(req.approver_name || 'Staff')}</span>`;
-                    } else if (isDec) {
-                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300"><i class="bi bi-x-circle"></i> Refund Declined</span>`;
-                    } else {
-                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/10 dark:text-slate-300"><i class="bi bi-hourglass-bottom"></i> Expired</span>`;
-                    }
-
-                    const phoneDisplay = formatPhilippinePhone(req.phone);
-
-                    return `
-                        <div class="p-4 rounded-2xl border ${isSub ? 'border-amber-400/80 bg-amber-50/25 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                                    <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">#${formatReservationId(req.reservation_id)}</span>
-                                    <span class="font-bold text-slate-900 dark:text-white text-sm truncate">${escapeHtml(req.booker_name)}</span>
-                                    <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone text-[0.75rem]"></i> ${escapeHtml(phoneDisplay)}</span>
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300/80">
-                                        <i class="bi bi-cash-stack"></i> 50% Refund Request
-                                    </span>
-                                    ${refundStatusBadge}
-                                </div>
-
-                                <div class="my-2 p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 text-xs">
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <div>
-                                            <span class="text-slate-500 text-[0.68rem] uppercase font-semibold block">50% Refund Amount:</span>
-                                            <span class="font-display font-extrabold text-emerald-700 dark:text-emerald-400 text-base">${escapeHtml(req.refund_amount_formatted)}</span>
-                                            <span class="text-[0.68rem] text-slate-400 block">(Downpayment: ${escapeHtml(req.amount_paid_formatted || req.total_amount_formatted)})</span>
-                                        </div>
-                                        <div class="sm:col-span-2">
-                                            <span class="text-slate-500 text-[0.68rem] uppercase font-semibold block">Receiving E-Wallet / GCash:</span>
-                                            <div class="flex items-center gap-2 flex-wrap mt-0.5">
-                                                <span class="font-bold text-slate-800 dark:text-slate-100">${escapeHtml(req.ewallet_provider)} &bull; </span>
-                                                <span class="font-mono font-bold text-slate-900 dark:text-white text-xs">${escapeHtml(req.ewallet_account_number)}</span>
-                                                <button type="button" class="btn-copy-ewallet cursor-pointer px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 transition-colors" data-copy-text="${escapeHtml(req.ewallet_account_number)}" title="Copy number">
-                                                    <i class="bi bi-clipboard"></i> Copy
-                                                </button>
-                                            </div>
-                                            <div class="text-[0.72rem] text-slate-600 dark:text-slate-300 mt-0.5">
-                                                Account Name: <strong class="text-slate-800 dark:text-slate-100">${escapeHtml(req.ewallet_account_name)}</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    ${req.refund_reference_number ? `
-                                        <div class="mt-2 pt-2 border-t border-amber-200/60 dark:border-white/10 flex items-center gap-2 text-[0.72rem] flex-wrap">
-                                            <span class="text-slate-500 font-medium">Disbursed GCash Ref #:</span>
-                                            <span class="font-mono font-bold text-emerald-800 dark:text-emerald-300">${escapeHtml(req.refund_reference_number)}</span>
-                                            ${req.approver_name ? `<span class="text-slate-600 dark:text-slate-300 font-medium">&bull; Disbursed by: <strong class="text-emerald-700 dark:text-emerald-400">${escapeHtml(req.approver_name)}</strong></span>` : ''}
-                                            ${req.refunded_at ? `<span class="text-slate-400">(${escapeHtml(req.refunded_at)})</span>` : ''}
-                                        </div>
-                                    ` : ''}
-
-                                    ${req.reason ? `
-                                        <div class="mt-2 pt-2 border-t border-amber-200/60 dark:border-white/10 text-[0.72rem] text-slate-600 dark:text-slate-300">
-                                            <span class="text-slate-500">Reason:</span> &ldquo;${escapeHtml(req.reason)}&rdquo;
-                                        </div>
-                                    ` : ''}
-                                </div>
-
-                                <div class="text-[0.7rem] text-slate-400 flex items-center gap-3 flex-wrap mt-1">
-                                    <span><i class="bi bi-clock"></i> Sent: ${req.created_at} (${req.created_at_human})</span>
-                                    ${req.used_at ? `<span><i class="bi bi-check-all text-emerald-600"></i> Guest Requested: ${req.used_at}</span>` : ''}
-                                    ${req.approved_at ? `<span class="text-emerald-700 dark:text-emerald-300 font-semibold"><i class="bi bi-shield-check text-emerald-600"></i> Refund Disbursed by: <strong>${escapeHtml(req.approver_name || 'Staff')}</strong> (${escapeHtml(req.approved_at)})</span>` : ''}
-                                    ${req.decline_reason ? `<span class="text-rose-600 font-medium">Decline reason: "${escapeHtml(req.decline_reason)}"</span>` : ''}
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons + 3-dot menu -->
-                            <div class="shrink-0 flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                                ${isSub ? `
-                                    <button type="button" class="btn-refund-process cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm"
-                                        data-req-id="${req.id}"
-                                        data-res-id="${req.reservation_id}"
-                                        data-booker="${escapeHtml(req.booker_name)}"
-                                        data-refund-amount="${req.refund_amount}"
-                                        data-refund-formatted="${escapeHtml(req.refund_amount_formatted)}"
-                                        data-ewallet-provider="${escapeHtml(req.ewallet_provider)}"
-                                        data-ewallet-number="${escapeHtml(req.ewallet_account_number)}"
-                                        data-ewallet-name="${escapeHtml(req.ewallet_account_name)}">
-                                        <i class="bi bi-send-check"></i>
-                                        <span>Confirm Refund Sent</span>
-                                    </button>
-                                    <button type="button" class="btn-resched-decline cursor-pointer rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}">
-                                        <i class="bi bi-x-lg"></i>
-                                        <span>Decline</span>
-                                    </button>
-                                ` : ''}
-
-                                <!-- 3-dot dropdown -->
-                                <div class="relative">
-                                    <button type="button" class="btn-resched-dots w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-all cursor-pointer" data-req-id="${req.id}" aria-label="More actions">
-                                        <i class="bi bi-three-dots-vertical text-sm"></i>
-                                    </button>
-                                    <div class="resched-dots-menu hidden absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c211e] shadow-xl z-20 overflow-hidden py-1" data-req-id="${req.id}">
-                                        <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer" data-dots-action="view" data-res-id="${req.reservation_id}">
-                                            <i class="bi bi-eye text-slate-400 dark:text-slate-500"></i>
-                                            View Reservation
-                                        </button>
-                                        <div class="h-px mx-3 bg-slate-100 dark:bg-white/10"></div>
-                                        <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" data-dots-action="delete" data-req-id="${req.id}">
-                                            <i class="bi bi-trash text-rose-400"></i>
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                bodyEl.innerHTML = `
+                    <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 divide-y divide-slate-100 dark:divide-white/10">
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5 bg-slate-50/60 dark:bg-white/[0.02]">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Request Type</span>
+                            <span class="col-span-2 font-semibold text-slate-900 dark:text-white">Date Reschedule</span>
                         </div>
-                    `;
-                }
-
-                // ── Standard Reschedule Request Card ──────────────────────
-
-                let statusBadgeHtml = '';
-                if (isSub) {
-                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300"><i class="bi bi-clock"></i> Awaiting Action</span>`;
-                } else if (isApp) {
-                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"><i class="bi bi-check-circle"></i> Approved</span>`;
-                } else if (isDec) {
-                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300"><i class="bi bi-x-circle"></i> Declined</span>`;
-                } else if (isExp) {
-                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/10 dark:text-slate-300"><i class="bi bi-hourglass-bottom"></i> Expired</span>`;
-                } else {
-                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300"><i class="bi bi-link-45deg"></i> Link Sent (24h)</span>`;
-                }
-
-                const amenitiesBadges = (req.amenities || []).map(a => `<span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-[0.68rem] text-slate-700 dark:text-slate-300 border border-slate-200/60">${escapeHtml(a)}</span>`).join(' ');
-                const phoneDisplay = formatPhilippinePhone(req.phone);
-
-                return `
-                    <div class="p-4 rounded-2xl border ${isSub ? 'border-blue-300/80 bg-blue-50/20 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                                <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300">#${formatReservationId(req.reservation_id)}</span>
-                                <span class="font-bold text-slate-900 dark:text-white text-sm truncate">${escapeHtml(req.booker_name)}</span>
-                                <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone text-[0.75rem]"></i> ${escapeHtml(phoneDisplay)}</span>
-                                ${statusBadgeHtml}
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300 my-2">
-                                <div>
-                                    <span class="text-slate-400 text-[0.7rem] uppercase font-semibold block">Original Date:</span>
-                                    <span class="font-bold text-slate-800 dark:text-slate-200">${req.original_date}</span>
-                                </div>
-                                <div>
-                                    <span class="text-slate-400 text-[0.7rem] uppercase font-semibold block">Requested New Date:</span>
-                                    <span class="font-bold ${isSub ? 'text-blue-700 dark:text-blue-300 text-sm' : 'text-slate-800 dark:text-slate-200'}">
-                                        ${req.requested_date !== '—' ? req.requested_date : '<span class="italic text-slate-400 font-normal">Waiting for guest to submit</span>'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            ${amenitiesBadges ? `<div class="flex items-center gap-1.5 flex-wrap my-1">${amenitiesBadges}</div>` : ''}
-                            ${req.replacement_amenity ? `
-                                <div class="my-1.5">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300">
-                                        <i class="bi bi-arrow-left-right text-amber-600"></i> Unit Swap Requested: <span class="underline">${escapeHtml(req.replacement_amenity.name)}</span> (Same Category &amp; Price)
-                                    </span>
-                                </div>
-                            ` : ''}
-
-                            <div class="text-[0.7rem] text-slate-400 flex items-center gap-3 flex-wrap mt-2">
-                                <span><i class="bi bi-clock"></i> Sent: ${req.created_at} (${req.created_at_human})</span>
-                                ${req.used_at ? `<span><i class="bi bi-check-all text-emerald-600"></i> Guest Submitted: ${req.used_at}</span>` : `<span><i class="bi bi-hourglass text-amber-500"></i> Expires: ${req.expires_at}</span>`}
-                                ${req.approved_at ? `<span class="text-emerald-600 font-medium"><i class="bi bi-shield-check"></i> Reviewed: ${req.approved_at} by ${escapeHtml(req.approver_name)}</span>` : ''}
-                                ${req.decline_reason ? `<span class="text-rose-600 font-medium">Decline reason: "${escapeHtml(req.decline_reason)}"</span>` : ''}
-                            </div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Original Date</span>
+                            <span class="col-span-2 font-semibold text-slate-900 dark:text-white">${escapeHtml(req.original_date)}</span>
                         </div>
-
-                        <!-- Action Buttons + 3-dot menu -->
-                        <div class="shrink-0 flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                            ${isSub ? `
-                                <button type="button" class="btn-resched-approve cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}" data-res-id="${req.reservation_id}" data-req-date="${escapeHtml(req.requested_date)}" data-swap-amenity="${req.replacement_amenity ? escapeHtml(req.replacement_amenity.name) : ''}">
-                                    <i class="bi bi-check-lg"></i>
-                                    <span>Approve</span>
-                                </button>
-                                <button type="button" class="btn-resched-decline cursor-pointer rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}">
-                                    <i class="bi bi-x-lg"></i>
-                                    <span>Decline</span>
-                                </button>
-                            ` : ''}
-                            <!-- 3-dot dropdown -->
-                            <div class="relative">
-                                <button type="button" class="btn-resched-dots w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-all cursor-pointer" data-req-id="${req.id}" aria-label="More actions">
-                                    <i class="bi bi-three-dots-vertical text-sm"></i>
-                                </button>
-                                <div class="resched-dots-menu hidden absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c211e] shadow-xl z-20 overflow-hidden py-1" data-req-id="${req.id}">
-                                    <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer" data-dots-action="view" data-res-id="${req.reservation_id}">
-                                        <i class="bi bi-eye text-slate-400 dark:text-slate-500"></i>
-                                        View Reservation
-                                    </button>
-                                    <div class="h-px mx-3 bg-slate-100 dark:bg-white/10"></div>
-                                    <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" data-dots-action="delete" data-req-id="${req.id}">
-                                        <i class="bi bi-trash text-rose-400"></i>
-                                        Delete
-                                    </button>
-                                </div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Requested New Date</span>
+                            <span class="col-span-2 font-semibold ${isSub ? 'text-[#155e3c] dark:text-emerald-400' : 'text-slate-900 dark:text-white'}">
+                                ${req.requested_date !== '—' ? escapeHtml(req.requested_date) : '<span class="italic text-slate-400 font-normal">Waiting for guest to submit</span>'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Amenities</span>
+                            <div class="col-span-2 flex flex-wrap gap-1">${amenitiesList}</div>
+                        </div>
+                        ${req.replacement_amenity ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Unit Swap</span>
+                            <span class="col-span-2 font-semibold text-slate-900 dark:text-white">${escapeHtml(req.replacement_amenity.name)} <span class="font-normal text-slate-500">(Same Category &amp; Price)</span></span>
+                        </div>` : ''}
+                        ${req.approved_at ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Reviewed By</span>
+                            <span class="col-span-2 text-slate-800 dark:text-slate-200">${escapeHtml(req.approver_name || 'Staff')} (${escapeHtml(req.approved_at)})</span>
+                        </div>` : ''}
+                        ${req.decline_reason ? `
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Decline Reason</span>
+                            <span class="col-span-2 text-red-600 dark:text-red-400">&ldquo;${escapeHtml(req.decline_reason)}&rdquo;</span>
+                        </div>` : ''}
+                        <div class="grid grid-cols-3 gap-3 px-4 py-2.5 bg-slate-50/60 dark:bg-white/[0.02]">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium">Timeline</span>
+                            <div class="col-span-2 text-slate-600 dark:text-slate-300 space-y-0.5">
+                                <div>Sent: ${escapeHtml(req.created_at)} (${escapeHtml(req.created_at_human)})</div>
+                                ${req.used_at ? `<div>Guest Submitted: ${escapeHtml(req.used_at)}</div>` : `<div>Expires: ${escapeHtml(req.expires_at)}</div>`}
                             </div>
                         </div>
                     </div>
                 `;
-            }).join('');
+            }
 
-            // Wire up approve and decline buttons
-            container.querySelectorAll('.btn-resched-approve').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const reqId = btn.dataset.reqId;
-                    const resId = btn.dataset.resId;
-                    const reqDate = btn.dataset.reqDate;
-                    const swapAmenity = btn.dataset.swapAmenity || '';
-                    handleApproveResched(btn, reqId, resId, reqDate, swapAmenity);
-                });
-            });
-
-            // Wire up 50% refund process modal button
-            container.querySelectorAll('.btn-refund-process').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const req = {
-                        id: btn.dataset.reqId,
-                        reservation_id: btn.dataset.resId,
-                        booker_name: btn.dataset.booker,
-                        refund_amount: btn.dataset.refundAmount,
-                        refund_amount_formatted: btn.dataset.refundFormatted,
-                        ewallet_provider: btn.dataset.ewalletProvider,
-                        ewallet_account_number: btn.dataset.ewalletNumber,
-                        ewallet_account_name: btn.dataset.ewalletName,
-                    };
-                    openProcessRefundModal(req);
-                });
-            });
-
-            // Wire up copy e-wallet number buttons on cards
-            container.querySelectorAll('.btn-copy-ewallet').forEach(btn => {
+            bodyEl.querySelectorAll('.btn-copy-ewallet').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     const text = btn.dataset.copyText;
-                    if (text) {
-                        navigator.clipboard.writeText(text).then(() => {
-                            const originalHtml = btn.innerHTML;
-                            btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
-                            setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
-                        }).catch(() => {
-                            // Fallback if clipboard API is blocked
-                            const tempInput = document.createElement('input');
-                            tempInput.value = text;
-                            document.body.appendChild(tempInput);
-                            tempInput.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(tempInput);
-                            btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
-                            setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
-                        });
-                    }
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+                        setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+                    }).catch(() => {
+                        const tempInput = document.createElement('input');
+                        tempInput.value = text;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+                        setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+                    });
                 });
             });
+        }
 
-            container.querySelectorAll('.btn-resched-decline').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const reqId = btn.dataset.reqId;
-                    openDeclineReschedModal(reqId);
-                });
-            });
-
-            container.querySelectorAll('[data-open-res-id]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const rId = btn.dataset.openResId;
-                    closeReschedRequestsModal();
-                    openModal(rId);
-                });
-            });
-
-            // ── 3-dot dropdown wiring ──────────────────────────────────────
-            const closeAllDotMenus = () => {
-                container.querySelectorAll('.resched-dots-menu').forEach(m => m.classList.add('hidden'));
-            };
-
-            container.querySelectorAll('.btn-resched-dots').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const reqId = btn.dataset.reqId;
-                    const menu = container.querySelector(`.resched-dots-menu[data-req-id="${reqId}"]`);
-                    const isOpen = menu && !menu.classList.contains('hidden');
-                    closeAllDotMenus();
-                    if (!isOpen && menu) menu.classList.remove('hidden');
-                });
-            });
-
-            // View Reservation action
-            container.querySelectorAll('[data-dots-action="view"]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    closeAllDotMenus();
-                    const rId = btn.dataset.resId;
-                    closeReschedRequestsModal();
-                    openModal(rId);
-                });
-            });
-
-            // Delete action
-            container.querySelectorAll('[data-dots-action="delete"]').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    closeAllDotMenus();
-                    const reqId = btn.dataset.reqId;
-                    showConfirmModal(
-                        'Delete Reschedule Request',
-                        'Are you sure you want to delete this reschedule request? This cannot be undone.',
-                        async () => {
-                            try {
-                                const res = await fetch(`/staff/reschedule-requests/${reqId}`, {
-                                    method: 'DELETE',
-                                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                    loadRescheduleRequests(currentReschedFilter);
-                                } else {
-                                    alert(data.message || 'Failed to delete.');
-                                }
-                            } catch (err) {
-                                console.error(err);
-                                alert('Network error. Could not delete the request.');
-                            }
-                        },
-                        {
-                            confirmText: 'Yes, Delete',
-                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 shadow-sm',
-                        }
-                    );
-                });
-            });
-
-            // Close menus on outside click
-            document.addEventListener('click', closeAllDotMenus, { once: false, signal: pageSignal });
-
-        } catch (err) {
-            console.error('Error loading reschedule requests:', err);
-            container.innerHTML = `
-                <div class="py-12 text-center text-rose-600 text-xs">
-                    <i class="bi bi-exclamation-triangle text-xl block mb-2"></i>
-                    Failed to load reschedule requests. Please try refreshing.
+        if (footerEl) {
+            footerEl.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <button type="button" id="reschedDetailViewResBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10">
+                        <i class="bi bi-eye"></i>
+                        <span>View Reservation</span>
+                    </button>
+                    <button type="button" id="reschedDetailDeleteBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30">
+                        <i class="bi bi-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    ${isSub && req.is_refund ? `
+                        <button type="button" id="reschedDetailDeclineBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-red-600 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-red-700">
+                            <i class="bi bi-x-lg"></i>
+                            <span>Decline</span>
+                        </button>
+                        <button type="button" id="reschedDetailProcessRefundBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-[#155e3c] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#114b30]">
+                            <i class="bi bi-send-check"></i>
+                            <span>Confirm Refund Sent</span>
+                        </button>
+                    ` : ''}
+                    ${isSub && !req.is_refund ? `
+                        <button type="button" id="reschedDetailDeclineBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-red-600 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-red-700">
+                            <i class="bi bi-x-lg"></i>
+                            <span>Decline</span>
+                        </button>
+                        <button type="button" id="reschedDetailApproveBtn" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-[#155e3c] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#114b30]">
+                            <i class="bi bi-check-lg"></i>
+                            <span>Approve</span>
+                        </button>
+                    ` : ''}
+                    ${!isSub ? `
+                        <button type="button" data-close-resched-detail-modal="true" class="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/15 dark:bg-transparent dark:text-slate-200 dark:hover:bg-white/10">
+                            Close
+                        </button>
+                    ` : ''}
                 </div>
             `;
+
+            footerEl.querySelectorAll('[data-close-resched-detail-modal="true"]').forEach(b => {
+                b.addEventListener('click', closeReschedDetailModal);
+            });
+
+            document.getElementById('reschedDetailViewResBtn')?.addEventListener('click', () => {
+                closeReschedDetailModal();
+                closeReschedRequestsModal();
+                openModal(req.reservation_id);
+            });
+
+            document.getElementById('reschedDetailDeleteBtn')?.addEventListener('click', () => {
+                showConfirmModal(
+                    'Delete Reschedule Request',
+                    'Are you sure you want to delete this reschedule request? This cannot be undone.',
+                    async () => {
+                        try {
+                            const res = await fetch(`/staff/reschedule-requests/${req.id}`, {
+                                method: 'DELETE',
+                                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                closeReschedDetailModal();
+                                loadRescheduleRequests(currentReschedFilter);
+                            } else {
+                                alert(data.message || 'Failed to delete.');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Network error. Could not delete the request.');
+                        }
+                    },
+                    { confirmText: 'Yes, Delete' }
+                );
+            });
+
+            document.getElementById('reschedDetailProcessRefundBtn')?.addEventListener('click', () => {
+                openProcessRefundModal(req);
+            });
+
+            document.getElementById('reschedDetailDeclineBtn')?.addEventListener('click', () => {
+                openDeclineReschedModal(req.id);
+            });
+
+            const approveBtn = document.getElementById('reschedDetailApproveBtn');
+            approveBtn?.addEventListener('click', () => {
+                const swapAmenity = req.replacement_amenity ? req.replacement_amenity.name : '';
+                handleApproveResched(approveBtn, req.id, req.reservation_id, req.requested_date, swapAmenity);
+            });
+        }
+
+        reschedRequestDetailModal.classList.add('is-open');
+        reschedRequestDetailModal.classList.remove('hidden');
+        reschedRequestDetailModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const updateReschedFilterCounts = (counts) => {
+        if (!counts) return;
+        const filterSelect = document.getElementById('reschedStatusFilter');
+        if (!filterSelect) return;
+        const typeFiltered = (allReschedRequestsCache || []).filter(req => {
+            if (currentReschedTypeFilter === 'refund') return !!req.is_refund;
+            if (currentReschedTypeFilter === 'reschedule') return !req.is_refund;
+            return true;
+        });
+        const useLocalCounts = allReschedRequestsCache !== null;
+        const subC = useLocalCounts ? typeFiltered.filter(r => r.status === 'submitted').length : (counts.submitted ?? 0);
+        const allC = useLocalCounts ? typeFiltered.length : (counts.all ?? 0);
+        const pendC = useLocalCounts ? typeFiltered.filter(r => r.status === 'pending' && !r.is_expired).length : (counts.pending ?? 0);
+        const appC = useLocalCounts ? typeFiltered.filter(r => r.status === 'approved').length : (counts.approved ?? 0);
+        const decC = useLocalCounts ? typeFiltered.filter(r => r.status === 'declined').length : (counts.declined ?? 0);
+        const expC = useLocalCounts ? typeFiltered.filter(r => r.status === 'expired' || r.is_expired).length : 0;
+
+        const labels = {
+            submitted: `Awaiting Action (${subC})`,
+            all: `All Statuses (${allC})`,
+            pending: `Link Sent / Pending (${pendC})`,
+            approved: `Approved (${appC})`,
+            declined: `Declined (${decC})`,
+            expired: `Expired (${expC})`,
+        };
+        Array.from(filterSelect.options).forEach(opt => {
+            if (labels[opt.value]) {
+                opt.textContent = labels[opt.value];
+            }
+        });
+    };
+
+    const renderRescheduleRequestsTable = () => {
+        const container = document.getElementById('reschedRequestsList');
+        if (!container || allReschedRequestsCache === null) return;
+
+        updateReschedFilterCounts(allReschedCountsCache || {});
+
+        const filtered = allReschedRequestsCache.filter(req => {
+            if (currentReschedTypeFilter === 'refund' && !req.is_refund) return false;
+            if (currentReschedTypeFilter === 'reschedule' && req.is_refund) return false;
+
+            if (currentReschedFilter === 'submitted') return req.status === 'submitted';
+            if (currentReschedFilter === 'pending') return req.status === 'pending' && !req.is_expired;
+            if (currentReschedFilter === 'approved') return req.status === 'approved';
+            if (currentReschedFilter === 'declined') return req.status === 'declined';
+            if (currentReschedFilter === 'expired') return req.status === 'expired' || !!req.is_expired;
+            return true;
+        });
+
+        const totalShowingEl = document.getElementById('reschedRequestsTotalShowing');
+        if (totalShowingEl) totalShowingEl.textContent = filtered.length;
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="py-12 text-center text-hp-text-muted text-xs">
+                    <i class="bi bi-inbox text-3xl text-gray-300 dark:text-white/20 block mb-2"></i>
+                    No reschedule or refund requests found for the selected filters.
+                </div>
+            `;
+            return;
+        }
+
+        reschedRequestsById = {};
+        filtered.forEach(r => {
+            reschedRequestsById[String(r.id)] = r;
+        });
+
+        container.innerHTML = `
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+                <table class="w-full border-collapse text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+                            <th class="px-4 py-2.5 whitespace-nowrap">ID</th>
+                            <th class="px-4 py-2.5">Guest</th>
+                            <th class="px-4 py-2.5 whitespace-nowrap">Type</th>
+                            <th class="px-4 py-2.5">Schedule / Details</th>
+                            <th class="px-4 py-2.5 whitespace-nowrap">Status</th>
+                            <th class="px-4 py-2.5 whitespace-nowrap">Submitted</th>
+                            <th class="px-4 py-2.5 text-right whitespace-nowrap"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white dark:divide-white/10 dark:bg-transparent">
+                        ${filtered.map(req => {
+                            const statusInfo = getReschedStatusInfo(req);
+                            const phoneDisplay = formatPhilippinePhone(req.phone);
+                            const typeLabel = req.is_refund
+                                ? `<span class="font-medium text-slate-700 dark:text-slate-200">50% Refund</span>`
+                                : `<span class="font-medium text-slate-700 dark:text-slate-200">Reschedule</span>`;
+
+                            const detailSummary = req.is_refund
+                                ? `<span class="font-semibold text-slate-900 dark:text-white">${escapeHtml(req.refund_amount_formatted)}</span> <span class="text-slate-400">&bull; ${escapeHtml(req.ewallet_provider)}</span>`
+                                : `<span class="text-slate-500">${escapeHtml(req.original_date)}</span> <span class="text-slate-400">&rarr;</span> <span class="font-semibold text-slate-900 dark:text-white">${req.requested_date !== '—' ? escapeHtml(req.requested_date) : 'Pending input'}</span>`;
+
+                            return `
+                                <tr class="resched-table-row cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]" data-resched-row-id="${req.id}">
+                                    <td class="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">#${formatReservationId(req.reservation_id)}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-semibold text-slate-900 dark:text-white leading-snug">${escapeHtml(req.booker_name)}</div>
+                                        <div class="text-[11px] font-mono text-slate-400">${escapeHtml(phoneDisplay)}</div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">${typeLabel}</td>
+                                    <td class="px-4 py-3">${detailSummary}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap">${statusInfo.badge}</td>
+                                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">${escapeHtml(req.created_at_human || req.created_at)}</td>
+                                    <td class="px-4 py-3 text-right text-slate-400 whitespace-nowrap">
+                                        <i class="bi bi-chevron-right text-xs"></i>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.querySelectorAll('.resched-table-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const req = reschedRequestsById[String(row.dataset.reschedRowId)];
+                if (req) {
+                    openReschedDetailModal(req);
+                }
+            });
+        });
+    };
+
+    const prefetchRescheduleRequests = () => {
+        if (reschedPrefetchPromise) return reschedPrefetchPromise;
+        reschedPrefetchPromise = fetch('/staff/reschedule-requests', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(res => (res.ok ? res.json() : Promise.reject(new Error('Failed to load requests'))))
+            .then(data => {
+                allReschedRequestsCache = data.requests || [];
+                allReschedCountsCache = data.counts || {};
+                const subCount = data.counts ? (data.counts.submitted || 0) : (data.submitted_count || 0);
+                if (reschedRequestsBadge) {
+                    if (subCount > 0) {
+                        reschedRequestsBadge.textContent = subCount;
+                        reschedRequestsBadge.classList.remove('hidden');
+                    } else {
+                        reschedRequestsBadge.classList.add('hidden');
+                    }
+                }
+                updateReschedFilterCounts(allReschedCountsCache);
+                return data;
+            })
+            .finally(() => {
+                reschedPrefetchPromise = null;
+            });
+        return reschedPrefetchPromise;
+    };
+
+    // Fetch and render Reschedule Requests
+    const loadRescheduleRequests = async (_filter = 'submitted', options = {}) => {
+        const container = document.getElementById('reschedRequestsList');
+        const silent = !!options.silent;
+
+        if (container && !silent && allReschedRequestsCache === null) {
+            container.innerHTML = `
+                <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+                    <div class="divide-y divide-slate-100 dark:divide-white/10">
+                        ${[1, 2, 3, 4].map(() => `
+                            <div class="flex items-center gap-4 px-4 py-3 animate-pulse">
+                                <div class="h-4 w-12 rounded bg-slate-200 dark:bg-white/10"></div>
+                                <div class="h-4 w-32 rounded bg-slate-200 dark:bg-white/10"></div>
+                                <div class="h-4 w-24 rounded bg-slate-100 dark:bg-white/5"></div>
+                                <div class="h-4 w-40 rounded bg-slate-100 dark:bg-white/5"></div>
+                                <div class="h-5 w-24 rounded bg-slate-200 dark:bg-white/10 ml-auto"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        try {
+            await prefetchRescheduleRequests();
+            renderRescheduleRequestsTable();
+        } catch (err) {
+            console.error('Error loading reschedule requests:', err);
+            if (container && !silent) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-rose-600 text-xs">
+                        <i class="bi bi-exclamation-triangle text-xl block mb-2"></i>
+                        Failed to load reschedule requests. Please try refreshing.
+                    </div>
+                `;
+            }
         }
     };
 
@@ -8193,6 +8376,7 @@ window.AppPage['staff_reservations'] = function () {
                                 currentReservationData.active_reschedule_request = null;
                             }
                         }
+                        closeReschedDetailModal();
                         showSuccessModal(data.message || 'Reschedule request approved successfully!');
                         loadRescheduleRequests(currentReschedFilter);
                         fetchReschedBadgeCount();
@@ -8219,7 +8403,6 @@ window.AppPage['staff_reservations'] = function () {
             },
             {
                 confirmText: 'Yes, Approve',
-                confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark shadow-sm',
             }
         );
     };
@@ -8282,6 +8465,7 @@ window.AppPage['staff_reservations'] = function () {
 
             if (response.ok && data.success) {
                 closeDeclineReschedModal();
+                closeReschedDetailModal();
                 showSuccessModal(data.message || 'Reschedule request has been declined.');
                 loadRescheduleRequests(currentReschedFilter);
                 fetchReschedBadgeCount();
@@ -8413,6 +8597,7 @@ window.AppPage['staff_reservations'] = function () {
 
             if (response.ok && data.success) {
                 closeProcessRefundModal();
+                closeReschedDetailModal();
                 showSuccessModal(data.message || '50% Refund has been processed and recorded successfully!');
                 loadRescheduleRequests(currentReschedFilter);
                 fetchReschedBadgeCount();
@@ -8449,6 +8634,10 @@ window.AppPage['staff_reservations'] = function () {
                 closeRequestReschedModal();
                 return;
             }
+            if (reschedRequestDetailModal && reschedRequestDetailModal.classList.contains('is-open')) {
+                closeReschedDetailModal();
+                return;
+            }
             if (reschedRequestsModal && reschedRequestsModal.classList.contains('is-open')) {
                 closeReschedRequestsModal();
                 return;
@@ -8456,24 +8645,10 @@ window.AppPage['staff_reservations'] = function () {
         }
     }, { signal: pageSignal });
 
-    // Badge Count Poll / Fetcher
+    // Badge Count Poll / Prefetcher
     const fetchReschedBadgeCount = async () => {
         try {
-            const response = await fetch('/staff/reschedule-requests?status=submitted', {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const subCount = data.counts ? (data.counts.submitted || 0) : (data.submitted_count || 0);
-                if (reschedRequestsBadge) {
-                    if (subCount > 0) {
-                        reschedRequestsBadge.textContent = subCount;
-                        reschedRequestsBadge.classList.remove('hidden');
-                    } else {
-                        reschedRequestsBadge.classList.add('hidden');
-                    }
-                }
-            }
+            await prefetchRescheduleRequests();
         } catch (e) {
             // Ignore badge fetch error
         }
